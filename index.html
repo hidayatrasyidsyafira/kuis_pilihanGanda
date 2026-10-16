@@ -135,7 +135,40 @@
         }
 
         /* === TOMBOL PILIHAN GANDA === */
-        .pilihan-group {
+        /* === GRID 2 KOLOM UNTUK PILIHAN === */
+            .pilihan-group {
+                display: none;
+                grid-template-columns: 1fr 1fr;   /* 2 kolom sama lebar */
+                grid-template-rows: auto auto auto; /* 3 baris */
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+            .pilihan-group.aktif {
+                display: grid;
+            }
+            
+            /* Posisi tiap pilihan di grid */
+            .pilihan-group .pilihan:nth-child(1) { grid-column: 1; grid-row: 1; } /* A */
+            .pilihan-group .pilihan:nth-child(2) { grid-column: 1; grid-row: 2; } /* B */
+            .pilihan-group .pilihan:nth-child(3) { grid-column: 1; grid-row: 3; } /* C */
+            .pilihan-group .pilihan:nth-child(4) { grid-column: 2; grid-row: 1; } /* D */
+            .pilihan-group .pilihan:nth-child(5) { grid-column: 2; grid-row: 2; } /* E */
+            
+            /* Di HP: 1 kolom saja */
+            @media (max-width: 600px) {
+                .pilihan-group {
+                    grid-template-columns: 1fr;
+                }
+                .pilihan-group .pilihan:nth-child(1),
+                .pilihan-group .pilihan:nth-child(2),
+                .pilihan-group .pilihan:nth-child(3),
+                .pilihan-group .pilihan:nth-child(4),
+                .pilihan-group .pilihan:nth-child(5) {
+                    grid-column: 1;
+                    grid-row: auto;
+                }
+            }
+        
             display: none;
             flex-direction: column;
             gap: 12px;
@@ -582,7 +615,7 @@ async function mulaiKuis() {
     document.getElementById("timer-total").style.display = "block";
     document.getElementById("progress").style.display = "block";
     document.getElementById("teks-soal").style.display = "block";
-    document.getElementById("pilihan-group").style.display = "flex";
+    document.getElementById("pilihan-group").classList.add("aktif");
 
     kuisAktif = true;
     sisaWaktuTotal = DURASI_TOTAL_DETIK;
@@ -623,21 +656,22 @@ function tampilSoal() {
     document.getElementById("progress").textContent = `Soal ${nomor + 1} dari ${daftarSoal.length}`;
     document.getElementById("teks-soal").textContent = daftarSoal[nomor].soal;
 
-    // Generate tombol pilihan (A, B, C, D)
     const wadah = document.getElementById("pilihan-group");
     wadah.innerHTML = "";
 
     const pilihan = daftarSoal[nomor].pilihan;
-    ["A", "B", "C", "D"].forEach(huruf => {
-        if (!pilihan[huruf]) return; // skip kalau pilihan kosong
+    ["A", "B", "C", "D", "E"].forEach(huruf => {   // ← tambah E
+        if (!pilihan[huruf]) return;
         const btn = document.createElement("button");
         btn.className = "pilihan";
         btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
         btn.onclick = () => cekJawaban(huruf);
         wadah.appendChild(btn);
     });
-}
 
+    // Tampilkan grid
+    wadah.classList.add("aktif");
+}
 /* ---------- CEK JAWABAN ---------- */
 function cekJawaban(pilihanSiswa) {
     if (!kuisAktif || sudahDijawab) return;
