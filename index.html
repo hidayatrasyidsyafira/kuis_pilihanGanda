@@ -19,12 +19,13 @@
             border-radius: 24px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.2);
             padding: 40px 35px;
-            max-width: 750px;
+            max-width: 780px;
             width: 100%;
             text-align: center;
         }
         h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
 
+        /* === FORM IDENTITAS === */
         .form-identitas {
             background: #f0f8ff;
             padding: 25px;
@@ -87,6 +88,7 @@
         }
         .tombol-mulai:hover { transform: scale(1.05); }
 
+        /* === TIMER === */
         .timer-total {
             background: linear-gradient(135deg, #fff3cd, #ffe69c);
             padding: 15px;
@@ -126,7 +128,7 @@
             min-height: 120px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             font-size: 1.3rem;
             line-height: 1.6;
             color: #2c3e50;
@@ -134,73 +136,51 @@
             text-align: left;
         }
 
-        /* === TOMBOL PILIHAN GANDA === */
         /* === GRID 2 KOLOM UNTUK PILIHAN === */
-            .pilihan-group {
-                display: none;
-                grid-template-columns: 1fr 1fr;   /* 2 kolom sama lebar */
-                grid-template-rows: auto auto auto; /* 3 baris */
-                gap: 12px;
-                margin-bottom: 20px;
-            }
-            .pilihan-group.aktif {
-                display: grid;
-            }
-            
-            /* Posisi tiap pilihan di grid */
-            .pilihan-group .pilihan:nth-child(1) { grid-column: 1; grid-row: 1; } /* A */
-            .pilihan-group .pilihan:nth-child(2) { grid-column: 1; grid-row: 2; } /* B */
-            .pilihan-group .pilihan:nth-child(3) { grid-column: 1; grid-row: 3; } /* C */
-            .pilihan-group .pilihan:nth-child(4) { grid-column: 2; grid-row: 1; } /* D */
-            .pilihan-group .pilihan:nth-child(5) { grid-column: 2; grid-row: 2; } /* E */
-            
-            /* Di HP: 1 kolom saja */
-            @media (max-width: 600px) {
-                .pilihan-group {
-                    grid-template-columns: 1fr;
-                }
-                .pilihan-group .pilihan:nth-child(1),
-                .pilihan-group .pilihan:nth-child(2),
-                .pilihan-group .pilihan:nth-child(3),
-                .pilihan-group .pilihan:nth-child(4),
-                .pilihan-group .pilihan:nth-child(5) {
-                    grid-column: 1;
-                    grid-row: auto;
-                }
-            }
-        
+        .pilihan-group {
             display: none;
-            flex-direction: column;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
             gap: 12px;
             margin-bottom: 20px;
         }
+        .pilihan-group.aktif {
+            display: grid;
+        }
+
         .pilihan {
             display: flex;
             align-items: center;
             gap: 15px;
             padding: 16px 20px;
-            border: none;                          /* ← hapus border */
+            border: none;
             border-radius: 14px;
-            background: #f8f9fa;                    /* abu sangat muda */
+            background: #f8f9fa;
             cursor: pointer;
             transition: all 0.25s ease;
             text-align: left;
             font-size: 1.1rem;
             color: #2c3e50;
             width: 100%;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);  /* ← shadow halus */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
             font-weight: 500;
         }
+
         .pilihan:hover:not(:disabled) {
             background: #e3f2fd;
-            transform: translateY(-2px);            /* naik halus */
+            transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(79, 172, 254, 0.25);
         }
-        .pilihan:disabled { cursor: not-allowed; opacity: 0.75; }
+
+        .pilihan:disabled {
+            cursor: not-allowed;
+            opacity: 0.75;
+        }
         .pilihan:disabled:not(.benar):not(.salah) {
             background: #f0f0f0;
             box-shadow: none;
         }
+
         .pilihan .huruf {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
@@ -215,9 +195,13 @@
             flex-shrink: 0;
             box-shadow: 0 4px 10px rgba(79, 172, 254, 0.35);
         }
+
         .pilihan .teks-pilihan {
             flex: 1;
+            line-height: 1.4;
         }
+
+        /* State: benar */
         .pilihan.benar {
             background: linear-gradient(135deg, #d4edda, #c3e6cb);
             box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3);
@@ -226,6 +210,8 @@
             background: linear-gradient(135deg, #2ecc71, #27ae60);
             box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
         }
+
+        /* State: salah */
         .pilihan.salah {
             background: linear-gradient(135deg, #f8d7da, #f5c6cb);
             box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
@@ -234,12 +220,28 @@
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4);
         }
-        .pilihan.benar .huruf { background: #2ecc71; }
-        .pilihan.salah {
-            border-color: #e74c3c;
-            background: #f8d7da;
+
+        /* Posisi grid untuk 5 pilihan: A B C kiri, D E kanan */
+        .pilihan-group .pilihan:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .pilihan-group .pilihan:nth-child(2) { grid-column: 1; grid-row: 2; }
+        .pilihan-group .pilihan:nth-child(3) { grid-column: 1; grid-row: 3; }
+        .pilihan-group .pilihan:nth-child(4) { grid-column: 2; grid-row: 1; }
+        .pilihan-group .pilihan:nth-child(5) { grid-column: 2; grid-row: 2; }
+
+        /* Di HP: 1 kolom */
+        @media (max-width: 600px) {
+            .pilihan-group {
+                grid-template-columns: 1fr;
+            }
+            .pilihan-group .pilihan:nth-child(1),
+            .pilihan-group .pilihan:nth-child(2),
+            .pilihan-group .pilihan:nth-child(3),
+            .pilihan-group .pilihan:nth-child(4),
+            .pilihan-group .pilihan:nth-child(5) {
+                grid-column: 1;
+                grid-row: auto;
+            }
         }
-        .pilihan.salah .huruf { background: #e74c3c; }
 
         .lanjut-btn {
             background: #3498db;
@@ -392,20 +394,13 @@
             border: 1px solid #81c784;
             margin-top: 10px;
         }
-
-        @media (max-width: 600px) {
-            .container { padding: 25px 20px; }
-            h1 { font-size: 1.5rem; }
-            .pilihan { font-size: 1rem; padding: 14px 15px; }
-            .soal-box { font-size: 1.1rem; padding: 25px 18px; }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
 
-        <!-- Panel Guru -->
+        <!-- Panel Guru (muncul kalau ?guru=1) -->
         <div class="panel-guru" id="panel-guru">
             <h3>👨‍🏫 Panel Guru</h3>
             <div class="row">
@@ -444,9 +439,7 @@
 
         <div id="layar-soal">
             <div class="soal-box" id="teks-soal"></div>
-            <div class="pilihan-group" id="pilihan-group">
-                <!-- Pilihan akan di-generate oleh JS -->
-            </div>
+            <div class="pilihan-group" id="pilihan-group"></div>
         </div>
 
         <div class="akhir" id="layar-akhir">
@@ -545,65 +538,7 @@ function buatLinkGuru() {
     document.getElementById("guru-output").textContent = `${baseUrl}?durasi=${menit}`;
 }
 
-/* =========================================================
-   📄 AMBIL SOAL DARI CSV (FORMAT BARU: 8 KOLOM)
-   ========================================================= */
-async function ambilSoal() {
-    try {
-        const res = await fetch("soal.csv");
-        if (!res.ok) throw new Error("Tidak ada file soal.csv");
-        const teks = await res.text();
-        const baris = parseCSV(teks);
-
-        daftarSoal = [];
-        for (let i = 1; i < baris.length; i++) {
-            const k = baris[i];
-            if (!k || k.length < 8) continue;
-            const soal = k[0];
-            const pilihan = {
-                A: k[1],
-                B: k[2],
-                C: k[3],
-                D: k[4],
-                E: k[5]
-            };
-            const kunci = k[6].toUpperCase().trim();
-            const skor = parseInt(k[7]) || 1;
-            const penjelasan = k[8] || "";
-
-            // Validasi: minimal A, B, C, D harus ada
-            if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) {
-                daftarSoal.push({ soal, pilihan, kunci, skor, penjelasan });
-            }
-        }
-    } catch (err) {
-        console.error("Gagal baca soal.csv:", err);
-        daftarSoal = [
-            {
-                soal: "CPU adalah singkatan dari...",
-                pilihan: {
-                    A: "Central Processing Unit",
-                    B: "Computer Personal Unit",
-                    C: "Central Program Utility",
-                    D: "Control Processing Unit",
-                    E: "Central Personal Utility"
-                },
-                kunci: "A", skor: 1,
-                penjelasan: "CPU = Central Processing Unit."
-            },
-            {
-                soal: "RAM bersifat...",
-                pilihan: {
-                    A: "Permanen", B: "Sementara",
-                    C: "Sangat cepat", D: "Tidak terbatas", E: "Sangat lambat"
-                },
-                kunci: "B", skor: 1,
-                penjelasan: "RAM = memori sementara."
-            }
-        ];
-    }
-}
-/* ---------- PARSER CSV (handle tanda kutip) ---------- */
+/* ---------- PARSER CSV ---------- */
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
         const hasil = [];
@@ -618,6 +553,68 @@ function parseCSV(teks) {
     });
 }
 
+/* =========================================================
+   📄 AMBIL SOAL DARI CSV (9 KOLOM: soal, A, B, C, D, E, kunci, skor, penjelasan)
+   ========================================================= */
+async function ambilSoal() {
+    try {
+        const res = await fetch("soal.csv");
+        if (!res.ok) throw new Error("Tidak ada file soal.csv");
+        const teks = await res.text();
+        const baris = parseCSV(teks);
+
+        daftarSoal = [];
+        for (let i = 1; i < baris.length; i++) {
+            const k = baris[i];
+            if (!k || k.length < 8) continue;
+            const soal = k[0];
+            const pilihan = {
+                A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || ""
+            };
+            const kunci = k[6].toUpperCase().trim();
+            const skor = parseInt(k[7]) || 1;
+            const penjelasan = k[8] || "";
+
+            if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) {
+                daftarSoal.push({ soal, pilihan, kunci, skor, penjelasan });
+            }
+        }
+    } catch (err) {
+        console.error("Gagal baca soal.csv:", err);
+        daftarSoal = [
+            {
+                soal: "CPU adalah singkatan dari...",
+                pilihan: {
+                    A: "Central Processing Unit", B: "Computer Personal Unit",
+                    C: "Central Program Utility", D: "Control Processing Unit",
+                    E: "Central Personal Utility"
+                },
+                kunci: "A", skor: 1,
+                penjelasan: "CPU = Central Processing Unit, otak komputer."
+            },
+            {
+                soal: "RAM bersifat...",
+                pilihan: {
+                    A: "Permanen", B: "Sementara",
+                    C: "Sangat cepat", D: "Tidak terbatas", E: "Sangat lambat"
+                },
+                kunci: "B", skor: 1,
+                penjelasan: "RAM = memori sementara, hilang saat komputer mati."
+            },
+            {
+                soal: "Algoritma adalah...",
+                pilihan: {
+                    A: "Bahasa pemrograman", B: "Langkah logis penyelesaian masalah",
+                    C: "Program komputer", D: "Jaringan internet",
+                    E: "Sistem operasi"
+                },
+                kunci: "B", skor: 1,
+                penjelasan: "Algoritma = urutan langkah logis untuk menyelesaikan masalah."
+            }
+        ];
+    }
+}
+
 /* ---------- MULAI KUIS ---------- */
 async function mulaiKuis() {
     const nama = document.getElementById("input-nama").value.trim();
@@ -629,7 +626,7 @@ async function mulaiKuis() {
     kelasSiswa = kelas;
 
     await ambilSoal();
-    daftarSoal = acak(daftarSoal); // Acak urutan soal
+    daftarSoal = acak(daftarSoal);
 
     document.getElementById("form-identitas").style.display = "none";
     document.querySelector(".info-durasi").style.display = "none";
@@ -641,8 +638,7 @@ async function mulaiKuis() {
 
     document.getElementById("timer-total").style.display = "block";
     document.getElementById("progress").style.display = "block";
-    document.getElementById("teks-soal").style.display = "block";
-    document.getElementById("pilihan-group").classList.add("aktif");
+    document.getElementById("teks-soal").style.display = "flex";
 
     kuisAktif = true;
     sisaWaktuTotal = DURASI_TOTAL_DETIK;
@@ -687,7 +683,7 @@ function tampilSoal() {
     wadah.innerHTML = "";
 
     const pilihan = daftarSoal[nomor].pilihan;
-    ["A", "B", "C", "D", "E"].forEach(huruf => {   // ← tambah E
+    ["A", "B", "C", "D", "E"].forEach(huruf => {
         if (!pilihan[huruf]) return;
         const btn = document.createElement("button");
         btn.className = "pilihan";
@@ -696,9 +692,9 @@ function tampilSoal() {
         wadah.appendChild(btn);
     });
 
-    // Tampilkan grid
     wadah.classList.add("aktif");
 }
+
 /* ---------- CEK JAWABAN ---------- */
 function cekJawaban(pilihanSiswa) {
     if (!kuisAktif || sudahDijawab) return;
@@ -707,7 +703,6 @@ function cekJawaban(pilihanSiswa) {
     const soal = daftarSoal[nomor];
     const benar = pilihanSiswa === soal.kunci;
 
-    // Nonaktifkan semua tombol & tandai benar/salah
     const semuaTombol = document.querySelectorAll("#pilihan-group .pilihan");
     semuaTombol.forEach(btn => {
         btn.disabled = true;
@@ -716,7 +711,6 @@ function cekJawaban(pilihanSiswa) {
         else if (huruf === pilihanSiswa) btn.classList.add("salah");
     });
 
-    // Simpan riwayat
     riwayatJawaban.push({
         nomor: nomor,
         jawabanSiswa: pilihanSiswa,
@@ -730,12 +724,8 @@ function cekJawaban(pilihanSiswa) {
         penjelasan: soal.penjelasan
     });
 
-    // Lanjut ke soal berikutnya setelah jeda singkat
     if (nomor < daftarSoal.length - 1) {
-        setTimeout(() => {
-            nomor++;
-            tampilSoal();
-        }, 800);
+        setTimeout(() => { nomor++; tampilSoal(); }, 800);
     } else {
         setTimeout(tampilHasil, 800);
     }
@@ -751,7 +741,6 @@ function hitungSkor() {
         skorDidapat += r.skorDidapat;
         if (r.benar) jumlahBenar++;
     });
-    // Skor 0-100
     const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
     return { skorDidapat, skorMaksimal, jumlahBenar, skorAkhir };
 }
@@ -845,7 +834,8 @@ function tampilkanPembahasan() {
                 A. ${soal.pilihan.A || "-"}<br>
                 B. ${soal.pilihan.B || "-"}<br>
                 C. ${soal.pilihan.C || "-"}<br>
-                D. ${soal.pilihan.D || "-"}
+                D. ${soal.pilihan.D || "-"}<br>
+                ${soal.pilihan.E ? "E. " + soal.pilihan.E : ""}
             </div>
             ${statusHTML}
             ${soal.penjelasan ? `<div style="margin-top:8px; padding:10px; background:#f0f8ff; border-left:4px solid #4facfe; border-radius:6px; font-style:italic; font-size:0.95rem;">💡 ${soal.penjelasan}</div>` : ""}
@@ -866,6 +856,7 @@ function mulaiUlang() {
     document.getElementById("info-siswa").style.display = "none";
     document.getElementById("timer-total").style.display = "none";
     document.getElementById("progress").style.display = "none";
+    document.getElementById("pilihan-group").classList.remove("aktif");
 
     document.getElementById("form-identitas").style.display = "block";
     document.getElementById("info-durasi").style.display = "block";
