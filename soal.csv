@@ -1,4 +1,4 @@
-soal,pilihan_a,pilihan_b,pilihan_c,pilihan_d,kunci,skor,penjelasan
-"CPU adalah singkatan dari...","Central Processing Unit","Computer Personal Unit","Central Program Utility","Control Processing Unit",A,1,"CPU = Central Processing Unit, otak komputer."
-"RAM bersifat...","Permanen","Sementara","Sangat cepat","Tidak terbatas",B,1,"RAM = memori sementara, hilang saat mati."
-"Algoritma adalah...","Bahasa pemrograman","Langkah logis penyelesaian masalah","Program komputer","Jaringan internet",B,1,"Algoritma = urutan langkah logis."
+soal,pilihan_a,pilihan_b,pilihan_c,pilihan_d,pilihan_e,kunci,skor,penjelasan
+"CPU adalah singkatan dari...","Central Processing Unit","Computer Personal Unit","Central Program Utility","Control Processing Unit","Central Personal Utility",A,1,"CPU = Central Processing Unit."
+"RAM bersifat...","Permanen","Sementara","Sangat cepat","Tidak terbatas","Sangat lambat",B,1,"RAM = memori sementara."
+"Algoritma adalah...","Bahasa pemrograman","Langkah logis penyelesaian masalah","Program komputer","Jaringan internet","Sistem operasi",B,1,"Algoritma = urutan langkah logis."
