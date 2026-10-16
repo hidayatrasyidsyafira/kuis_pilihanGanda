@@ -539,43 +539,51 @@ async function ambilSoal() {
         daftarSoal = [];
         for (let i = 1; i < baris.length; i++) {
             const k = baris[i];
-            if (!k || k.length < 7) continue;
+            if (!k || k.length < 8) continue;
             const soal = k[0];
-            const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4] };
-            const kunci = k[5].toUpperCase().trim();
-            const skor = parseInt(k[6]) || 1;
-            const penjelasan = k[7] || "";
+            const pilihan = {
+                A: k[1],
+                B: k[2],
+                C: k[3],
+                D: k[4],
+                E: k[5]
+            };
+            const kunci = k[6].toUpperCase().trim();
+            const skor = parseInt(k[7]) || 1;
+            const penjelasan = k[8] || "";
 
-            if (soal && pilihan.A && pilihan.B && ["A","B","C","D"].includes(kunci)) {
+            // Validasi: minimal A, B, C, D harus ada
+            if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) {
                 daftarSoal.push({ soal, pilihan, kunci, skor, penjelasan });
             }
         }
     } catch (err) {
         console.error("Gagal baca soal.csv:", err);
-        // Fallback 3 soal contoh
         daftarSoal = [
             {
                 soal: "CPU adalah singkatan dari...",
-                pilihan: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit" },
+                pilihan: {
+                    A: "Central Processing Unit",
+                    B: "Computer Personal Unit",
+                    C: "Central Program Utility",
+                    D: "Control Processing Unit",
+                    E: "Central Personal Utility"
+                },
                 kunci: "A", skor: 1,
-                penjelasan: "CPU = Central Processing Unit, otak komputer."
+                penjelasan: "CPU = Central Processing Unit."
             },
             {
                 soal: "RAM bersifat...",
-                pilihan: { A: "Permanen", B: "Sementara", C: "Sangat cepat", D: "Tidak terbatas" },
+                pilihan: {
+                    A: "Permanen", B: "Sementara",
+                    C: "Sangat cepat", D: "Tidak terbatas", E: "Sangat lambat"
+                },
                 kunci: "B", skor: 1,
-                penjelasan: "RAM = memori sementara, hilang saat komputer mati."
-            },
-            {
-                soal: "Algoritma adalah...",
-                pilihan: { A: "Bahasa pemrograman", B: "Langkah logis penyelesaian masalah", C: "Program komputer", D: "Jaringan internet" },
-                kunci: "B", skor: 1,
-                penjelasan: "Algoritma = urutan langkah logis untuk menyelesaikan masalah."
+                penjelasan: "RAM = memori sementara."
             }
         ];
     }
 }
-
 /* ---------- PARSER CSV (handle tanda kutip) ---------- */
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
