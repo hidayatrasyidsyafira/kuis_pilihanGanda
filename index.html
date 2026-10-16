@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kuis Pilihan Ganda</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+            padding: 40px 35px;
+            max-width: 750px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
+
+        .form-identitas {
+            background: #f0f8ff;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: left;
+            border: 2px solid #4facfe;
+        }
+        .form-identitas h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #0c5460;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #b8d8e8;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border 0.2s;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.15);
+        }
+
+        .info-durasi {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            border-left: 5px solid #ffc107;
+        }
+
+        .tombol-mulai {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            border-radius: 16px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .tombol-mulai:hover { transform: scale(1.05); }
+
+        .timer-total {
+            background: linear-gradient(135deg, #fff3cd, #ffe69c);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #856404;
+            font-size: 1.5rem;
+            display: none;
+            border: 2px solid #ffc107;
+            letter-spacing: 1px;
+        }
+        .timer-total.warning {
+            background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+            color: #e65100;
+            border-color: #ff9800;
+            animation: pulse 1s infinite;
+        }
+        .timer-total.danger {
+            background: linear-gradient(135deg, #ffcdd2, #ef9a9a);
+            color: #b71c1c;
+            border-color: #f44336;
+            animation: pulse 0.6s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 1.1rem; display: none; }
+        .soal-box {
+            background: #f8f9fa;
+            padding: 30px 25px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            border-left: 6px solid #4facfe;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #2c3e50;
+            display: none;
+            text-align: left;
+        }
+
+        /* === TOMBOL PILIHAN GANDA === */
+        .pilihan-group {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .pilihan {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            width: 100%;
+        }
+        .pilihan:hover:not(:disabled) {
+            border-color: #4facfe;
+            background: #f0f8ff;
+            transform: translateX(5px);
+        }
+        .pilihan:disabled { cursor: not-allowed; opacity: 0.7; }
+        .pilihan .huruf {
+            background: #4facfe;
+            color: white;
+            font-weight: bold;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .pilihan .teks-pilihan {
+            flex: 1;
+        }
+        .pilihan.benar {
+            border-color: #2ecc71;
+            background: #d4edda;
+        }
+        .pilihan.benar .huruf { background: #2ecc71; }
+        .pilihan.salah {
+            border-color: #e74c3c;
+            background: #f8d7da;
+        }
+        .pilihan.salah .huruf { background: #e74c3c; }
+
+        .lanjut-btn {
+            background: #3498db;
+            color: white;
+            padding: 16px 35px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+            margin: 10px auto;
+        }
+        .lanjut-btn:hover { background: #2980b9; }
+        .akhir, .pembahasan { display: none; }
+        .daftar-soal { text-align: left; margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .item-soal {
+            padding: 18px;
+            border-bottom: 1px solid #eee;
+            line-height: 1.6;
+        }
+        .item-soal strong { color: #2c3e50; }
+        .label-netral { color: #3498db; font-weight: bold; }
+        .label-benar { color: #2ecc71; font-weight: bold; }
+        .label-salah { color: #e74c3c; font-weight: bold; }
+        .jawaban-pg {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 0 3px;
+        }
+        .jawaban-pg.benar { background: #d4edda; color: #155724; }
+        .jawaban-pg.salah { background: #f8d7da; color: #721c24; }
+
+        .info-siswa {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 0.95rem;
+        }
+        .status-kirim {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        .skor-akhir {
+            background: linear-gradient(135deg, #f0f8ff, #e3f2fd);
+            padding: 25px;
+            border-radius: 16px;
+            margin: 20px 0;
+            border: 2px solid #4facfe;
+        }
+        .skor-akhir .angka {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .skor-akhir .label {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        .overlay-waktu-habis {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .overlay-waktu-habis .box {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 450px;
+        }
+        .overlay-waktu-habis h2 {
+            color: #e74c3c;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        .overlay-waktu-habis p {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        .overlay-waktu-habis button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Panel Guru */
+        .panel-guru {
+            display: none;
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+            border: 2px dashed #66bb6a;
+        }
+        .panel-guru h3 {
+            color: #2e7d32;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .panel-guru .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .panel-guru input {
+            padding: 10px;
+            border: 2px solid #81c784;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 100px;
+            text-align: center;
+        }
+        .panel-guru button {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .panel-guru .url-output {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            border: 1px solid #81c784;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 25px 20px; }
+            h1 { font-size: 1.5rem; }
+            .pilihan { font-size: 1rem; padding: 14px 15px; }
+            .soal-box { font-size: 1.1rem; padding: 25px 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
+
+        <!-- Panel Guru -->
+        <div class="panel-guru" id="panel-guru">
+            <h3>👨‍🏫 Panel Guru</h3>
+            <div class="row">
+                <label>Durasi (menit):</label>
+                <input type="number" id="guru-durasi" value="20" min="1" max="180">
+                <button onclick="buatLinkGuru()">🔗 Buat Link Siswa</button>
+            </div>
+            <div class="url-output" id="guru-output">
+                Link akan muncul di sini...
+            </div>
+        </div>
+
+        <!-- Form Siswa -->
+        <div class="form-identitas" id="form-identitas">
+            <h3>👤 Isi Data Diri Dulu Ya</h3>
+            <div class="form-group">
+                <label for="input-nama">Nama Lengkap</label>
+                <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="input-kelas">Kelas</label>
+                <input type="text" id="input-kelas" placeholder="Contoh: XI IPA 1" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="info-durasi" id="info-durasi">
+            ⏱️ Total waktu pengerjaan: <strong id="durasi-tampil">20 menit</strong><br>
+            <small style="font-weight: normal;">Soal & pilihan diacak untuk setiap siswa</small>
+        </div>
+
+        <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()">▶️ MULAI</button>
+
+        <div class="info-siswa" id="info-siswa"></div>
+        <div class="timer-total" id="timer-total">⏱️ Sisa Waktu: 20:00</div>
+        <div class="progress" id="progress">Soal 1 dari 0</div>
+
+        <div id="layar-soal">
+            <div class="soal-box" id="teks-soal"></div>
+            <div class="pilihan-group" id="pilihan-group">
+                <!-- Pilihan akan di-generate oleh JS -->
+            </div>
+        </div>
+
+        <div class="akhir" id="layar-akhir">
+            <h2 style="font-size: 1.8rem; margin-bottom: 15px;">🎉 Kuis Selesai!</h2>
+            <div class="skor-akhir">
+                <div class="label">Skor Akhir</div>
+                <div class="angka" id="skor-angka">0</div>
+                <div class="label" id="skor-detail">0 dari 0 soal benar</div>
+            </div>
+            <p style="margin: 15px 0; font-size: 1rem; color: #555;">
+                Jawabanmu sudah tersimpan. Terima kasih sudah mengerjakan! 🙌
+            </p>
+            <div class="status-kirim" id="status-kirim"></div>
+            <button class="lanjut-btn" style="display:inline-block;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
+            <button class="lanjut-btn" style="background:#2ecc71; display:inline-block;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
+        </div>
+
+        <div class="pembahasan" id="layar-pembahasan">
+            <h2 style="font-size: 1.8rem; margin-bottom: 20px;">📖 Pembahasan Lengkap</h2>
+            <div class="daftar-soal" id="daftar-pembahasan"></div>
+            <button class="lanjut-btn" style="margin-top:25px;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
+        </div>
+    </div>
+
+    <div class="overlay-waktu-habis" id="overlay-waktu-habis">
+        <div class="box">
+            <h2>⏰ Waktu Habis!</h2>
+            <p>Waktu pengerjaan sudah berakhir.<br>Jawabanmu sudah tersimpan.</p>
+            <button onclick="tutupOverlayDanTampilHasil()">Lihat Hasil →</button>
+        </div>
+    </div>
+
+<script>
+/* =========================================================
+   ⚙️ KONFIGURASI
+   ========================================================= */
+const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbxHumfJu2Agl0Sk65WZNXFtgcXPmYXgAw4OcqyA8IM7NjNUkNc2DZfC2IbaJIHVmwgS5g/exec";
+const DURASI_DEFAULT_MENIT = 20;
+
+/* ---------- BACA PARAMETER URL ---------- */
+function ambilParameterURL() {
+    const params = new URLSearchParams(window.location.search);
+    const durasiParam = params.get("durasi");
+    const guruParam = params.get("guru");
+    let durasiMenit = DURASI_DEFAULT_MENIT;
+    if (durasiParam !== null) {
+        const nilai = parseFloat(durasiParam);
+        if (!isNaN(nilai) && nilai >= 1 && nilai <= 180) durasiMenit = nilai;
+    }
+    return { durasiMenit, modeGuru: guruParam === "1" };
+}
+const KONFIG = ambilParameterURL();
+const DURASI_TOTAL_DETIK = Math.round(KONFIG.durasiMenit * 60);
+
+/* ---------- STATE ---------- */
+let daftarSoal = [];
+let nomor = 0, sudahDijawab = false;
+let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
+let riwayatJawaban = [];
+let namaSiswa = "", kelasSiswa = "";
+let kuisAktif = false;
+
+/* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
+function acak(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+/* ---------- INFO DURASI ---------- */
+function tampilkanInfoDurasi() {
+    const menit = KONFIG.durasiMenit;
+    document.getElementById("durasi-tampil").textContent = `${menit} menit`;
+    const mm = String(Math.floor(menit)).padStart(2, "0");
+    const ss = String(Math.round((menit % 1) * 60)).padStart(2, "0");
+    document.getElementById("timer-total").textContent = `⏱️ Sisa Waktu: ${mm}:${ss}`;
+}
+
+/* ---------- PANEL GURU ---------- */
+function setupPanelGuru() {
+    if (!KONFIG.modeGuru) return;
+    document.getElementById("panel-guru").style.display = "block";
+    document.getElementById("form-identitas").style.display = "none";
+    document.getElementById("tombol-mulai").style.display = "none";
+    document.getElementById("info-durasi").style.display = "none";
+    document.getElementById("guru-durasi").value = DURASI_DEFAULT_MENIT;
+    buatLinkGuru();
+}
+function buatLinkGuru() {
+    const menit = parseInt(document.getElementById("guru-durasi").value);
+    if (isNaN(menit) || menit < 1 || menit > 180) { alert("⚠️ Durasi 1–180 menit"); return; }
+    const baseUrl = window.location.origin + window.location.pathname;
+    document.getElementById("guru-output").textContent = `${baseUrl}?durasi=${menit}`;
+}
+
+/* =========================================================
+   📄 AMBIL SOAL DARI CSV (FORMAT BARU: 8 KOLOM)
+   ========================================================= */
+async function ambilSoal() {
+    try {
+        const res = await fetch("soal.csv");
+        if (!res.ok) throw new Error("Tidak ada file soal.csv");
+        const teks = await res.text();
+        const baris = parseCSV(teks);
+
+        daftarSoal = [];
+        for (let i = 1; i < baris.length; i++) {
+            const k = baris[i];
+            if (!k || k.length < 7) continue;
+            const soal = k[0];
+            const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4] };
+            const kunci = k[5].toUpperCase().trim();
+            const skor = parseInt(k[6]) || 1;
+            const penjelasan = k[7] || "";
+
+            if (soal && pilihan.A && pilihan.B && ["A","B","C","D"].includes(kunci)) {
+                daftarSoal.push({ soal, pilihan, kunci, skor, penjelasan });
+            }
+        }
+    } catch (err) {
+        console.error("Gagal baca soal.csv:", err);
+        // Fallback 3 soal contoh
+        daftarSoal = [
+            {
+                soal: "CPU adalah singkatan dari...",
+                pilihan: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit" },
+                kunci: "A", skor: 1,
+                penjelasan: "CPU = Central Processing Unit, otak komputer."
+            },
+            {
+                soal: "RAM bersifat...",
+                pilihan: { A: "Permanen", B: "Sementara", C: "Sangat cepat", D: "Tidak terbatas" },
+                kunci: "B", skor: 1,
+                penjelasan: "RAM = memori sementara, hilang saat komputer mati."
+            },
+            {
+                soal: "Algoritma adalah...",
+                pilihan: { A: "Bahasa pemrograman", B: "Langkah logis penyelesaian masalah", C: "Program komputer", D: "Jaringan internet" },
+                kunci: "B", skor: 1,
+                penjelasan: "Algoritma = urutan langkah logis untuk menyelesaikan masalah."
+            }
+        ];
+    }
+}
+
+/* ---------- PARSER CSV (handle tanda kutip) ---------- */
+function parseCSV(teks) {
+    return teks.split("\n").map(r => {
+        const hasil = [];
+        let bagian = "", dalamKutip = false;
+        for (let c of r) {
+            if (c === '"') dalamKutip = !dalamKutip;
+            else if (c === "," && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
+            else bagian += c;
+        }
+        hasil.push(bagian.trim());
+        return hasil.map(s => s.replace(/^"|"$/g, ""));
+    });
+}
+
+/* ---------- MULAI KUIS ---------- */
+async function mulaiKuis() {
+    const nama = document.getElementById("input-nama").value.trim();
+    const kelas = document.getElementById("input-kelas").value.trim();
+    if (!nama) { alert("⚠️ Nama tidak boleh kosong!"); return; }
+    if (!kelas) { alert("⚠️ Kelas tidak boleh kosong!"); return; }
+
+    namaSiswa = nama;
+    kelasSiswa = kelas;
+
+    await ambilSoal();
+    daftarSoal = acak(daftarSoal); // Acak urutan soal
+
+    document.getElementById("form-identitas").style.display = "none";
+    document.querySelector(".info-durasi").style.display = "none";
+    document.getElementById("tombol-mulai").style.display = "none";
+
+    const info = document.getElementById("info-siswa");
+    info.textContent = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} — ⏱️ ${KONFIG.durasiMenit} menit`;
+    info.style.display = "block";
+
+    document.getElementById("timer-total").style.display = "block";
+    document.getElementById("progress").style.display = "block";
+    document.getElementById("teks-soal").style.display = "block";
+    document.getElementById("pilihan-group").style.display = "flex";
+
+    kuisAktif = true;
+    sisaWaktuTotal = DURASI_TOTAL_DETIK;
+    updateTimerTotal();
+    mulaiTimerTotal();
+
+    tampilSoal();
+}
+
+/* ---------- TIMER ---------- */
+function mulaiTimerTotal() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        sisaWaktuTotal--;
+        updateTimerTotal();
+        if (sisaWaktuTotal <= 0) {
+            clearInterval(timerInterval);
+            kuisAktif = false;
+            document.getElementById("overlay-waktu-habis").style.display = "flex";
+        }
+    }, 1000);
+}
+function updateTimerTotal() {
+    const el = document.getElementById("timer-total");
+    const menit = Math.floor(sisaWaktuTotal / 60);
+    const detik = sisaWaktuTotal % 60;
+    el.textContent = `⏱️ Sisa Waktu: ${String(menit).padStart(2, "0")}:${String(detik).padStart(2, "0")}`;
+    el.classList.remove("warning", "danger");
+    if (sisaWaktuTotal <= 60) el.classList.add("danger");
+    else if (sisaWaktuTotal <= 300) el.classList.add("warning");
+}
+
+/* ---------- TAMPIL SOAL + PILIHAN ---------- */
+function tampilSoal() {
+    if (!kuisAktif) return;
+    sudahDijawab = false;
+
+    document.getElementById("progress").textContent = `Soal ${nomor + 1} dari ${daftarSoal.length}`;
+    document.getElementById("teks-soal").textContent = daftarSoal[nomor].soal;
+
+    // Generate tombol pilihan (A, B, C, D)
+    const wadah = document.getElementById("pilihan-group");
+    wadah.innerHTML = "";
+
+    const pilihan = daftarSoal[nomor].pilihan;
+    ["A", "B", "C", "D"].forEach(huruf => {
+        if (!pilihan[huruf]) return; // skip kalau pilihan kosong
+        const btn = document.createElement("button");
+        btn.className = "pilihan";
+        btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
+        btn.onclick = () => cekJawaban(huruf);
+        wadah.appendChild(btn);
+    });
+}
+
+/* ---------- CEK JAWABAN ---------- */
+function cekJawaban(pilihanSiswa) {
+    if (!kuisAktif || sudahDijawab) return;
+    sudahDijawab = true;
+
+    const soal = daftarSoal[nomor];
+    const benar = pilihanSiswa === soal.kunci;
+
+    // Nonaktifkan semua tombol & tandai benar/salah
+    const semuaTombol = document.querySelectorAll("#pilihan-group .pilihan");
+    semuaTombol.forEach(btn => {
+        btn.disabled = true;
+        const huruf = btn.querySelector(".huruf").textContent;
+        if (huruf === soal.kunci) btn.classList.add("benar");
+        else if (huruf === pilihanSiswa) btn.classList.add("salah");
+    });
+
+    // Simpan riwayat
+    riwayatJawaban.push({
+        nomor: nomor,
+        jawabanSiswa: pilihanSiswa,
+        kunci: soal.kunci,
+        benar: benar,
+        skor: soal.skor,
+        skorDidapat: benar ? soal.skor : 0,
+        teksSoal: soal.soal,
+        teksPilihanSiswa: soal.pilihan[pilihanSiswa] || "-",
+        teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+        penjelasan: soal.penjelasan
+    });
+
+    // Lanjut ke soal berikutnya setelah jeda singkat
+    if (nomor < daftarSoal.length - 1) {
+        setTimeout(() => {
+            nomor++;
+            tampilSoal();
+        }, 800);
+    } else {
+        setTimeout(tampilHasil, 800);
+    }
+}
+
+/* ---------- HITUNG SKOR ---------- */
+function hitungSkor() {
+    let skorDidapat = 0;
+    let skorMaksimal = 0;
+    let jumlahBenar = 0;
+    riwayatJawaban.forEach(r => {
+        skorMaksimal += r.skor;
+        skorDidapat += r.skorDidapat;
+        if (r.benar) jumlahBenar++;
+    });
+    // Skor 0-100
+    const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+    return { skorDidapat, skorMaksimal, jumlahBenar, skorAkhir };
+}
+
+/* ---------- KIRIM HASIL AKHIR ---------- */
+function kirimHasilAkhir() {
+    const { jumlahBenar, skorAkhir } = hitungSkor();
+    const totalSoal = daftarSoal.length;
+
+    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor akhir ${skorAkhir}`);
+
+    if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
+
+    const params = new URLSearchParams({
+        nama: namaSiswa,
+        kelas: kelasSiswa,
+        jumlah_benar: jumlahBenar,
+        total_soal: totalSoal,
+        skor: skorAkhir,
+        waktu_jawab: new Date().toLocaleString("id-ID")
+    });
+
+    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), {
+        method: "GET", mode: "no-cors"
+    })
+    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - ${skorAkhir}`))
+    .catch(err => console.error("❌ Gagal:", err));
+}
+
+/* ---------- HASIL AKHIR ---------- */
+function tampilHasil() {
+    clearInterval(timerInterval);
+    kuisAktif = false;
+
+    const { jumlahBenar, skorAkhir, skorDidapat, skorMaksimal } = hitungSkor();
+
+    document.getElementById("layar-soal").style.display = "none";
+    document.getElementById("layar-akhir").style.display = "block";
+    document.getElementById("timer-total").style.display = "none";
+
+    document.getElementById("skor-angka").textContent = skorAkhir;
+    document.getElementById("skor-detail").textContent =
+        `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+    document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
+
+    kirimHasilAkhir();
+}
+
+function tutupOverlayDanTampilHasil() {
+    document.getElementById("overlay-waktu-habis").style.display = "none";
+    tampilHasil();
+}
+
+/* ---------- PEMBAHASAN ---------- */
+function tampilkanPembahasan() {
+    document.getElementById("layar-akhir").style.display = "none";
+    document.getElementById("layar-pembahasan").style.display = "block";
+    const wadah = document.getElementById("daftar-pembahasan");
+    wadah.innerHTML = "";
+
+    daftarSoal.forEach((soal, idx) => {
+        const r = riwayatJawaban.find(x => x.nomor === idx);
+        const div = document.createElement("div");
+        div.className = "item-soal";
+
+        let statusHTML = "";
+        if (r) {
+            const kelasJawaban = r.benar ? "benar" : "salah";
+            const ikonStatus = r.benar ? "✅" : "❌";
+            statusHTML = `
+                <div style="margin-top:8px;">
+                    <span class="label-netral">Jawabanmu:</span>
+                    <span class="jawaban-pg ${kelasJawaban}">${r.jawabanSiswa}. ${r.teksPilihanSiswa} ${ikonStatus}</span>
+                </div>
+            `;
+            if (!r.benar) {
+                statusHTML += `
+                    <div style="margin-top:4px;">
+                        <span class="label-netral">Jawaban Benar:</span>
+                        <span class="jawaban-pg benar">${r.kunci}. ${r.teksPilihanKunci}</span>
+                    </div>
+                `;
+            }
+        } else {
+            statusHTML = `<span class="label-salah">⏰ Tidak dijawab</span>`;
+        }
+
+        div.innerHTML = `
+            <strong>Soal ${idx + 1}:</strong> ${soal.soal}<br>
+            <div style="margin: 8px 0; font-size: 0.95rem; color: #555;">
+                A. ${soal.pilihan.A || "-"}<br>
+                B. ${soal.pilihan.B || "-"}<br>
+                C. ${soal.pilihan.C || "-"}<br>
+                D. ${soal.pilihan.D || "-"}
+            </div>
+            ${statusHTML}
+            ${soal.penjelasan ? `<div style="margin-top:8px; padding:10px; background:#f0f8ff; border-left:4px solid #4facfe; border-radius:6px; font-style:italic; font-size:0.95rem;">💡 ${soal.penjelasan}</div>` : ""}
+        `;
+        wadah.appendChild(div);
+    });
+}
+
+/* ---------- MULAI ULANG ---------- */
+function mulaiUlang() {
+    clearInterval(timerInterval);
+    nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = "";
+    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK;
+
+    document.getElementById("layar-akhir").style.display = "none";
+    document.getElementById("layar-pembahasan").style.display = "none";
+    document.getElementById("layar-soal").style.display = "block";
+    document.getElementById("info-siswa").style.display = "none";
+    document.getElementById("timer-total").style.display = "none";
+    document.getElementById("progress").style.display = "none";
+
+    document.getElementById("form-identitas").style.display = "block";
+    document.getElementById("info-durasi").style.display = "block";
+    document.getElementById("tombol-mulai").style.display = "block";
+
+    document.getElementById("input-nama").value = "";
+    document.getElementById("input-kelas").value = "";
+    document.getElementById("input-nama").focus();
+
+    tampilkanInfoDurasi();
+}
+
+/* ---------- INIT ---------- */
+tampilkanInfoDurasi();
+setupPanelGuru();
+ambilSoal();
+</script>
+</body>
+</html>
