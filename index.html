@@ -829,14 +829,17 @@ async function mulaiKuis() {
     daftarSoal = acak(daftarSoal);
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
+    // MATIKAN TIMER JADWAL AGAR FORM TIDAK MUNCUL LAGI
+    if (jadwalInterval) clearInterval(jadwalInterval);
+
     // SEMBUNYIKAN SEMUA FORM AWAL
+    document.getElementById("judul-utama").style.display = "none"; 
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-kelas").style.display = "none";
     document.getElementById("area-mulai").style.display = "none"; 
-    document.getElementById("judul-utama").style.display = "none"; // Sembunyikan judul besar
 
     const info = document.getElementById("info-siswa");
-    info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong>`;
+    info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong> — ⏱️ ${KONFIG.durasiMenit} menit`;
     info.style.display = "block";
 
     document.getElementById("timer-total").style.display = "block";
@@ -973,7 +976,7 @@ function tampilHasil() {
     document.getElementById("layar-soal").style.display = "none";
     document.getElementById("layar-akhir").style.display = "block";
     document.getElementById("timer-total").style.display = "none";
-    document.getElementById("info-siswa").style.display = "none"; // Sembunyikan info siswa saat selesai
+    document.getElementById("info-siswa").style.display = "none";
 
     document.getElementById("skor-angka").textContent = skorAkhir;
     document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
@@ -1037,7 +1040,7 @@ function mulaiUlang() {
     document.getElementById("pilihan-group").classList.remove("aktif");
     
     // Reset Tampilan Awal
-    document.getElementById("judul-utama").style.display = "block"; // Munculkan judul
+    document.getElementById("judul-utama").style.display = "block"; 
     document.getElementById("layar-login-nisn").style.display = "block";
     document.getElementById("form-input-nisn").style.display = "block"; 
     document.getElementById("hasil-cari-siswa").classList.remove("aktif"); 
