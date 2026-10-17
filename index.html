@@ -808,15 +808,25 @@ function kirimHasilAkhir() {
     const { jumlahBenar, skorAkhir } = hitungSkor();
     const totalSoal = daftarSoal.length;
 
+    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor ${skorAkhir}, pindah tab ${jumlahPindahTab}x`);
+
     if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
 
     const params = new URLSearchParams({
-        nama: namaSiswa, kelas: kelasSiswa, jumlah_benar: jumlahBenar,
-        total_soal: totalSoal, skor: skorAkhir, pindah_tab: jumlahPindahTab,
+        nama: namaSiswa,
+        kelas: kelasSiswa,
+        jumlah_benar: jumlahBenar,
+        total_soal: totalSoal,
+        skor: skorAkhir,
+        pindah_tab: jumlahPindahTab,
+        mapel: mapelSiswa,             // ← TAMBAHKAN INI
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
 
-    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
+    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), {
+        method: "GET", mode: "no-cors"
+    })
+    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - ${mapelSiswa} - skor ${skorAkhir}`))
     .catch(err => console.error("❌ Gagal:", err));
 }
 
