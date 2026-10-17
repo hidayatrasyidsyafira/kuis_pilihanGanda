@@ -150,6 +150,11 @@
         .status-jadwal.belum { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
         .status-jadwal.lewat { background: #f8d7da; color: #721c24; border: 2px solid #e74c3c; }
 
+        /* Info Durasi & Tombol Mulai (Disembunyikan dulu) */
+        .area-mulai {
+            display: none; /* Sembunyi di awal */
+            margin-top: 20px;
+        }
         .info-durasi {
             background: #e3f2fd; color: #0c5460; padding: 15px; border-radius: 12px;
             margin-bottom: 20px; font-size: 1rem; font-weight: 600; text-align: center;
@@ -311,13 +316,14 @@
             <div class="status-jadwal" id="status-jadwal"></div>
         </div>
 
-        <div class="info-durasi" id="info-durasi">
-            ⏱️ Total waktu pengerjaan: <strong id="durasi-tampil">20 menit</strong><br>
-            <small style="font-weight: normal;">Soal & pilihan diacak untuk setiap siswa</small>
+        <!-- Area Tombol Mulai & Info Durasi (Baru muncul kalau mapel dipilih & waktu aktif) -->
+        <div class="area-mulai" id="area-mulai">
+            <div class="info-durasi" id="info-durasi">
+                ⏱️ Total waktu pengerjaan: <strong id="durasi-tampil">20 menit</strong><br>
+                <small style="font-weight: normal;">Soal & pilihan diacak untuk setiap siswa</small>
+            </div>
+            <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()">▶️ MULAI</button>
         </div>
-
-        <!-- Tombol MULAI -->
-        <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI</button>
 
         <div class="info-siswa" id="info-siswa"></div>
         <div class="timer-total" id="timer-total">⏱️ Sisa Waktu: 20:00</div>
@@ -459,11 +465,12 @@ function lanjutPilihKelas() {
     document.getElementById("tampil-nama-siswa").textContent = namaSiswa;
     document.getElementById("tampil-kelas-siswa").textContent = kelasSiswa;
 
-    // Tampilkan loading sementara
+    // Sembunyikan area mulai dulu sebelum mapel dipilih
+    document.getElementById("area-mulai").style.display = "none";
+
     const container = document.getElementById("container-mapel");
     container.innerHTML = `<div style="text-align:center; color:#7f8c8d; margin-top:20px;">⏳ Memuat jadwal ujian...</div>`;
 
-    // Panggil fungsi dengan jeda sedikit agar data jadwal (jika belum termuat) selesai di-fetch
     setTimeout(() => {
         tampilkanTombolMapel();
     }, 500);
@@ -481,16 +488,16 @@ async function ambilJadwal() {
 }
 
 function tampilkanTombolMapel() {
-    const kelas = kelasSiswa; // Ambil dari data NISN, bukan dropdown
+    const kelas = kelasSiswa; 
     const container = document.getElementById("container-mapel");
     const statusDiv = document.getElementById("status-jadwal");
-    const btnMulai = document.getElementById("tombol-mulai");
+    const areaMulai = document.getElementById("area-mulai");
     
     container.innerHTML = "";
     statusDiv.style.display = "none";
     statusDiv.innerHTML = "";
     mapelDipilih = null;
-    btnMulai.disabled = true;
+    areaMulai.style.display = "none"; // Sembunyikan tombol mulai setiap ganti kelas
     if (jadwalInterval) clearInterval(jadwalInterval);
 
     if (!kelas) return; 
@@ -551,7 +558,7 @@ function pilihMapel(jadwal, btnElement) {
 
 function cekStatusWaktu(jadwal) {
     const statusDiv = document.getElementById("status-jadwal");
-    const btnMulai = document.getElementById("tombol-mulai");
+    const areaMulai = document.getElementById("area-mulai");
 
     if (jadwalInterval) clearInterval(jadwalInterval);
 
@@ -565,6 +572,7 @@ function cekStatusWaktu(jadwal) {
     
     statusDiv.style.display = "block";
     statusDiv.className = "status-jadwal";
+    areaMulai.style.display = "none"; // Sembunyikan tombol mulai dulu
 
     jadwalInterval = setInterval(() => {
         const sekarang = new Date().getTime();
@@ -581,17 +589,19 @@ function cekStatusWaktu(jadwal) {
 
             statusDiv.className = "status-jadwal belum";
             statusDiv.innerHTML = `⏳ Ujian ${jadwal.mapel} belum dimulai. Countdown: <br><strong style="font-size:1.3rem">${teksCountdown}</strong>`;
-            btnMulai.disabled = true;
+            areaMulai.style.display = "none"; // Tetap sembunyi
 
         } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
             statusDiv.className = "status-jadwal aktif";
             statusDiv.innerHTML = `✅ Ujian ${jadwal.mapel} SEDANG BERLANGSUNG.<br>Batas waktu: <strong>${jamSelesai}</strong>`;
-            btnMulai.disabled = false;
+            
+            // MUNCULKAN TOMBOL MULAI DI SINI
+            areaMulai.style.display = "block"; 
 
         } else {
             statusDiv.className = "status-jadwal lewat";
             statusDiv.innerHTML = `❌ Waktu ujian ${jadwal.mapel} telah berakhir (${jamSelesai}).`;
-            btnMulai.disabled = true;
+            areaMulai.style.display = "none";
             clearInterval(jadwalInterval);
         }
     }, 1000);
@@ -709,8 +719,9 @@ async function mulaiKuis() {
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
     document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
-    document.querySelector(".info-durasi").style.display = "none";
-    document.getElementById("tombol-mulai").style.display = "none";
+    document.getElementById("area-mulai").style.display = "none";
+    document.querySelector(".info-durasi").style.display = "none"; // Sembunyikan info durasi saat kuis jalan
+    document.getElementById("tombol-mulai").style.display = "none"; // Tombol mulai hilang
 
     const info = document.getElementById("info-siswa");
     info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong> — ⏱️ ${KONFIG.durasiMenit} menit`;
@@ -912,10 +923,9 @@ function mulaiUlang() {
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
 
-    document.getElementById("info-durasi").style.display = "block";
-    document.getElementById("tombol-mulai").style.display = "block";
-    document.getElementById("tombol-mulai").disabled = true;
-
+    document.getElementById("area-mulai").style.display = "none"; // Sembunyikan area mulai lagi
+    document.getElementById("tombol-mulai").style.display = "block"; // Kembalikan tombol (meski terbungkus area-mulai)
+    
     // Reset layar ke tahap Login NISN
     document.getElementById("layar-login-nisn").classList.remove("sembunyi");
     document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
