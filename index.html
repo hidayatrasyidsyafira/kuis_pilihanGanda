@@ -267,6 +267,11 @@
         .tombol-mulai:disabled { background: #95a5a6; cursor: not-allowed; transform: none; opacity: 0.7; }
 
         /* --- KUIS & SOAL --- */
+        .info-siswa {
+            background: #d4edda; color: #155724; padding: 10px 15px; border-radius: 10px;
+            margin-bottom: 15px; display: none; font-size: 0.95rem;
+        }
+        
         .timer-total {
             background: linear-gradient(135deg, #fff3cd, #ffe69c); padding: 15px;
             border-radius: 12px; margin-bottom: 15px; font-weight: bold; color: #856404;
@@ -339,10 +344,6 @@
         .jawaban-pg.benar { background: #d4edda; color: #155724; }
         .jawaban-pg.salah { background: #f8d7da; color: #721c24; }
 
-        .info-siswa {
-            background: #d4edda; color: #155724; padding: 10px 15px; border-radius: 10px;
-            margin-bottom: 15px; display: none; font-size: 0.95rem;
-        }
         .status-kirim { margin-top: 15px; font-size: 0.9rem; color: #7f8c8d; }
         .skor-akhir { background: linear-gradient(135deg, #f0f8ff, #e3f2fd); padding: 25px; border-radius: 16px; margin: 20px 0; border: 2px solid #4facfe; }
         .skor-akhir .angka { font-size: 3rem; font-weight: bold; color: #2c3e50; }
@@ -372,7 +373,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
+        <h1 id="judul-utama">📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
 
         <!-- LAYAR 1: Form Login NISN -->
         <div class="form-identitas layar-form" id="layar-login-nisn">
@@ -831,10 +832,11 @@ async function mulaiKuis() {
     // SEMBUNYIKAN SEMUA FORM AWAL
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-kelas").style.display = "none";
-    document.getElementById("area-mulai").style.display = "none"; // <-- Ini yang menghilangkan form token & tombol
+    document.getElementById("area-mulai").style.display = "none"; 
+    document.getElementById("judul-utama").style.display = "none"; // Sembunyikan judul besar
 
     const info = document.getElementById("info-siswa");
-    info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong> — ⏱️ ${KONFIG.durasiMenit} menit`;
+    info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong>`;
     info.style.display = "block";
 
     document.getElementById("timer-total").style.display = "block";
@@ -971,6 +973,7 @@ function tampilHasil() {
     document.getElementById("layar-soal").style.display = "none";
     document.getElementById("layar-akhir").style.display = "block";
     document.getElementById("timer-total").style.display = "none";
+    document.getElementById("info-siswa").style.display = "none"; // Sembunyikan info siswa saat selesai
 
     document.getElementById("skor-angka").textContent = skorAkhir;
     document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
@@ -1034,6 +1037,7 @@ function mulaiUlang() {
     document.getElementById("pilihan-group").classList.remove("aktif");
     
     // Reset Tampilan Awal
+    document.getElementById("judul-utama").style.display = "block"; // Munculkan judul
     document.getElementById("layar-login-nisn").style.display = "block";
     document.getElementById("form-input-nisn").style.display = "block"; 
     document.getElementById("hasil-cari-siswa").classList.remove("aktif"); 
