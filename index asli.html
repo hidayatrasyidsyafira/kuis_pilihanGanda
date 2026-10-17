@@ -25,6 +25,7 @@
         }
         h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
 
+        /* === FORM IDENTITAS & LAYAR === */
         .form-identitas {
             background: #f0f8ff;
             padding: 25px;
@@ -55,169 +56,164 @@
             font-size: 1rem;
             transition: border 0.2s;
             outline: none;
+            background: white;
         }
         .form-group input:focus {
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.15);
         }
 
-        .info-durasi {
-            background: #fff3cd;
-            color: #856404;
-            padding: 15px;
+        /* === LAYAR FORM LOGIN === */
+        .layar-form { display: block; }
+        .layar-form.sembunyi { display: none; }
+        
+        .hasil-cari-siswa {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
             border-radius: 12px;
-            margin-bottom: 20px;
+            padding: 20px;
+            margin-top: 15px;
+            text-align: left;
+            display: none; 
+        }
+        .hasil-cari-siswa.aktif { display: block; }
+        .hasil-cari-siswa h4 { color: #2e7d32; margin-bottom: 10px; font-size: 1.1rem; text-align: center; }
+        
+        .info-siswa-detail {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
             font-size: 1rem;
-            font-weight: 600;
-            text-align: center;
-            border-left: 5px solid #ffc107;
+            border: 1px solid #c8e6c9;
+        }
+        .info-siswa-detail strong { display: inline-block; width: 80px; }
+        
+        .tombol-lanjut-nisn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .tombol-lanjut-nisn:hover { background: #27ae60; }
+
+        /* === TOMBOL MAPEL === */
+        .grid-mapel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .tombol-mapel {
+            background: white;
+            border: 2px solid #b8d8e8;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .tombol-mapel:hover {
+            border-color: #4facfe;
+            background: #f0f8ff;
+        }
+        .tombol-mapel.terpilih {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border-color: #4facfe;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+        }
+        .tombol-mapel .nama-mapel { font-weight: bold; font-size: 1.1rem; }
+        .tombol-mapel .info-waktu { font-size: 0.85rem; opacity: 0.8; }
+        .tombol-mapel.terpilih .info-waktu { color: #e3f2fd; }
+        
+        .pesan-kosong {
+            background: #f8d7da; color: #721c24; padding: 15px;
+            border-radius: 10px; text-align: center; font-size: 0.95rem; margin-top: 15px;
+        }
+
+        /* Status Jadwal */
+        .status-jadwal {
+            margin-top: 15px; padding: 15px; border-radius: 10px;
+            font-weight: bold; text-align: center; font-size: 1.1rem; display: none;
+        }
+        .status-jadwal.aktif { background: #d4edda; color: #155724; border: 2px solid #2ecc71; }
+        .status-jadwal.belum { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
+        .status-jadwal.lewat { background: #f8d7da; color: #721c24; border: 2px solid #e74c3c; }
+
+        /* Info Durasi & Tombol Mulai (Disembunyikan dulu) */
+        .area-mulai {
+            display: none; /* Sembunyi di awal */
+            margin-top: 20px;
+        }
+        .info-durasi {
+            background: #e3f2fd; color: #0c5460; padding: 15px; border-radius: 12px;
+            margin-bottom: 20px; font-size: 1rem; font-weight: 600; text-align: center;
+            border-left: 5px solid #4facfe;
         }
 
         .tombol-mulai {
             background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white;
-            border: none;
-            padding: 20px 60px;
-            border-radius: 16px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 20px 0;
-            transition: transform 0.2s;
+            color: white; border: none; padding: 20px 60px; border-radius: 16px;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer; margin: 20px 0;
+            transition: transform 0.2s; width: 100%;
         }
-        .tombol-mulai:hover { transform: scale(1.05); }
+        .tombol-mulai:hover:not(:disabled) { transform: scale(1.02); }
+        .tombol-mulai:disabled { background: #95a5a6; cursor: not-allowed; transform: none; opacity: 0.7; }
 
         .timer-total {
-            background: linear-gradient(135deg, #fff3cd, #ffe69c);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            color: #856404;
-            font-size: 1.5rem;
-            display: none;
-            border: 2px solid #ffc107;
-            letter-spacing: 1px;
+            background: linear-gradient(135deg, #fff3cd, #ffe69c); padding: 15px;
+            border-radius: 12px; margin-bottom: 15px; font-weight: bold; color: #856404;
+            font-size: 1.5rem; display: none; border: 2px solid #ffc107; letter-spacing: 1px;
         }
-        .timer-total.warning {
-            background: linear-gradient(135deg, #ffe0b2, #ffcc80);
-            color: #e65100;
-            border-color: #ff9800;
-            animation: pulse 1s infinite;
-        }
-        .timer-total.danger {
-            background: linear-gradient(135deg, #ffcdd2, #ef9a9a);
-            color: #b71c1c;
-            border-color: #f44336;
-            animation: pulse 0.6s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-        }
+        .timer-total.warning { background: linear-gradient(135deg, #ffe0b2, #ffcc80); color: #e65100; border-color: #ff9800; animation: pulse 1s infinite; }
+        .timer-total.danger { background: linear-gradient(135deg, #ffcdd2, #ef9a9a); color: #b71c1c; border-color: #f44336; animation: pulse 0.6s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
 
         .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 1.1rem; display: none; }
         .soal-box {
-            background: #f8f9fa;
-            padding: 30px 25px;
-            border-radius: 18px;
-            margin-bottom: 20px;
-            border-left: 6px solid #4facfe;
-            min-height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            font-size: 1.3rem;
-            line-height: 1.6;
-            color: #2c3e50;
-            display: none;
-            text-align: left;
+            background: #f8f9fa; padding: 30px 25px; border-radius: 18px; margin-bottom: 20px;
+            border-left: 6px solid #4facfe; min-height: 120px; display: flex; align-items: center;
+            justify-content: flex-start; font-size: 1.3rem; line-height: 1.6; color: #2c3e50;
+            display: none; text-align: left;
         }
 
         /* === GRID 2 KOLOM UNTUK PILIHAN === */
-        .pilihan-group {
-            display: none;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto auto;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .pilihan-group.aktif {
-            display: grid;
-        }
+        .pilihan-group { display: none; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; gap: 12px; margin-bottom: 20px; }
+        .pilihan-group.aktif { display: grid; }
 
         .pilihan {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 16px 20px;
-            border: none;
-            border-radius: 14px;
-            background: #f8f9fa;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            text-align: left;
-            font-size: 1.1rem;
-            color: #2c3e50;
-            width: 100%;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-            font-weight: 500;
+            display: flex; align-items: center; gap: 15px; padding: 16px 20px;
+            border: none; border-radius: 14px; background: #f8f9fa; cursor: pointer;
+            transition: all 0.25s ease; text-align: left; font-size: 1.1rem; color: #2c3e50;
+            width: 100%; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06); font-weight: 500;
         }
-
-        .pilihan:hover:not(:disabled) {
-            background: #e3f2fd;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(79, 172, 254, 0.25);
-        }
-
-        .pilihan:disabled {
-            cursor: not-allowed;
-            opacity: 0.75;
-        }
-        .pilihan:disabled:not(.benar):not(.salah) {
-            background: #f0f0f0;
-            box-shadow: none;
-        }
+        .pilihan:hover:not(:disabled) { background: #e3f2fd; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79, 172, 254, 0.25); }
+        .pilihan:disabled { cursor: not-allowed; opacity: 0.75; }
+        .pilihan:disabled:not(.benar):not(.salah) { background: #f0f0f0; box-shadow: none; }
 
         .pilihan .huruf {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            font-weight: bold;
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            flex-shrink: 0;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;
+            font-weight: bold; width: 42px; height: 42px; display: flex; align-items: center;
+            justify-content: center; border-radius: 50%; font-size: 1.2rem; flex-shrink: 0;
             box-shadow: 0 4px 10px rgba(79, 172, 254, 0.35);
         }
+        .pilihan .teks-pilihan { flex: 1; line-height: 1.4; }
 
-        .pilihan .teks-pilihan {
-            flex: 1;
-            line-height: 1.4;
-        }
+        .pilihan.benar { background: linear-gradient(135deg, #d4edda, #c3e6cb); box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3); }
+        .pilihan.benar .huruf { background: linear-gradient(135deg, #2ecc71, #27ae60); box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4); }
+        .pilihan.salah { background: linear-gradient(135deg, #f8d7da, #f5c6cb); box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3); }
+        .pilihan.salah .huruf { background: linear-gradient(135deg, #e74c3c, #c0392b); box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4); }
 
-        .pilihan.benar {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3);
-        }
-        .pilihan.benar .huruf {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
-        }
-
-        .pilihan.salah {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
-        }
-        .pilihan.salah .huruf {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4);
-        }
-
-        /* Posisi grid: A B C kiri, D E kanan */
         .pilihan-group .pilihan:nth-child(1) { grid-column: 1; grid-row: 1; }
         .pilihan-group .pilihan:nth-child(2) { grid-column: 1; grid-row: 2; }
         .pilihan-group .pilihan:nth-child(3) { grid-column: 1; grid-row: 3; }
@@ -226,239 +222,148 @@
 
         @media (max-width: 600px) {
             .pilihan-group { grid-template-columns: 1fr; }
-            .pilihan-group .pilihan:nth-child(1),
-            .pilihan-group .pilihan:nth-child(2),
-            .pilihan-group .pilihan:nth-child(3),
-            .pilihan-group .pilihan:nth-child(4),
-            .pilihan-group .pilihan:nth-child(5) {
-                grid-column: 1;
-                grid-row: auto;
-            }
+            .pilihan-group .pilihan:nth-child(1), .pilihan-group .pilihan:nth-child(2),
+            .pilihan-group .pilihan:nth-child(3), .pilihan-group .pilihan:nth-child(4),
+            .pilihan-group .pilihan:nth-child(5) { grid-column: 1; grid-row: auto; }
+            .grid-mapel { grid-template-columns: 1fr; }
         }
 
         .lanjut-btn {
-            background: #3498db;
-            color: white;
-            padding: 16px 35px;
-            border: none;
-            border-radius: 14px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: none;
-            margin: 10px auto;
+            background: #3498db; color: white; padding: 16px 35px; border: none;
+            border-radius: 14px; font-size: 1.2rem; cursor: pointer; display: none; margin: 10px auto;
         }
         .lanjut-btn:hover { background: #2980b9; }
         .akhir, .pembahasan { display: none; }
         .daftar-soal { text-align: left; margin-top: 20px; max-height: 400px; overflow-y: auto; }
-        .item-soal {
-            padding: 18px;
-            border-bottom: 1px solid #eee;
-            line-height: 1.6;
-        }
+        .item-soal { padding: 18px; border-bottom: 1px solid #eee; line-height: 1.6; }
         .item-soal strong { color: #2c3e50; }
         .label-netral { color: #3498db; font-weight: bold; }
         .label-salah { color: #e74c3c; font-weight: bold; }
-        .jawaban-pg {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 6px;
-            font-weight: bold;
-            margin: 0 3px;
-        }
+        .jawaban-pg { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: bold; margin: 0 3px; }
         .jawaban-pg.benar { background: #d4edda; color: #155724; }
         .jawaban-pg.salah { background: #f8d7da; color: #721c24; }
 
         .info-siswa {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            display: none;
-            font-size: 0.95rem;
+            background: #d4edda; color: #155724; padding: 10px 15px; border-radius: 10px;
+            margin-bottom: 15px; display: none; font-size: 0.95rem;
         }
-        .status-kirim {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-        }
-        .skor-akhir {
-            background: linear-gradient(135deg, #f0f8ff, #e3f2fd);
-            padding: 25px;
-            border-radius: 16px;
-            margin: 20px 0;
-            border: 2px solid #4facfe;
-        }
-        .skor-akhir .angka {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .skor-akhir .label {
-            color: #7f8c8d;
-            font-size: 1rem;
-        }
+        .status-kirim { margin-top: 15px; font-size: 0.9rem; color: #7f8c8d; }
+        .skor-akhir { background: linear-gradient(135deg, #f0f8ff, #e3f2fd); padding: 25px; border-radius: 16px; margin: 20px 0; border: 2px solid #4facfe; }
+        .skor-akhir .angka { font-size: 3rem; font-weight: bold; color: #2c3e50; }
+        .skor-akhir .label { color: #7f8c8d; font-size: 1rem; }
 
         .overlay-waktu-habis {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.75);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75);
+            display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px;
         }
-        .overlay-waktu-habis .box {
-            background: white;
-            padding: 40px 30px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 450px;
-        }
-        .overlay-waktu-habis h2 {
-            color: #e74c3c;
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }
-        .overlay-waktu-habis p {
-            color: #555;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-        }
-        .overlay-waktu-habis button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 14px 30px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        .overlay-waktu-habis .box { background: white; padding: 40px 30px; border-radius: 20px; text-align: center; max-width: 450px; }
+        .overlay-waktu-habis h2 { color: #e74c3c; font-size: 2rem; margin-bottom: 15px; }
+        .overlay-waktu-habis p { color: #555; margin-bottom: 20px; font-size: 1.1rem; }
+        .overlay-waktu-habis button { background: #3498db; color: white; border: none; padding: 14px 30px; border-radius: 12px; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
 
-        .panel-guru {
-            display: none;
-            background: #e8f5e9;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: left;
-            border: 2px dashed #66bb6a;
-        }
-        .panel-guru h3 {
-            color: #2e7d32;
-            margin-bottom: 12px;
-            text-align: center;
-        }
-        .panel-guru .row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-        .panel-guru input {
-            padding: 10px;
-            border: 2px solid #81c784;
-            border-radius: 8px;
-            font-size: 1rem;
-            width: 100px;
-            text-align: center;
-        }
-        .panel-guru button {
-            background: #2e7d32;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .panel-guru .url-output {
-            background: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            word-break: break-all;
-            border: 1px solid #81c784;
-            margin-top: 10px;
-        }
-
-        /* === TOAST NOTIFIKASI PINDAH TAB === */
         .toast-peringatan {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #ff9800, #f57c00);
-            color: white;
-            padding: 15px 22px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transform: translateX(400px);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            max-width: 320px;
+            position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white; padding: 15px 22px; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
+            box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4); z-index: 10000; display: flex; align-items: center; gap: 10px;
+            transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); max-width: 320px;
         }
-        .toast-peringatan.muncul {
-            transform: translateX(0);
-        }
-        .toast-peringatan .ikon {
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
+        .toast-peringatan.muncul { transform: translateX(0); }
+        .toast-peringatan .ikon { font-size: 1.4rem; flex-shrink: 0; }
         @media (max-width: 600px) {
-            .toast-peringatan {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                max-width: none;
-                font-size: 0.85rem;
-                padding: 12px 16px;
-            }
+            .toast-peringatan { top: 10px; right: 10px; left: 10px; max-width: none; font-size: 0.85rem; padding: 12px 16px; }
         }
+
+        /* === FORM TOKEN === */
+        .form-token {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .form-token label {
+            font-weight: bold;
+            color: #856404;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .input-token {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            outline: none;
+        }
+        .input-token:focus {
+            border-color: #e65100;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
+        }
+        
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
 
-        <div class="panel-guru" id="panel-guru">
-            <h3>👨‍🏫 Panel Guru</h3>
-            <div class="row">
-                <label>Durasi (menit):</label>
-                <input type="number" id="guru-durasi" value="20" min="1" max="180">
-                <button onclick="buatLinkGuru()">🔗 Buat Link Siswa</button>
-            </div>
-            <div class="url-output" id="guru-output">
-                Link akan muncul di sini...
-            </div>
-        </div>
-
-        <div class="form-identitas" id="form-identitas">
-            <h3>👤 Isi Data Diri Dulu Ya</h3>
+        <!-- LAYAR 1: Form Login NISN -->
+        <div class="form-identitas layar-form" id="layar-login-nisn">
+            <h3>🔐 Login Siswa</h3>
             <div class="form-group">
-                <label for="input-nama">Nama Lengkap</label>
-                <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso" autocomplete="off">
+                <label for="input-nisn">Masukkan NISN</label>
+                <input type="text" id="input-nisn" placeholder="Contoh: 12345678" autocomplete="off">
             </div>
+            <button class="tombol-lanjut-nisn" onclick="cariSiswa()">🔍 Cari Data Siswa</button>
+
+            <!-- Hasil Pencarian -->
+            <div class="hasil-cari-siswa" id="hasil-cari-siswa">
+                <h4>✅ Data Ditemukan</h4>
+                <div class="info-siswa-detail">
+                    <div><strong>Nama</strong> : <span id="hasil-nama"></span></div>
+                    <div><strong>Kelas</strong> : <span id="hasil-kelas"></span></div>
+                </div>
+                <button class="tombol-lanjut-nisn" style="background:#3498db;" onclick="lanjutPilihKelas()">Lanjut Pilih Mapel →</button>
+            </div>
+        </div>
+
+        <!-- LAYAR 2: Form Pilih Mapel -->
+        <div class="form-identitas layar-form sembunyi" id="layar-pilih-kelas">
+            <h3>📚 Pilih Mata Pelajaran</h3>
             <div class="form-group">
-                <label for="input-kelas">Kelas</label>
-                <input type="text" id="input-kelas" placeholder="Contoh: XI IPA 1" autocomplete="off">
+                <label>Identitas Siswa</label>
+                <div class="info-siswa-detail" style="background:#f0f8ff; margin-bottom: 0;">
+                    <div><strong>Nama</strong> : <span id="tampil-nama-siswa"></span></div>
+                    <div><strong>Kelas</strong> : <span id="tampil-kelas-siswa"></span></div>
+                </div>
             </div>
+
+            <!-- Container Mapel -->
+            <div id="container-mapel">
+                <div style="text-align:center; color:#7f8c8d; margin-top:20px;">⏳ Memuat jadwal ujian...</div>
+            </div>
+            <div class="status-jadwal" id="status-jadwal"></div>
         </div>
 
-        <div class="info-durasi" id="info-durasi">
-            ⏱️ Total waktu pengerjaan: <strong id="durasi-tampil">20 menit</strong><br>
-            <small style="font-weight: normal;">Soal & pilihan diacak untuk setiap siswa</small>
+       <!-- Area Tombol Mulai & Info Durasi (Baru muncul kalau mapel dipilih & waktu aktif) -->
+        <div class="area-mulai" id="area-mulai">
+            <div class="info-durasi" id="info-durasi">
+                ⏱️ Total waktu pengerjaan: <strong id="durasi-tampil">20 menit</strong><br>
+                <small style="font-weight: normal;">Soal & pilihan diacak untuk setiap siswa</small>
+            </div>
+            
+            <!-- Input Token -->
+            <div class="form-token">
+                <label>🔐 Masukkan Token Ujian</label>
+                <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
+            </div>
+        
+            <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI UJIAN</button>
         </div>
-
-        <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()">▶️ MULAI</button>
 
         <div class="info-siswa" id="info-siswa"></div>
         <div class="timer-total" id="timer-total">⏱️ Sisa Waktu: 20:00</div>
@@ -476,9 +381,7 @@
                 <div class="angka" id="skor-angka">0</div>
                 <div class="label" id="skor-detail">0 dari 0 soal benar</div>
             </div>
-            <p style="margin: 15px 0; font-size: 1rem; color: #555;">
-                Jawabanmu sudah tersimpan. Terima kasih sudah mengerjakan! 🙌
-            </p>
+            <p style="margin: 15px 0; font-size: 1rem; color: #555;">Jawabanmu sudah tersimpan. Terima kasih! 🙌</p>
             <div class="status-kirim" id="status-kirim"></div>
             <button class="lanjut-btn" style="display:inline-block;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
             <button class="lanjut-btn" style="background:#2ecc71; display:inline-block;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
@@ -499,7 +402,6 @@
         </div>
     </div>
 
-    <!-- Toast notifikasi pindah tab -->
     <div class="toast-peringatan" id="toast-peringatan">
         <span class="ikon">⚠️</span>
         <span id="toast-teks">Kamu terdeteksi keluar dari halaman kuis.</span>
@@ -516,13 +418,12 @@ const DURASI_DEFAULT_MENIT = 20;
 function ambilParameterURL() {
     const params = new URLSearchParams(window.location.search);
     const durasiParam = params.get("durasi");
-    const guruParam = params.get("guru");
     let durasiMenit = DURASI_DEFAULT_MENIT;
     if (durasiParam !== null) {
         const nilai = parseFloat(durasiParam);
         if (!isNaN(nilai) && nilai >= 1 && nilai <= 180) durasiMenit = nilai;
     }
-    return { durasiMenit, modeGuru: guruParam === "1" };
+    return { durasiMenit };
 }
 const KONFIG = ambilParameterURL();
 const DURASI_TOTAL_DETIK = Math.round(KONFIG.durasiMenit * 60);
@@ -532,10 +433,15 @@ let daftarSoal = [];
 let nomor = 0, sudahDijawab = false;
 let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
 let riwayatJawaban = [];
-let namaSiswa = "", kelasSiswa = "";
+let namaSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
 let jumlahPindahTab = 0;
 let toastTimer = null;
+let jadwalData = [];
+let dataSiswaGlobal = [];
+let jadwalInterval = null; 
+let mapelDipilih = null; 
+let tokenValid = false;
 
 /* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
 function acak(array) {
@@ -556,21 +462,216 @@ function tampilkanInfoDurasi() {
     document.getElementById("timer-total").textContent = `⏱️ Sisa Waktu: ${mm}:${ss}`;
 }
 
-/* ---------- PANEL GURU ---------- */
-function setupPanelGuru() {
-    if (!KONFIG.modeGuru) return;
-    document.getElementById("panel-guru").style.display = "block";
-    document.getElementById("form-identitas").style.display = "none";
-    document.getElementById("tombol-mulai").style.display = "none";
-    document.getElementById("info-durasi").style.display = "none";
-    document.getElementById("guru-durasi").value = DURASI_DEFAULT_MENIT;
-    buatLinkGuru();
+/* =========================================================
+   🎓 FITUR LOGIN NISN
+   ========================================================= */
+async function ambilDataSiswa() {
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=siswa");
+        const json = await res.json();
+        if (json.status === "success") {
+            dataSiswaGlobal = json.data;
+        }
+    } catch (err) {
+        console.error("Gagal ambil data siswa:", err);
+    }
 }
-function buatLinkGuru() {
-    const menit = parseInt(document.getElementById("guru-durasi").value);
-    if (isNaN(menit) || menit < 1 || menit > 180) { alert("⚠️ Durasi 1–180 menit"); return; }
-    const baseUrl = window.location.origin + window.location.pathname;
-    document.getElementById("guru-output").textContent = `${baseUrl}?durasi=${menit}`;
+
+function cariSiswa() {
+    const nisn = document.getElementById("input-nisn").value.trim();
+    const hasilDiv = document.getElementById("hasil-cari-siswa");
+
+    if (!nisn) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
+
+    const siswa = dataSiswaGlobal.find(s => s.nisn === nisn);
+
+    if (siswa) {
+        document.getElementById("hasil-nama").textContent = siswa.nama;
+        document.getElementById("hasil-kelas").textContent = siswa.kelas;
+        
+        namaSiswa = siswa.nama;
+        kelasSiswa = siswa.kelas;
+
+        hasilDiv.classList.add("aktif");
+    } else {
+        alert("❌ NISN tidak ditemukan. Periksa kembali atau hubungi guru.");
+        hasilDiv.classList.remove("aktif");
+    }
+}
+
+function lanjutPilihKelas() {
+    document.getElementById("layar-login-nisn").classList.add("sembunyi");
+    document.getElementById("layar-pilih-kelas").classList.remove("sembunyi");
+
+    document.getElementById("tampil-nama-siswa").textContent = namaSiswa;
+    document.getElementById("tampil-kelas-siswa").textContent = kelasSiswa;
+
+    // Sembunyikan area mulai dulu sebelum mapel dipilih
+    document.getElementById("area-mulai").style.display = "none";
+
+    const container = document.getElementById("container-mapel");
+    container.innerHTML = `<div style="text-align:center; color:#7f8c8d; margin-top:20px;">⏳ Memuat jadwal ujian...</div>`;
+
+    setTimeout(() => {
+        tampilkanTombolMapel();
+    }, 500);
+}
+
+/* =========================================================
+   📅 FITUR JADWAL UJIAN & TOMBOL MAPEL
+   ========================================================= */
+async function ambilJadwal() {
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal");
+        const json = await res.json();
+        if (json.status === "success") { jadwalData = json.data; }
+    } catch (err) { console.error("Gagal ambil jadwal:", err); }
+}
+
+function tampilkanTombolMapel() {
+    const kelas = kelasSiswa; 
+    const container = document.getElementById("container-mapel");
+    const statusDiv = document.getElementById("status-jadwal");
+    const areaMulai = document.getElementById("area-mulai");
+    
+    container.innerHTML = "";
+    statusDiv.style.display = "none";
+    statusDiv.innerHTML = "";
+    mapelDipilih = null;
+    areaMulai.style.display = "none"; // Sembunyikan tombol mulai setiap ganti kelas
+    if (jadwalInterval) clearInterval(jadwalInterval);
+
+    if (!kelas) return; 
+
+    const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const hariIni = namaHari[new Date().getDay()];
+    const sekarang = new Date().getTime();
+
+    const jadwalHariIni = jadwalData.filter(j => {
+        // Cek apakah kelas siswa ada di dalam daftar kelas (dipisah koma)
+        const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelas.toUpperCase().trim());
+        const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
+        
+        if (!kelasCocok || !hariCocok) return false;
+
+        const waktuParts = j.waktu.split("-");
+        if (waktuParts.length < 2) return false; 
+
+        const jamMulai = waktuParts[0].trim();
+        const jamSelesai = waktuParts[1].trim();
+
+        const [tgl, bln, thn] = j.tanggal.split("/");
+        const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
+        const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
+
+        return sekarang < dateSelesai;
+    });
+
+    if (jadwalHariIni.length === 0) {
+        container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian yang aktif untuk Kelas ${kelas} hari ini.</div>`;
+        return;
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "grid-mapel";
+
+    jadwalHariIni.forEach((j, index) => {
+        const btn = document.createElement("button");
+        btn.className = "tombol-mapel";
+        btn.id = `mapel-btn-${index}`;
+        btn.innerHTML = `
+            <span class="nama-mapel">📘 ${j.mapel}</span>
+            <span class="info-waktu">⏱️ ${j.waktu}</span>
+        `;
+        btn.onclick = () => pilihMapel(j, btn);
+        grid.appendChild(btn);
+    });
+
+    container.appendChild(grid);
+}
+
+function pilihMapel(jadwal, btnElement) {
+    document.querySelectorAll(".tombol-mapel").forEach(b => b.classList.remove("terpilih"));
+    btnElement.classList.add("terpilih");
+    mapelDipilih = jadwal;
+    cekStatusWaktu(jadwal);
+}
+
+function cekToken() {
+    const inputToken = document.getElementById("input-token").value.toUpperCase().trim();
+    const btnMulai = document.getElementById("tombol-mulai");
+    
+    if (!mapelDipilih) return;
+
+    // Ambil token dari jadwal yang dipilih
+    const tokenAsli = String(mapelDipilih.token || "").toUpperCase().trim();
+
+    if (inputToken === tokenAsli && tokenAsli !== "") {
+        // Token BENAR
+        btnMulai.disabled = false;
+        btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+        btnMulai.style.cursor = "pointer";
+        document.getElementById("input-token").style.borderColor = "#2ecc71";
+        document.getElementById("input-token").style.background = "#d4edda";
+    } else {
+        // Token SALAH atau KOSONG
+        btnMulai.disabled = true;
+        btnMulai.style.background = "#95a5a6";
+        btnMulai.style.cursor = "not-allowed";
+        document.getElementById("input-token").style.borderColor = "#ffc107";
+        document.getElementById("input-token").style.background = "#fff";
+    }
+}    
+
+function cekStatusWaktu(jadwal) {
+    const statusDiv = document.getElementById("status-jadwal");
+    const areaMulai = document.getElementById("area-mulai");
+
+    if (jadwalInterval) clearInterval(jadwalInterval);
+
+    const waktuParts = jadwal.waktu.split("-");
+    const jamMulai = waktuParts[0].trim();
+    const jamSelesai = waktuParts[1].trim();
+
+    const [tgl, bln, thn] = jadwal.tanggal.split("/");
+    const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
+    const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
+    
+    statusDiv.style.display = "block";
+    statusDiv.className = "status-jadwal";
+    areaMulai.style.display = "none"; // Sembunyikan tombol mulai dulu
+
+    jadwalInterval = setInterval(() => {
+        const sekarang = new Date().getTime();
+        
+        if (sekarang < dateMulai) {
+            const selisih = dateMulai - sekarang;
+            const h = Math.floor(selisih / (1000 * 60 * 60));
+            const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((selisih % (1000 * 60)) / 1000);
+            
+            let teksCountdown = "";
+            if (h > 0) teksCountdown += `${h} jam `;
+            teksCountdown += `${m} mnt ${s} dtk`;
+
+            statusDiv.className = "status-jadwal belum";
+            statusDiv.innerHTML = `⏳ Ujian ${jadwal.mapel} belum dimulai. Countdown: <br><strong style="font-size:1.3rem">${teksCountdown}</strong>`;
+            areaMulai.style.display = "none"; // Tetap sembunyi
+
+        } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
+            statusDiv.className = "status-jadwal aktif";
+            statusDiv.innerHTML = `✅ Ujian ${jadwal.mapel} SEDANG BERLANGSUNG.<br>Batas waktu: <strong>${jamSelesai}</strong>`;
+            
+            // MUNCULKAN TOMBOL MULAI DI SINI
+            areaMulai.style.display = "block"; 
+
+        } else {
+            statusDiv.className = "status-jadwal lewat";
+            statusDiv.innerHTML = `❌ Waktu ujian ${jadwal.mapel} telah berakhir (${jamSelesai}).`;
+            areaMulai.style.display = "none";
+            clearInterval(jadwalInterval);
+        }
+    }, 1000);
 }
 
 /* =========================================================
@@ -579,14 +680,11 @@ function buatLinkGuru() {
 function aktifkanDeteksiPindahTab() {
     document.addEventListener("visibilitychange", () => {
         if (!kuisAktif) return;
-
         if (document.hidden) {
             jumlahPindahTab++;
             console.log(`⚠️ Pindah tab terdeteksi (${jumlahPindahTab}x)`);
         } else {
-            if (jumlahPindahTab > 0) {
-                tampilkanToastPeringatan();
-            }
+            if (jumlahPindahTab > 0) tampilkanToastPeringatan();
         }
     });
 }
@@ -595,13 +693,9 @@ function tampilkanToastPeringatan() {
     const toast = document.getElementById("toast-peringatan");
     const teks = document.getElementById("toast-teks");
     teks.textContent = `Kamu terdeteksi keluar dari halaman kuis (${jumlahPindahTab}x)`;
-
     toast.classList.add("muncul");
-
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("muncul");
-    }, 3000);
+    toastTimer = setTimeout(() => toast.classList.remove("muncul"), 3000);
 }
 
 /* ---------- PARSER CSV ---------- */
@@ -643,13 +737,11 @@ async function ambilSoal() {
         }
     } catch (err) {
         console.error("Gagal baca soal.csv:", err);
-        daftarSoal = [
-            {
-                soal: "CPU adalah singkatan dari...",
-                pilihanAsli: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
-                kunciAsli: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
-            }
-        ];
+        daftarSoal = [{
+            soal: "CPU adalah singkatan dari...",
+            pilihanAsli: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
+            kunciAsli: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
+        }];
     }
 }
 
@@ -657,65 +749,49 @@ async function ambilSoal() {
    🔀 FUNGSI ACAK PILIHAN (A-E)
    ========================================================= */
 function acakPilihanSoal(soal) {
-    // Kumpulkan pilihan yang tidak kosong
     const daftarPilihan = [];
     ["A", "B", "C", "D", "E"].forEach(huruf => {
-        if (soal.pilihanAsli[huruf]) {
-            daftarPilihan.push({
-                teks: soal.pilihanAsli[huruf],
-                asli: huruf
-            });
-        }
+        if (soal.pilihanAsli[huruf]) daftarPilihan.push({ teks: soal.pilihanAsli[huruf], asli: huruf });
     });
 
-    // Acak urutan pilihan
     const pilihanDiacak = acak(daftarPilihan);
-
-    // Buat pilihan baru dengan label huruf yang rapi (A, B, C, D, E)
     const pilihanBaru = {};
     let kunciBaru = soal.kunciAsli;
 
     ["A", "B", "C", "D", "E"].forEach((hurufBaru, index) => {
         if (pilihanDiacak[index]) {
             pilihanBaru[hurufBaru] = pilihanDiacak[index].teks;
-            // Jika pilihan ini aslinya adalah kunci, catat huruf barunya
-            if (pilihanDiacak[index].asli === soal.kunciAsli) {
-                kunciBaru = hurufBaru;
-            }
+            if (pilihanDiacak[index].asli === soal.kunciAsli) kunciBaru = hurufBaru;
         }
     });
 
-    return {
-        ...soal,
-        pilihan: pilihanBaru,
-        kunci: kunciBaru
-    };
+    return { ...soal, pilihan: pilihanBaru, kunci: kunciBaru };
 }
 
 /* ---------- MULAI KUIS ---------- */
 async function mulaiKuis() {
-    const nama = document.getElementById("input-nama").value.trim();
-    const kelas = document.getElementById("input-kelas").value.trim();
-    if (!nama) { alert("⚠️ Nama tidak boleh kosong!"); return; }
-    if (!kelas) { alert("⚠️ Kelas tidak boleh kosong!"); return; }
+    if (!namaSiswa || !kelasSiswa) { 
+        alert("⚠️ Data siswa tidak valid. Silakan login ulang."); 
+        return; 
+    }
+    if (!mapelDipilih) { 
+        alert("⚠️ Pilih mata pelajaran terlebih dahulu!"); 
+        return; 
+    }
 
-    namaSiswa = nama;
-    kelasSiswa = kelas;
+    mapelSiswa = mapelDipilih.mapel;
 
     await ambilSoal();
-    
-    // Acak urutan soal
     daftarSoal = acak(daftarSoal);
-    
-    // Acak pilihan untuk setiap soal
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
-    document.getElementById("form-identitas").style.display = "none";
-    document.querySelector(".info-durasi").style.display = "none";
-    document.getElementById("tombol-mulai").style.display = "none";
+    document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
+    document.getElementById("area-mulai").style.display = "none";
+    document.querySelector(".info-durasi").style.display = "none"; // Sembunyikan info durasi saat kuis jalan
+    document.getElementById("tombol-mulai").style.display = "none"; // Tombol mulai hilang
 
     const info = document.getElementById("info-siswa");
-    info.textContent = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} — ⏱️ ${KONFIG.durasiMenit} menit`;
+    info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong> — ⏱️ ${KONFIG.durasiMenit} menit`;
     info.style.display = "block";
 
     document.getElementById("timer-total").style.display = "block";
@@ -795,13 +871,8 @@ function cekJawaban(pilihanSiswa) {
     });
 
     riwayatJawaban.push({
-        nomor: nomor,
-        jawabanSiswa: pilihanSiswa,
-        kunci: soal.kunci,
-        benar: benar,
-        skor: soal.skor,
-        skorDidapat: benar ? soal.skor : 0,
-        teksSoal: soal.soal,
+        nomor: nomor, jawabanSiswa: pilihanSiswa, kunci: soal.kunci, benar: benar,
+        skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
         teksPilihanSiswa: soal.pilihan[pilihanSiswa] || "-",
         teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
         penjelasan: soal.penjelasan
@@ -816,9 +887,7 @@ function cekJawaban(pilihanSiswa) {
 
 /* ---------- HITUNG SKOR ---------- */
 function hitungSkor() {
-    let skorDidapat = 0;
-    let skorMaksimal = 0;
-    let jumlahBenar = 0;
+    let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
     riwayatJawaban.forEach(r => {
         skorMaksimal += r.skor;
         skorDidapat += r.skorDidapat;
@@ -833,24 +902,20 @@ function kirimHasilAkhir() {
     const { jumlahBenar, skorAkhir } = hitungSkor();
     const totalSoal = daftarSoal.length;
 
-    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor ${skorAkhir}, pindah tab ${jumlahPindahTab}x`);
-
     if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
 
     const params = new URLSearchParams({
-        nama: namaSiswa,
-        kelas: kelasSiswa,
+        nama: namaSiswa, 
+        kelas: kelasSiswa, 
         jumlah_benar: jumlahBenar,
-        total_soal: totalSoal,
-        skor: skorAkhir,
+        total_soal: totalSoal, 
+        skor: skorAkhir, 
         pindah_tab: jumlahPindahTab,
+        mapel: mapelSiswa,
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
 
-    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), {
-        method: "GET", mode: "no-cors"
-    })
-    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - skor ${skorAkhir} - pindah ${jumlahPindahTab}x`))
+    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
     .catch(err => console.error("❌ Gagal:", err));
 }
 
@@ -858,7 +923,6 @@ function kirimHasilAkhir() {
 function tampilHasil() {
     clearInterval(timerInterval);
     kuisAktif = false;
-
     const { jumlahBenar, skorAkhir, skorDidapat, skorMaksimal } = hitungSkor();
 
     document.getElementById("layar-soal").style.display = "none";
@@ -866,8 +930,7 @@ function tampilHasil() {
     document.getElementById("timer-total").style.display = "none";
 
     document.getElementById("skor-angka").textContent = skorAkhir;
-    document.getElementById("skor-detail").textContent =
-        `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+    document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
     document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
 
     kirimHasilAkhir();
@@ -894,20 +957,8 @@ function tampilkanPembahasan() {
         if (r) {
             const kelasJawaban = r.benar ? "benar" : "salah";
             const ikonStatus = r.benar ? "✅" : "❌";
-            statusHTML = `
-                <div style="margin-top:8px;">
-                    <span class="label-netral">Jawabanmu:</span>
-                    <span class="jawaban-pg ${kelasJawaban}">${r.jawabanSiswa}. ${r.teksPilihanSiswa} ${ikonStatus}</span>
-                </div>
-            `;
-            if (!r.benar) {
-                statusHTML += `
-                    <div style="margin-top:4px;">
-                        <span class="label-netral">Jawaban Benar:</span>
-                        <span class="jawaban-pg benar">${r.kunci}. ${r.teksPilihanKunci}</span>
-                    </div>
-                `;
-            }
+            statusHTML = `<div style="margin-top:8px;"><span class="label-netral">Jawabanmu:</span><span class="jawaban-pg ${kelasJawaban}">${r.jawabanSiswa}. ${r.teksPilihanSiswa} ${ikonStatus}</span></div>`;
+            if (!r.benar) statusHTML += `<div style="margin-top:4px;"><span class="label-netral">Jawaban Benar:</span><span class="jawaban-pg benar">${r.kunci}. ${r.teksPilihanKunci}</span></div>`;
         } else {
             statusHTML = `<span class="label-salah">⏰ Tidak dijawab</span>`;
         }
@@ -915,14 +966,10 @@ function tampilkanPembahasan() {
         div.innerHTML = `
             <strong>Soal ${idx + 1}:</strong> ${soal.soal}<br>
             <div style="margin: 8px 0; font-size: 0.95rem; color: #555;">
-                A. ${soal.pilihan.A || "-"}<br>
-                B. ${soal.pilihan.B || "-"}<br>
-                C. ${soal.pilihan.C || "-"}<br>
-                D. ${soal.pilihan.D || "-"}<br>
-                ${soal.pilihan.E ? "E. " + soal.pilihan.E : ""}
+                A. ${soal.pilihan.A || "-"}<br> B. ${soal.pilihan.B || "-"}<br> C. ${soal.pilihan.C || "-"}<br> D. ${soal.pilihan.D || "-"}<br> ${soal.pilihan.E ? "E. " + soal.pilihan.E : ""}
             </div>
             ${statusHTML}
-            ${soal.penjelasan ? `<div style="margin-top:8px; padding:10px; background:#f0f8ff; border-left:4px solid #4facfe; border-radius:6px; font-style:italic; font-size:0.95rem;">💡 ${soal.penjelasan}</div>` : ""}
+            ${soal.penjelasan ? `<div style="margin-top:8px; padding:10px; background:#f0f8ff; border-left:4px solid #4facfe; border-radius:6px; font-style: italic; font-size:0.95rem;">💡 ${soal.penjelasan}</div>` : ""}
         `;
         wadah.appendChild(div);
     });
@@ -931,9 +978,9 @@ function tampilkanPembahasan() {
 /* ---------- MULAI ULANG ---------- */
 function mulaiUlang() {
     clearInterval(timerInterval);
-    nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = "";
-    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK;
-    jumlahPindahTab = 0;
+    if (jadwalInterval) clearInterval(jadwalInterval);
+    nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
+    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK; jumlahPindahTab = 0; mapelDipilih = null;
 
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
@@ -943,22 +990,28 @@ function mulaiUlang() {
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
 
-    document.getElementById("form-identitas").style.display = "block";
-    document.getElementById("info-durasi").style.display = "block";
-    document.getElementById("tombol-mulai").style.display = "block";
-
-    document.getElementById("input-nama").value = "";
-    document.getElementById("input-kelas").value = "";
-    document.getElementById("input-nama").focus();
+    document.getElementById("area-mulai").style.display = "none"; // Sembunyikan area mulai lagi
+    document.getElementById("tombol-mulai").style.display = "block"; // Kembalikan tombol (meski terbungkus area-mulai)
+    
+    // Reset layar ke tahap Login NISN
+    document.getElementById("layar-login-nisn").classList.remove("sembunyi");
+    document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
+    
+    document.getElementById("input-nisn").value = "";
+    document.getElementById("hasil-cari-siswa").classList.remove("aktif");
+    document.getElementById("container-mapel").innerHTML = "";
+    document.getElementById("status-jadwal").style.display = "none";
+    document.getElementById("input-nisn").focus();
+    document.getElementById("input-token").value = "";
 
     tampilkanInfoDurasi();
 }
 
 /* ---------- INIT ---------- */
 tampilkanInfoDurasi();
-setupPanelGuru();
 aktifkanDeteksiPindahTab();
-ambilSoal();
+ambilJadwal();
+ambilDataSiswa();
 </script>
 </body>
 </html>
