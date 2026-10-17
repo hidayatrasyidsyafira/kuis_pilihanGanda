@@ -743,4 +743,197 @@ function tampilSoal() {
     const pilihan = daftarSoal[nomor].pilihan;
     ["A", "B", "C", "D", "E"].forEach(huruf => {
         if (!pilihan[huruf]) return;
-        const btn =
+        const btn = document.createElement("button");
+        btn.className = "pilihan";
+        btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
+        btn.onclick = () => cekJawaban(huruf);
+        wadah.appendChild(btn);
+    });
+
+    wadah.classList.add("aktif");
+}
+
+/* ---------- CEK JAWABAN ---------- */
+function cekJawaban(pilihanSiswa) {
+    if (!kuisAktif || sudahDijawab) return;
+    sudahDijawab = true;
+
+    const soal = daftarSoal[nomor];
+    const benar = pilihanSiswa === soal.kunci;
+
+    const semuaTombol = document.querySelectorAll("#pilihan-group .pilihan");
+    semuaTombol.forEach(btn => {
+        btn.disabled = true;
+        const huruf = btn.querySelector(".huruf").textContent;
+        if (huruf === soal.kunci) btn.classList.add("benar");
+        else if (huruf === pilihanSiswa) btn.classList.add("salah");
+    });
+
+    riwayatJawaban.push({
+        nomor: nomor,
+        jawabanSiswa: pilihanSiswa,
+        kunci: soal.kunci,
+        benar: benar,
+        skor: soal.skor,
+        skorDidapat: benar ? soal.skor : 0,
+        teksSoal: soal.soal,
+        teksPilihanSiswa: soal.pilihan[pilihanSiswa] || "-",
+        teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+        penjelasan: soal.penjelasan
+    });
+
+    if (nomor < daftarSoal.length - 1) {
+        setTimeout(() => { nomor++; tampilSoal(); }, 800);
+    } else {
+        setTimeout(tampilHasil, 800);
+    }
+}
+
+/* ---------- HITUNG SKOR ---------- */
+function hitungSkor() {
+    let skorDidapat = 0;
+    let skorMaksimal = 0;
+    let jumlahBenar = 0;
+    riwayatJawaban.forEach(r => {
+        skorMaksimal += r.skor;
+        skorDidapat += r.skorDidapat;
+        if (r.benar) jumlahBenar++;
+    });
+    const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+    return { skorDidapat, skorMaksimal, jumlahBenar, skorAkhir };
+}
+
+/* ---------- KIRIM HASIL AKHIR ---------- */
+function kirimHasilAkhir() {
+    const { jumlahBenar, skorAkhir } = hitungSkor();
+    const totalSoal = daftarSoal.length;
+
+    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor ${skorAkhir}, pindah tab ${jumlahPindahTab}x`);
+
+    if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
+
+    const params = new URLSearchParams({
+        nama: namaSiswa,
+        kelas: kelasSiswa,
+        jumlah_benar: jumlahBenar,
+        total_soal: totalSoal,
+        skor: skorAkhir,
+        pindah_tab: jumlahPindahTab,       // ← BARU
+        waktu_jawab: new Date().toLocaleString("id-ID")
+    });
+
+    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), {
+        method: "GET", mode: "no-cors"
+    })
+    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - skor ${skorAkhir} - pindah ${jumlahPindahTab}x`))
+    .catch(err => console.error("❌ Gagal:", err));
+}
+
+/* ---------- HASIL AKHIR ---------- */
+function tampilHasil() {
+    clearInterval(timerInterval);
+    kuisAktif = false;
+
+    const { jumlahBenar, skorAkhir, skorDidapat, skorMaksimal } = hitungSkor();
+
+    document.getElementById("layar-soal").style.display = "none";
+    document.getElementById("layar-akhir").style.display = "block";
+    document.getElementById("timer-total").style.display = "none";
+
+    document.getElementById("skor-angka").textContent = skorAkhir;
+    document.getElementById("skor-detail").textContent =
+        `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+    document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
+
+    kirimHasilAkhir();
+}
+
+function tutupOverlayDanTampilHasil() {
+    document.getElementById("overlay-waktu-habis").style.display = "none";
+    tampilHasil();
+}
+
+/* ---------- PEMBAHASAN ---------- */
+function tampilkanPembahasan() {
+    document.getElementById("layar-akhir").style.display = "none";
+    document.getElementById("layar-pembahasan").style.display = "block";
+    const wadah = document.getElementById("daftar-pembahasan");
+    wadah.innerHTML = "";
+
+    daftarSoal.forEach((soal, idx) => {
+        const r = riwayatJawaban.find(x => x.nomor === idx);
+        const div = document.createElement("div");
+        div.className = "item-soal";
+
+        let statusHTML = "";
+        if (r) {
+            const kelasJawaban = r.benar ? "benar" : "salah";
+            const ikonStatus = r.benar ? "✅" : "❌";
+            statusHTML = `
+                <div style="margin-top:8px;">
+                    <span class="label-netral">Jawabanmu:</span>
+                    <span class="jawaban-pg ${kelasJawaban}">${r.jawabanSiswa}. ${r.teksPilihanSiswa} ${ikonStatus}</span>
+                </div>
+            `;
+            if (!r.benar) {
+                statusHTML += `
+                    <div style="margin-top:4px;">
+                        <span class="label-netral">Jawaban Benar:</span>
+                        <span class="jawaban-pg benar">${r.kunci}. ${r.teksPilihanKunci}</span>
+                    </div>
+                `;
+            }
+        } else {
+            statusHTML = `<span class="label-salah">⏰ Tidak dijawab</span>`;
+        }
+
+        div.innerHTML = `
+            <strong>Soal ${idx + 1}:</strong> ${soal.soal}<br>
+            <div style="margin: 8px 0; font-size: 0.95rem; color: #555;">
+                A. ${soal.pilihan.A || "-"}<br>
+                B. ${soal.pilihan.B || "-"}<br>
+                C. ${soal.pilihan.C || "-"}<br>
+                D. ${soal.pilihan.D || "-"}<br>
+                ${soal.pilihan.E ? "E. " + soal.pilihan.E : ""}
+            </div>
+            ${statusHTML}
+            ${soal.penjelasan ? `<div style="margin-top:8px; padding:10px; background:#f0f8ff; border-left:4px solid #4facfe; border-radius:6px; font-style:italic; font-size:0.95rem;">💡 ${soal.penjelasan}</div>` : ""}
+        `;
+        wadah.appendChild(div);
+    });
+}
+
+/* ---------- MULAI ULANG ---------- */
+function mulaiUlang() {
+    clearInterval(timerInterval);
+    nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = "";
+    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK;
+    jumlahPindahTab = 0;
+
+    document.getElementById("layar-akhir").style.display = "none";
+    document.getElementById("layar-pembahasan").style.display = "none";
+    document.getElementById("layar-soal").style.display = "block";
+    document.getElementById("info-siswa").style.display = "none";
+    document.getElementById("timer-total").style.display = "none";
+    document.getElementById("progress").style.display = "none";
+    document.getElementById("pilihan-group").classList.remove("aktif");
+
+    document.getElementById("form-identitas").style.display = "block";
+    document.getElementById("info-durasi").style.display = "block";
+    document.getElementById("tombol-mulai").style.display = "block";
+
+    document.getElementById("input-nama").value = "";
+    document.getElementById("input-kelas").value = "";
+    document.getElementById("input-nama").focus();
+
+    tampilkanInfoDurasi();
+}
+
+/* ---------- INIT ---------- */
+tampilkanInfoDurasi();
+setupPanelGuru();
+aktifkanDeteksiPindahTab();     // ← BARU: aktifkan deteksi
+ambilSoal();
+</script>
+</body>
+</html>
