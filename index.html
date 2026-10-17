@@ -272,6 +272,39 @@
         @media (max-width: 600px) {
             .toast-peringatan { top: 10px; right: 10px; left: 10px; max-width: none; font-size: 0.85rem; padding: 12px 16px; }
         }
+
+        /* === FORM TOKEN === */
+        .form-token {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .form-token label {
+            font-weight: bold;
+            color: #856404;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .input-token {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            outline: none;
+        }
+        .input-token:focus {
+            border-color: #e65100;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
+        }
+        
     </style>
 </head>
 <body>
@@ -316,13 +349,20 @@
             <div class="status-jadwal" id="status-jadwal"></div>
         </div>
 
-        <!-- Area Tombol Mulai & Info Durasi (Baru muncul kalau mapel dipilih & waktu aktif) -->
+       <!-- Area Tombol Mulai & Info Durasi (Baru muncul kalau mapel dipilih & waktu aktif) -->
         <div class="area-mulai" id="area-mulai">
             <div class="info-durasi" id="info-durasi">
                 ⏱️ Total waktu pengerjaan: <strong id="durasi-tampil">20 menit</strong><br>
                 <small style="font-weight: normal;">Soal & pilihan diacak untuk setiap siswa</small>
             </div>
-            <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()">▶️ MULAI</button>
+            
+            <!-- Input Token -->
+            <div class="form-token">
+                <label>🔐 Masukkan Token Ujian</label>
+                <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
+            </div>
+        
+            <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI UJIAN</button>
         </div>
 
         <div class="info-siswa" id="info-siswa"></div>
@@ -401,6 +441,7 @@ let jadwalData = [];
 let dataSiswaGlobal = [];
 let jadwalInterval = null; 
 let mapelDipilih = null; 
+let tokenValid = false;
 
 /* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
 function acak(array) {
@@ -555,6 +596,32 @@ function pilihMapel(jadwal, btnElement) {
     mapelDipilih = jadwal;
     cekStatusWaktu(jadwal);
 }
+
+function cekToken() {
+    const inputToken = document.getElementById("input-token").value.toUpperCase().trim();
+    const btnMulai = document.getElementById("tombol-mulai");
+    
+    if (!mapelDipilih) return;
+
+    // Ambil token dari jadwal yang dipilih
+    const tokenAsli = String(mapelDipilih.token || "").toUpperCase().trim();
+
+    if (inputToken === tokenAsli && tokenAsli !== "") {
+        // Token BENAR
+        btnMulai.disabled = false;
+        btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+        btnMulai.style.cursor = "pointer";
+        document.getElementById("input-token").style.borderColor = "#2ecc71";
+        document.getElementById("input-token").style.background = "#d4edda";
+    } else {
+        // Token SALAH atau KOSONG
+        btnMulai.disabled = true;
+        btnMulai.style.background = "#95a5a6";
+        btnMulai.style.cursor = "not-allowed";
+        document.getElementById("input-token").style.borderColor = "#ffc107";
+        document.getElementById("input-token").style.background = "#fff";
+    }
+}    
 
 function cekStatusWaktu(jadwal) {
     const statusDiv = document.getElementById("status-jadwal");
@@ -935,6 +1002,7 @@ function mulaiUlang() {
     document.getElementById("container-mapel").innerHTML = "";
     document.getElementById("status-jadwal").style.display = "none";
     document.getElementById("input-nisn").focus();
+    document.getElementById("input-token").value = "";
 
     tampilkanInfoDurasi();
 }
