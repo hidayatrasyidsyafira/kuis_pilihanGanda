@@ -116,7 +116,7 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
             transition: transform 0.2s;
-            display: none; /* Sembunyi di awal */
+            display: none;
         }
         .tombol-buka-modal:hover { transform: scale(1.02); }
 
@@ -401,7 +401,7 @@
             <div class="status-jadwal" id="status-jadwal"></div>
         </div>
 
-        <!-- AREA MULAI & TOKEN (Awalnya Sembunyi) -->
+        <!-- AREA MULAI & TOKEN -->
         <div class="area-mulai" id="area-mulai">
             <div class="terpilih-info" id="terpilih-info">Mapel: -</div>
             <div class="info-durasi" id="info-durasi">
@@ -557,10 +557,7 @@ function cariSiswa() {
 
         hasilDiv.classList.add("aktif");
 
-        // Sembunyikan input NISN dan tombol cari
         document.getElementById("form-input-nisn").style.display = "none";
-        
-        // Tampilkan tombol Pilih Mapel di bawahnya
         document.getElementById("layar-pilih-kelas").classList.remove("sembunyi");
         document.getElementById("btn-buka-modal").style.display = "block";
 
@@ -593,7 +590,6 @@ function bukaModalMapel() {
     const hariIni = namaHari[new Date().getDay()];
     const sekarang = new Date().getTime();
 
-    // Filter jadwal
     const jadwalHariIni = jadwalData.filter(j => {
         const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelasSiswa.toUpperCase().trim());
         const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
@@ -607,7 +603,7 @@ function bukaModalMapel() {
         const [tgl, bln, thn] = j.tanggal.split("/");
         const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
 
-        return sekarang < dateSelesai; // Hanya tampilkan yang belum lewat
+        return sekarang < dateSelesai; 
     });
 
     if (jadwalHariIni.length === 0) {
@@ -640,13 +636,9 @@ function pilihMapel(jadwal) {
     mapelDipilih = jadwal;
     tutupModalMapel();
     
-    // Tampilkan nama mapel di area mulai
     document.getElementById("terpilih-info").textContent = `Mapel: ${jadwal.mapel}`;
-    
-    // Sembunyikan tombol pilih mapel sementara
     document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
     
-    // Cek status waktu
     cekStatusWaktu(jadwal);
 }
 
@@ -664,7 +656,6 @@ function cekStatusWaktu(jadwal) {
     const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
     const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
     
-    // Sembunyikan status di tombol lama
     statusDiv.style.display = "none";
     areaMulai.style.display = "none"; 
 
@@ -672,7 +663,6 @@ function cekStatusWaktu(jadwal) {
         const sekarang = new Date().getTime();
         
         if (sekarang < dateMulai) {
-            // BELUM MULAI
             const selisih = dateMulai - sekarang;
             const h = Math.floor(selisih / (1000 * 60 * 60));
             const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
@@ -682,23 +672,19 @@ function cekStatusWaktu(jadwal) {
             if (h > 0) teksCountdown += `${h} jam `;
             teksCountdown += `${m} mnt ${s} dtk`;
 
-            // Tampilkan pesan countdown menggunakan alert/pesan di area modal atau form
             document.getElementById("terpilih-info").innerHTML = `⏳ Ujian ${jadwal.mapel} belum dimulai.<br>Countdown: <span style="color:#e65100;">${teksCountdown}</span>`;
-            areaMulai.style.display = "block"; // Tampilkan area (tapi token & btn disabled)
+            areaMulai.style.display = "block"; 
             document.getElementById("input-token").disabled = true;
             document.getElementById("tombol-mulai").disabled = true;
 
         } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            // SEDANG BERLANGSUNG
             document.getElementById("terpilih-info").innerHTML = `✅ Ujian ${jadwal.mapel} SEDANG BERLANGSUNG.`;
             areaMulai.style.display = "block";
             
             document.getElementById("input-token").disabled = false;
             document.getElementById("input-token").focus();
-            // Tombol MULAI akan menyala jika token benar
 
         } else {
-            // SUDAH LEWAT
             document.getElementById("terpilih-info").innerHTML = `❌ Waktu ujian ${jadwal.mapel} telah berakhir (${jamSelesai}).`;
             areaMulai.style.display = "block";
             document.getElementById("input-token").disabled = true;
@@ -717,14 +703,12 @@ function cekToken() {
     const tokenAsli = String(mapelDipilih.token || "").toUpperCase().trim();
 
     if (inputToken === tokenAsli && tokenAsli !== "") {
-        // Token BENAR
         btnMulai.disabled = false;
         btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
         btnMulai.style.cursor = "pointer";
         document.getElementById("input-token").style.borderColor = "#2ecc71";
         document.getElementById("input-token").style.background = "#d4edda";
     } else {
-        // Token SALAH atau KOSONG
         btnMulai.disabled = true;
         btnMulai.style.background = "#95a5a6";
         btnMulai.style.cursor = "not-allowed";
@@ -844,10 +828,10 @@ async function mulaiKuis() {
     daftarSoal = acak(daftarSoal);
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
-    // Sembunyikan area form awal
+    // SEMBUNYIKAN SEMUA FORM AWAL
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-kelas").style.display = "none";
-    document.getElementById("area-mulai").style.display = "none";
+    document.getElementById("area-mulai").style.display = "none"; // <-- Ini yang menghilangkan form token & tombol
 
     const info = document.getElementById("info-siswa");
     info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong> — ⏱️ ${KONFIG.durasiMenit} menit`;
@@ -1051,8 +1035,8 @@ function mulaiUlang() {
     
     // Reset Tampilan Awal
     document.getElementById("layar-login-nisn").style.display = "block";
-    document.getElementById("form-input-nisn").style.display = "block"; // Munculkan lagi input nisn
-    document.getElementById("hasil-cari-siswa").classList.remove("aktif"); // Sembunyikan hasil
+    document.getElementById("form-input-nisn").style.display = "block"; 
+    document.getElementById("hasil-cari-siswa").classList.remove("aktif"); 
     document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
     document.getElementById("btn-buka-modal").style.display = "none";
     document.getElementById("area-mulai").style.display = "none";
