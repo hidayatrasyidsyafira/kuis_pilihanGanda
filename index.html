@@ -500,7 +500,8 @@ function tampilkanTombolMapel() {
     const sekarang = new Date().getTime();
 
     const jadwalHariIni = jadwalData.filter(j => {
-        const kelasCocok = String(j.kelas).toUpperCase().trim() === kelas.toUpperCase();
+        // Cek apakah kelas siswa ada di dalam daftar kelas (dipisah koma)
+        const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelas.toUpperCase().trim());
         const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
         
         if (!kelasCocok || !hariCocok) return false;
