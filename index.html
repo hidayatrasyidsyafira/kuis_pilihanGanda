@@ -25,6 +25,7 @@
         }
         h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
 
+        /* === FORM IDENTITAS === */
         .form-identitas {
             background: #f0f8ff;
             padding: 25px;
@@ -60,6 +61,56 @@
         .form-group input:focus, .form-group select:focus {
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.15);
+        }
+
+        /* === TOMBOL MAPEL === */
+        .grid-mapel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .tombol-mapel {
+            background: white;
+            border: 2px solid #b8d8e8;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .tombol-mapel:hover {
+            border-color: #4facfe;
+            background: #f0f8ff;
+        }
+        .tombol-mapel.terpilih {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border-color: #4facfe;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+        }
+        .tombol-mapel .nama-mapel {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .tombol-mapel .info-waktu {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        .tombol-mapel.terpilih .info-waktu {
+            color: #e3f2fd;
+        }
+        .pesan-kosong {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.95rem;
+            margin-top: 15px;
         }
 
         /* Status Jadwal */
@@ -156,6 +207,7 @@
             text-align: left;
         }
 
+        /* === GRID 2 KOLOM UNTUK PILIHAN === */
         .pilihan-group {
             display: none;
             grid-template-columns: 1fr 1fr;
@@ -182,11 +234,13 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
             font-weight: 500;
         }
+
         .pilihan:hover:not(:disabled) {
             background: #e3f2fd;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(79, 172, 254, 0.25);
         }
+
         .pilihan:disabled { cursor: not-allowed; opacity: 0.75; }
         .pilihan:disabled:not(.benar):not(.salah) { background: #f0f0f0; box-shadow: none; }
 
@@ -204,6 +258,7 @@
             flex-shrink: 0;
             box-shadow: 0 4px 10px rgba(79, 172, 254, 0.35);
         }
+
         .pilihan .teks-pilihan { flex: 1; line-height: 1.4; }
 
         .pilihan.benar { background: linear-gradient(135deg, #d4edda, #c3e6cb); box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3); }
@@ -227,6 +282,7 @@
                 grid-column: 1;
                 grid-row: auto;
             }
+            .grid-mapel { grid-template-columns: 1fr; }
         }
 
         .lanjut-btn {
@@ -342,15 +398,19 @@
                 <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso" autocomplete="off">
             </div>
             <div class="form-group">
-                <label for="input-kelas">Kelas</label>
-                <input type="text" id="input-kelas" placeholder="Contoh: XI IPA 1" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label for="select-mapel">Pilih Mata Pelajaran (Sesuai Jadwal)</label>
-                <select id="select-mapel" onchange="cekStatusJadwal()">
-                    <option value="">-- Memuat jadwal... --</option>
+                <label for="select-kelas">Pilih Kelas</label>
+                <select id="select-kelas" onchange="tampilkanTombolMapel()">
+                    <option value="">-- Pilih Kelas --</option>
+                    <option value="X">Kelas X</option>
+                    <option value="XI">Kelas XI</option>
+                    <option value="XII">Kelas XII</option>
                 </select>
             </div>
+
+            <!-- Container untuk tombol mapel -->
+            <div id="container-mapel"></div>
+            
+            <!-- Status jadwal -->
             <div class="status-jadwal" id="status-jadwal"></div>
         </div>
 
@@ -436,7 +496,8 @@ let kuisAktif = false;
 let jumlahPindahTab = 0;
 let toastTimer = null;
 let jadwalData = [];
-let jadwalInterval = null; // untuk cek waktu mundur
+let jadwalInterval = null; 
+let mapelDipilih = null; 
 
 /* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
 function acak(array) {
@@ -458,84 +519,94 @@ function tampilkanInfoDurasi() {
 }
 
 /* =========================================================
-   📅 FITUR JADWAL UJIAN
+   📅 FITUR JADWAL UJIAN & TOMBOL MAPEL
    ========================================================= */
 async function ambilJadwal() {
-    const select = document.getElementById("select-mapel");
-    select.innerHTML = '<option value="">-- Memuat jadwal... --</option>';
-    
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal");
         const json = await res.json();
         
         if (json.status === "success") {
-            const semuaJadwal = json.data;
-            
-            // 1. Dapatkan nama hari ini dalam Bahasa Indonesia
-            const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-            const hariIni = namaHari[new Date().getDay()]; 
-
-            // 2. Filter: Hanya ambil jadwal yang harinya sama dengan hari ini
-            jadwalData = semuaJadwal.filter(j => {
-                // Ubah ke huruf kecil semua agar tidak error jika beda kapitalisasi
-                return String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
-            });
-            
-            // 3. Tampilkan ke dropdown
-            select.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
-            
-            if (jadwalData.length === 0) {
-                select.innerHTML = `<option value="">-- Tidak ada jadwal untuk hari ${hariIni} --</option>`;
-                return;
-            }
-
-            jadwalData.forEach((j, index) => {
-                const opt = document.createElement("option");
-                opt.value = index;
-                opt.textContent = `${j.mapel} (${j.waktu})`;
-                select.appendChild(opt);
-            });
-        } else {
-            select.innerHTML = '<option value="">Gagal memuat jadwal</option>';
+            jadwalData = json.data; 
         }
     } catch (err) {
         console.error("Gagal ambil jadwal:", err);
-        select.innerHTML = '<option value="">Error koneksi jadwal</option>';
     }
 }
-function cekStatusJadwal() {
-    const select = document.getElementById("select-mapel");
+
+function tampilkanTombolMapel() {
+    const kelas = document.getElementById("select-kelas").value;
+    const container = document.getElementById("container-mapel");
     const statusDiv = document.getElementById("status-jadwal");
     const btnMulai = document.getElementById("tombol-mulai");
-    const val = select.value;
+    
+    // Reset
+    container.innerHTML = "";
+    statusDiv.style.display = "none";
+    statusDiv.innerHTML = "";
+    mapelDipilih = null;
+    btnMulai.disabled = true;
 
-    // Bersihkan timer cek jadwal sebelumnya (jika ada)
-    if (jadwalInterval) clearInterval(jadwalInterval);
+    if (!kelas) return; 
 
-    if (val === "") {
-        statusDiv.style.display = "none";
-        btnMulai.disabled = true;
+    // 1. Dapatkan nama hari ini
+    const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const hariIni = namaHari[new Date().getDay()];
+
+    // 2. Filter jadwal: Kelas DAN Hari
+    const jadwalHariIni = jadwalData.filter(j => {
+        return j.kelas === kelas && String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
+    });
+
+    if (jadwalHariIni.length === 0) {
+        container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian untuk Kelas ${kelas} hari ini.</div>`;
         return;
     }
 
-    const jadwal = jadwalData[val];
-    
-    // Gabungkan tanggal (DD/MM/YYYY) dan waktu (HH:MM) jadi format Date JS
-    // Contoh: 17/10/2026 dan 07:30 menjadi "2026-10-17T07:30:00"
+    // 3. Render Tombol Mapel
+    const grid = document.createElement("div");
+    grid.className = "grid-mapel";
+
+    jadwalHariIni.forEach((j, index) => {
+        const btn = document.createElement("button");
+        btn.className = "tombol-mapel";
+        btn.id = `mapel-btn-${index}`;
+        btn.innerHTML = `
+            <span class="nama-mapel">📘 ${j.mapel}</span>
+            <span class="info-waktu">⏱️ ${j.waktu}</span>
+        `;
+        btn.onclick = () => pilihMapel(j, btn);
+        grid.appendChild(btn);
+    });
+
+    container.appendChild(grid);
+}
+
+function pilihMapel(jadwal, btnElement) {
+    document.querySelectorAll(".tombol-mapel").forEach(b => b.classList.remove("terpilih"));
+    btnElement.classList.add("terpilih");
+    mapelDipilih = jadwal;
+    cekStatusWaktu(jadwal);
+}
+
+function cekStatusWaktu(jadwal) {
+    const statusDiv = document.getElementById("status-jadwal");
+    const btnMulai = document.getElementById("tombol-mulai");
+
+    if (jadwalInterval) clearInterval(jadwalInterval);
+
     const [tgl, bln, thn] = jadwal.tanggal.split("/");
     const dateStr = `${thn}-${bln}-${tgl}T${jadwal.waktu}:00`;
     const waktuUjian = new Date(dateStr).getTime();
     
     statusDiv.style.display = "block";
-    statusDiv.className = "status-jadwal"; // reset class
+    statusDiv.className = "status-jadwal";
 
-    // Fungsi pengecekan berulang setiap detik
     jadwalInterval = setInterval(() => {
         const sekarang = new Date().getTime();
         const selisih = waktuUjian - sekarang;
 
         if (selisih > 0) {
-            // BELUM WAKTUNYA (Countdown)
             const h = Math.floor(selisih / (1000 * 60 * 60));
             const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((selisih % (1000 * 60)) / 1000);
@@ -545,18 +616,16 @@ function cekStatusJadwal() {
             teksCountdown += `${m} mnt ${s} dtk`;
 
             statusDiv.className = "status-jadwal belum";
-            statusDiv.innerHTML = `⏳ Ujian belum dimulai. Countdown: <br><strong style="font-size:1.3rem">${teksCountdown}</strong>`;
+            statusDiv.innerHTML = `⏳ Ujian ${jadwal.mapel} belum dimulai. Countdown: <br><strong style="font-size:1.3rem">${teksCountdown}</strong>`;
             btnMulai.disabled = true;
-        } else if (selisih > 0 || (selisih <= 0 && selisih > -(1000 * 60 * 60 * 2))) {
-            // SEDANG AKTIF (Anggap aktif sampai 2 jam setelah jadwal mulai)
+        } else if (selisih > -(1000 * 60 * 60 * 2)) { 
             statusDiv.className = "status-jadwal aktif";
-            statusDiv.innerHTML = `✅ Ujian SEDANG BERLANGSUNG. Silakan klik MULAI!`;
+            statusDiv.innerHTML = `✅ Ujian ${jadwal.mapel} SEDANG BERLANGSUNG. Silakan klik MULAI!`;
             btnMulai.disabled = false;
-            clearInterval(jadwalInterval); // stop cek timer
+            clearInterval(jadwalInterval);
         } else {
-            // SUDAH LEWAT
             statusDiv.className = "status-jadwal lewat";
-            statusDiv.innerHTML = `❌ Waktu ujian untuk mapel ini telah berakhir.`;
+            statusDiv.innerHTML = `❌ Waktu ujian ${jadwal.mapel} telah berakhir.`;
             btnMulai.disabled = true;
             clearInterval(jadwalInterval);
         }
@@ -677,16 +746,15 @@ function acakPilihanSoal(soal) {
 /* ---------- MULAI KUIS ---------- */
 async function mulaiKuis() {
     const nama = document.getElementById("input-nama").value.trim();
-    const kelas = document.getElementById("input-kelas").value.trim();
-    const mapelIndex = document.getElementById("select-mapel").value;
+    const kelas = document.getElementById("select-kelas").value;
     
     if (!nama) { alert("⚠️ Nama tidak boleh kosong!"); return; }
-    if (!kelas) { alert("⚠️ Kelas tidak boleh kosong!"); return; }
-    if (mapelIndex === "") { alert("⚠️ Pilih mata pelajaran terlebih dahulu!"); return; }
+    if (!kelas) { alert("⚠️ Pilih kelas terlebih dahulu!"); return; }
+    if (!mapelDipilih) { alert("⚠️ Pilih mata pelajaran terlebih dahulu!"); return; }
 
     namaSiswa = nama;
     kelasSiswa = kelas;
-    mapelSiswa = jadwalData[mapelIndex].mapel;
+    mapelSiswa = mapelDipilih.mapel;
 
     await ambilSoal();
     daftarSoal = acak(daftarSoal);
@@ -808,25 +876,20 @@ function kirimHasilAkhir() {
     const { jumlahBenar, skorAkhir } = hitungSkor();
     const totalSoal = daftarSoal.length;
 
-    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor ${skorAkhir}, pindah tab ${jumlahPindahTab}x`);
-
     if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
 
     const params = new URLSearchParams({
-        nama: namaSiswa,
-        kelas: kelasSiswa,
+        nama: namaSiswa, 
+        kelas: kelasSiswa, 
         jumlah_benar: jumlahBenar,
-        total_soal: totalSoal,
-        skor: skorAkhir,
+        total_soal: totalSoal, 
+        skor: skorAkhir, 
         pindah_tab: jumlahPindahTab,
-        mapel: mapelSiswa,             // ← TAMBAHKAN INI
+        mapel: mapelSiswa,
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
 
-    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), {
-        method: "GET", mode: "no-cors"
-    })
-    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - ${mapelSiswa} - skor ${skorAkhir}`))
+    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
     .catch(err => console.error("❌ Gagal:", err));
 }
 
@@ -891,7 +954,7 @@ function mulaiUlang() {
     clearInterval(timerInterval);
     if (jadwalInterval) clearInterval(jadwalInterval);
     nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
-    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK; jumlahPindahTab = 0;
+    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK; jumlahPindahTab = 0; mapelDipilih = null;
 
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
@@ -904,12 +967,12 @@ function mulaiUlang() {
     document.getElementById("form-identitas").style.display = "block";
     document.getElementById("info-durasi").style.display = "block";
     document.getElementById("tombol-mulai").style.display = "block";
+    document.getElementById("tombol-mulai").disabled = true;
 
     document.getElementById("input-nama").value = "";
-    document.getElementById("input-kelas").value = "";
-    document.getElementById("select-mapel").value = "";
+    document.getElementById("select-kelas").value = "";
+    document.getElementById("container-mapel").innerHTML = "";
     document.getElementById("status-jadwal").style.display = "none";
-    document.getElementById("tombol-mulai").disabled = true;
     document.getElementById("input-nama").focus();
 
     tampilkanInfoDurasi();
@@ -919,7 +982,7 @@ function mulaiUlang() {
 tampilkanInfoDurasi();
 setupPanelGuru();
 aktifkanDeteksiPindahTab();
-ambilJadwal(); // Ambil jadwal saat halaman dimuat
+ambilJadwal();
 ambilSoal();
 </script>
 </body>
