@@ -25,7 +25,6 @@
         }
         h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
 
-        /* === FORM IDENTITAS === */
         .form-identitas {
             background: #f0f8ff;
             padding: 25px;
@@ -88,7 +87,6 @@
         }
         .tombol-mulai:hover { transform: scale(1.05); }
 
-        /* === TIMER === */
         .timer-total {
             background: linear-gradient(135deg, #fff3cd, #ffe69c);
             padding: 15px;
@@ -201,7 +199,6 @@
             line-height: 1.4;
         }
 
-        /* State: benar */
         .pilihan.benar {
             background: linear-gradient(135deg, #d4edda, #c3e6cb);
             box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3);
@@ -211,7 +208,6 @@
             box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
         }
 
-        /* State: salah */
         .pilihan.salah {
             background: linear-gradient(135deg, #f8d7da, #f5c6cb);
             box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
@@ -221,18 +217,15 @@
             box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4);
         }
 
-        /* Posisi grid untuk 5 pilihan: A B C kiri, D E kanan */
+        /* Posisi grid: A B C kiri, D E kanan */
         .pilihan-group .pilihan:nth-child(1) { grid-column: 1; grid-row: 1; }
         .pilihan-group .pilihan:nth-child(2) { grid-column: 1; grid-row: 2; }
         .pilihan-group .pilihan:nth-child(3) { grid-column: 1; grid-row: 3; }
         .pilihan-group .pilihan:nth-child(4) { grid-column: 2; grid-row: 1; }
         .pilihan-group .pilihan:nth-child(5) { grid-column: 2; grid-row: 2; }
 
-        /* Di HP: 1 kolom */
         @media (max-width: 600px) {
-            .pilihan-group {
-                grid-template-columns: 1fr;
-            }
+            .pilihan-group { grid-template-columns: 1fr; }
             .pilihan-group .pilihan:nth-child(1),
             .pilihan-group .pilihan:nth-child(2),
             .pilihan-group .pilihan:nth-child(3),
@@ -264,7 +257,6 @@
         }
         .item-soal strong { color: #2c3e50; }
         .label-netral { color: #3498db; font-weight: bold; }
-        .label-benar { color: #2ecc71; font-weight: bold; }
         .label-salah { color: #e74c3c; font-weight: bold; }
         .jawaban-pg {
             display: inline-block;
@@ -345,7 +337,6 @@
             font-weight: bold;
         }
 
-        /* Panel Guru */
         .panel-guru {
             display: none;
             background: #e8f5e9;
@@ -394,13 +385,50 @@
             border: 1px solid #81c784;
             margin-top: 10px;
         }
+
+        /* === TOAST NOTIFIKASI PINDAH TAB === */
+        .toast-peringatan {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            padding: 15px 22px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 320px;
+        }
+        .toast-peringatan.muncul {
+            transform: translateX(0);
+        }
+        .toast-peringatan .ikon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+            .toast-peringatan {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 0.85rem;
+                padding: 12px 16px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
 
-        <!-- Panel Guru (muncul kalau ?guru=1) -->
         <div class="panel-guru" id="panel-guru">
             <h3>👨‍🏫 Panel Guru</h3>
             <div class="row">
@@ -413,7 +441,6 @@
             </div>
         </div>
 
-        <!-- Form Siswa -->
         <div class="form-identitas" id="form-identitas">
             <h3>👤 Isi Data Diri Dulu Ya</h3>
             <div class="form-group">
@@ -472,6 +499,12 @@
         </div>
     </div>
 
+    <!-- Toast notifikasi pindah tab -->
+    <div class="toast-peringatan" id="toast-peringatan">
+        <span class="ikon">⚠️</span>
+        <span id="toast-teks">Kamu terdeteksi keluar dari halaman kuis.</span>
+    </div>
+
 <script>
 /* =========================================================
    ⚙️ KONFIGURASI
@@ -501,6 +534,8 @@ let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
 let riwayatJawaban = [];
 let namaSiswa = "", kelasSiswa = "";
 let kuisAktif = false;
+let jumlahPindahTab = 0;              // ← BARU: counter pelanggaran
+let toastTimer = null;
 
 /* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
 function acak(array) {
@@ -538,6 +573,46 @@ function buatLinkGuru() {
     document.getElementById("guru-output").textContent = `${baseUrl}?durasi=${menit}`;
 }
 
+/* =========================================================
+   🛡️ ANTI-CHEAT: DETEKSI PINDAH TAB
+   ========================================================= */
+function aktifkanDeteksiPindahTab() {
+    // Deteksi saat halaman jadi tidak terlihat (pindah tab/minimize/buka app lain)
+    document.addEventListener("visibilitychange", () => {
+        if (!kuisAktif) return; // hanya hitung kalau kuis sedang berjalan
+
+        if (document.hidden) {
+            // Siswa KELUAR dari halaman kuis
+            jumlahPindahTab++;
+            console.log(`⚠️ Pindah tab terdeteksi (${jumlahPindahTab}x)`);
+        } else {
+            // Siswa BALIK ke halaman kuis → tampilkan toast
+            if (jumlahPindahTab > 0) {
+                tampilkanToastPeringatan();
+            }
+        }
+    });
+
+    // Deteksi saat window kehilangan fokus (misal alt+tab di laptop)
+    window.addEventListener("blur", () => {
+        // Blur biasanya juga memicu visibilitychange, jadi kita hanya log kalau perlu
+        // (Optional: aktifkan kalau mau lebih sensitif)
+    });
+}
+
+function tampilkanToastPeringatan() {
+    const toast = document.getElementById("toast-peringatan");
+    const teks = document.getElementById("toast-teks");
+    teks.textContent = `Kamu terdeteksi keluar dari halaman kuis (${jumlahPindahTab}x)`;
+
+    toast.classList.add("muncul");
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove("muncul");
+    }, 3000);
+}
+
 /* ---------- PARSER CSV ---------- */
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
@@ -553,9 +628,7 @@ function parseCSV(teks) {
     });
 }
 
-/* =========================================================
-   📄 AMBIL SOAL DARI CSV (9 KOLOM: soal, A, B, C, D, E, kunci, skor, penjelasan)
-   ========================================================= */
+/* ---------- AMBIL SOAL ---------- */
 async function ambilSoal() {
     try {
         const res = await fetch("soal.csv");
@@ -568,9 +641,7 @@ async function ambilSoal() {
             const k = baris[i];
             if (!k || k.length < 8) continue;
             const soal = k[0];
-            const pilihan = {
-                A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || ""
-            };
+            const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || "" };
             const kunci = k[6].toUpperCase().trim();
             const skor = parseInt(k[7]) || 1;
             const penjelasan = k[8] || "";
@@ -584,32 +655,18 @@ async function ambilSoal() {
         daftarSoal = [
             {
                 soal: "CPU adalah singkatan dari...",
-                pilihan: {
-                    A: "Central Processing Unit", B: "Computer Personal Unit",
-                    C: "Central Program Utility", D: "Control Processing Unit",
-                    E: "Central Personal Utility"
-                },
-                kunci: "A", skor: 1,
-                penjelasan: "CPU = Central Processing Unit, otak komputer."
+                pilihan: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
+                kunci: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
             },
             {
                 soal: "RAM bersifat...",
-                pilihan: {
-                    A: "Permanen", B: "Sementara",
-                    C: "Sangat cepat", D: "Tidak terbatas", E: "Sangat lambat"
-                },
-                kunci: "B", skor: 1,
-                penjelasan: "RAM = memori sementara, hilang saat komputer mati."
+                pilihan: { A: "Permanen", B: "Sementara", C: "Sangat cepat", D: "Tidak terbatas", E: "Sangat lambat" },
+                kunci: "B", skor: 1, penjelasan: "RAM = memori sementara."
             },
             {
                 soal: "Algoritma adalah...",
-                pilihan: {
-                    A: "Bahasa pemrograman", B: "Langkah logis penyelesaian masalah",
-                    C: "Program komputer", D: "Jaringan internet",
-                    E: "Sistem operasi"
-                },
-                kunci: "B", skor: 1,
-                penjelasan: "Algoritma = urutan langkah logis untuk menyelesaikan masalah."
+                pilihan: { A: "Bahasa pemrograman", B: "Langkah logis penyelesaian masalah", C: "Program komputer", D: "Jaringan internet", E: "Sistem operasi" },
+                kunci: "B", skor: 1, penjelasan: "Algoritma = urutan langkah logis."
             }
         ];
     }
@@ -641,6 +698,7 @@ async function mulaiKuis() {
     document.getElementById("teks-soal").style.display = "flex";
 
     kuisAktif = true;
+    jumlahPindahTab = 0;              // reset counter
     sisaWaktuTotal = DURASI_TOTAL_DETIK;
     updateTimerTotal();
     mulaiTimerTotal();
@@ -671,7 +729,7 @@ function updateTimerTotal() {
     else if (sisaWaktuTotal <= 300) el.classList.add("warning");
 }
 
-/* ---------- TAMPIL SOAL + PILIHAN ---------- */
+/* ---------- TAMPIL SOAL ---------- */
 function tampilSoal() {
     if (!kuisAktif) return;
     sudahDijawab = false;
@@ -750,7 +808,7 @@ function kirimHasilAkhir() {
     const { jumlahBenar, skorAkhir } = hitungSkor();
     const totalSoal = daftarSoal.length;
 
-    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor akhir ${skorAkhir}`);
+    console.log(`📊 Hasil: ${jumlahBenar} benar dari ${totalSoal} soal, skor ${skorAkhir}, pindah tab ${jumlahPindahTab}x`);
 
     if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
 
@@ -760,13 +818,14 @@ function kirimHasilAkhir() {
         jumlah_benar: jumlahBenar,
         total_soal: totalSoal,
         skor: skorAkhir,
+        pindah_tab: jumlahPindahTab,       // ← BARU
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
 
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), {
         method: "GET", mode: "no-cors"
     })
-    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - ${skorAkhir}`))
+    .then(() => console.log(`✅ Terkirim: ${namaSiswa} - skor ${skorAkhir} - pindah ${jumlahPindahTab}x`))
     .catch(err => console.error("❌ Gagal:", err));
 }
 
@@ -849,6 +908,7 @@ function mulaiUlang() {
     clearInterval(timerInterval);
     nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = "";
     kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK;
+    jumlahPindahTab = 0;
 
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
@@ -872,6 +932,7 @@ function mulaiUlang() {
 /* ---------- INIT ---------- */
 tampilkanInfoDurasi();
 setupPanelGuru();
+aktifkanDeteksiPindahTab();     // ← BARU: aktifkan deteksi
 ambilSoal();
 </script>
 </body>
