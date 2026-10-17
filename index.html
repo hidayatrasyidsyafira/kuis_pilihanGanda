@@ -689,10 +689,15 @@ function parseCSV(teks) {
 }
 
 /* ---------- AMBIL SOAL ---------- */
-async function ambilSoal() {
+async function ambilSoal(namaMapel) {
+    // Ubah nama mapel jadi huruf kecil dan hapus spasi (misal: "B. Inggris" jadi "b.inggris" atau "binggris")
+    // Disarankan nama mapel di sheet tidak pakai spasi, atau pakai format: soal_tik.csv
+    let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
+    let fileCSV = `soal_${namaFile}.csv`;
+
     try {
-        const res = await fetch("soal.csv");
-        if (!res.ok) throw new Error("Tidak ada file soal.csv");
+        const res = await fetch(fileCSV);
+        if (!res.ok) throw new Error(`File ${fileCSV} tidak ditemukan`);
         const teks = await res.text();
         const baris = parseCSV(teks);
 
@@ -711,11 +716,12 @@ async function ambilSoal() {
             }
         }
     } catch (err) {
-        console.error("Gagal baca soal.csv:", err);
+        console.warn(`⚠️ ${err.message}. Menggunakan soal default.`);
+        // Fallback jika file tidak ditemukan
         daftarSoal = [{
-            soal: "CPU adalah singkatan dari...",
-            pilihanAsli: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
-            kunciAsli: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
+            soal: `Soal default untuk ${namaMapel} (File CSV belum dibuat)`,
+            pilihanAsli: { A: "Benar", B: "Salah", C: "-", D: "-", E: "-" },
+            kunciAsli: "A", skor: 1, penjelasan: "Buat file soal untuk mapel ini."
         }];
     }
 }
@@ -756,10 +762,19 @@ async function mulaiKuis() {
     kelasSiswa = kelas;
     mapelSiswa = mapelDipilih.mapel;
 
-    await ambilSoal();
+    // Ambil soal sesuai mapel
+    await ambilSoal(mapelSiswa);
+    
+    // Jika soal kosong, batalkan
+    if (daftarSoal.length === 0) {
+        alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
+        return;
+    }
+
     daftarSoal = acak(daftarSoal);
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
+    // ... (SISA KODE DI BAWAHNYA SAMA SEPERTI SEBELUMNYA)
     document.getElementById("form-identitas").style.display = "none";
     document.querySelector(".info-durasi").style.display = "none";
     document.getElementById("tombol-mulai").style.display = "none";
