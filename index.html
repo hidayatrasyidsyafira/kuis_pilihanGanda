@@ -534,7 +534,7 @@ let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
 let riwayatJawaban = [];
 let namaSiswa = "", kelasSiswa = "";
 let kuisAktif = false;
-let jumlahPindahTab = 0;              // ← BARU: counter pelanggaran
+let jumlahPindahTab = 0;
 let toastTimer = null;
 
 /* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
@@ -577,26 +577,17 @@ function buatLinkGuru() {
    🛡️ ANTI-CHEAT: DETEKSI PINDAH TAB
    ========================================================= */
 function aktifkanDeteksiPindahTab() {
-    // Deteksi saat halaman jadi tidak terlihat (pindah tab/minimize/buka app lain)
     document.addEventListener("visibilitychange", () => {
-        if (!kuisAktif) return; // hanya hitung kalau kuis sedang berjalan
+        if (!kuisAktif) return;
 
         if (document.hidden) {
-            // Siswa KELUAR dari halaman kuis
             jumlahPindahTab++;
             console.log(`⚠️ Pindah tab terdeteksi (${jumlahPindahTab}x)`);
         } else {
-            // Siswa BALIK ke halaman kuis → tampilkan toast
             if (jumlahPindahTab > 0) {
                 tampilkanToastPeringatan();
             }
         }
-    });
-
-    // Deteksi saat window kehilangan fokus (misal alt+tab di laptop)
-    window.addEventListener("blur", () => {
-        // Blur biasanya juga memicu visibilitychange, jadi kita hanya log kalau perlu
-        // (Optional: aktifkan kalau mau lebih sensitif)
     });
 }
 
@@ -647,7 +638,7 @@ async function ambilSoal() {
             const penjelasan = k[8] || "";
 
             if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) {
-                daftarSoal.push({ soal, pilihan, kunci, skor, penjelasan });
+                daftarSoal.push({ soal, pilihanAsli: pilihan, kunciAsli: kunci, skor, penjelasan });
             }
         }
     } catch (err) {
@@ -655,21 +646,50 @@ async function ambilSoal() {
         daftarSoal = [
             {
                 soal: "CPU adalah singkatan dari...",
-                pilihan: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
-                kunci: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
-            },
-            {
-                soal: "RAM bersifat...",
-                pilihan: { A: "Permanen", B: "Sementara", C: "Sangat cepat", D: "Tidak terbatas", E: "Sangat lambat" },
-                kunci: "B", skor: 1, penjelasan: "RAM = memori sementara."
-            },
-            {
-                soal: "Algoritma adalah...",
-                pilihan: { A: "Bahasa pemrograman", B: "Langkah logis penyelesaian masalah", C: "Program komputer", D: "Jaringan internet", E: "Sistem operasi" },
-                kunci: "B", skor: 1, penjelasan: "Algoritma = urutan langkah logis."
+                pilihanAsli: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
+                kunciAsli: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
             }
         ];
     }
+}
+
+/* =========================================================
+   🔀 FUNGSI ACAK PILIHAN (A-E)
+   ========================================================= */
+function acakPilihanSoal(soal) {
+    // Kumpulkan pilihan yang tidak kosong
+    const daftarPilihan = [];
+    ["A", "B", "C", "D", "E"].forEach(huruf => {
+        if (soal.pilihanAsli[huruf]) {
+            daftarPilihan.push({
+                teks: soal.pilihanAsli[huruf],
+                asli: huruf
+            });
+        }
+    });
+
+    // Acak urutan pilihan
+    const pilihanDiacak = acak(daftarPilihan);
+
+    // Buat pilihan baru dengan label huruf yang rapi (A, B, C, D, E)
+    const pilihanBaru = {};
+    let kunciBaru = soal.kunciAsli;
+
+    ["A", "B", "C", "D", "E"].forEach((hurufBaru, index) => {
+        if (pilihanDiacak[index]) {
+            pilihanBaru[hurufBaru] = pilihanDiacak[index].teks;
+            // Jika pilihan ini aslinya adalah kunci, catat huruf barunya
+            if (pilihanDiacak[index].asli === soal.kunciAsli) {
+                kunciBaru = hurufBaru;
+            }
+        }
+    });
+
+    return {
+        ...soal,
+        pilihan: pilihanBaru,
+        kunci: kunciBaru
+    };
 }
 
 /* ---------- MULAI KUIS ---------- */
@@ -683,7 +703,12 @@ async function mulaiKuis() {
     kelasSiswa = kelas;
 
     await ambilSoal();
+    
+    // Acak urutan soal
     daftarSoal = acak(daftarSoal);
+    
+    // Acak pilihan untuk setiap soal
+    daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
     document.getElementById("form-identitas").style.display = "none";
     document.querySelector(".info-durasi").style.display = "none";
@@ -698,7 +723,7 @@ async function mulaiKuis() {
     document.getElementById("teks-soal").style.display = "flex";
 
     kuisAktif = true;
-    jumlahPindahTab = 0;              // reset counter
+    jumlahPindahTab = 0;
     sisaWaktuTotal = DURASI_TOTAL_DETIK;
     updateTimerTotal();
     mulaiTimerTotal();
@@ -818,7 +843,7 @@ function kirimHasilAkhir() {
         jumlah_benar: jumlahBenar,
         total_soal: totalSoal,
         skor: skorAkhir,
-        pindah_tab: jumlahPindahTab,       // ← BARU
+        pindah_tab: jumlahPindahTab,
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
 
@@ -932,7 +957,7 @@ function mulaiUlang() {
 /* ---------- INIT ---------- */
 tampilkanInfoDurasi();
 setupPanelGuru();
-aktifkanDeteksiPindahTab();     // ← BARU: aktifkan deteksi
+aktifkanDeteksiPindahTab();
 ambilSoal();
 </script>
 </body>
