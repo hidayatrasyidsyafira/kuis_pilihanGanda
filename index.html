@@ -469,14 +469,30 @@ async function ambilJadwal() {
         const json = await res.json();
         
         if (json.status === "success") {
-            jadwalData = json.data;
+            const semuaJadwal = json.data;
+            
+            // 1. Dapatkan nama hari ini dalam Bahasa Indonesia
+            const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            const hariIni = namaHari[new Date().getDay()]; 
+
+            // 2. Filter: Hanya ambil jadwal yang harinya sama dengan hari ini
+            jadwalData = semuaJadwal.filter(j => {
+                // Ubah ke huruf kecil semua agar tidak error jika beda kapitalisasi
+                return String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
+            });
+            
+            // 3. Tampilkan ke dropdown
             select.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
             
+            if (jadwalData.length === 0) {
+                select.innerHTML = `<option value="">-- Tidak ada jadwal untuk hari ${hariIni} --</option>`;
+                return;
+            }
+
             jadwalData.forEach((j, index) => {
-                // Value simpan index-nya agar mudah dicari saat dicek
                 const opt = document.createElement("option");
                 opt.value = index;
-                opt.textContent = `${j.mapel} (${j.hari}, ${j.tanggal} - ${j.waktu})`;
+                opt.textContent = `${j.mapel} (${j.waktu})`;
                 select.appendChild(opt);
             });
         } else {
@@ -487,7 +503,6 @@ async function ambilJadwal() {
         select.innerHTML = '<option value="">Error koneksi jadwal</option>';
     }
 }
-
 function cekStatusJadwal() {
     const select = document.getElementById("select-mapel");
     const statusDiv = document.getElementById("status-jadwal");
