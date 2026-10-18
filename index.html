@@ -704,11 +704,16 @@ function parseCSV(teks) {
     });
 }
 
-/* ---------- AMBIL SOAL ---------- */
-async function ambilSoal() {
+/* ---------- AMBIL SOAL (Berdasarkan Mapel dari Jadwal) ---------- */
+async function ambilSoal(namaMapel) {
+    // Bersihkan nama mapel agar aman dijadikan nama file
+    // Contoh: "TIK - UH 1" -> "soal_tik_-_uh_1.csv"
+    let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
+    let fileCSV = `soal_${namaFile}.csv`;
+
     try {
-        const res = await fetch("soal.csv");
-        if (!res.ok) throw new Error("Tidak ada file soal.csv");
+        const res = await fetch(fileCSV);
+        if (!res.ok) throw new Error(`File ${fileCSV} tidak ditemukan`);
         const teks = await res.text();
         const baris = parseCSV(teks);
 
@@ -727,11 +732,12 @@ async function ambilSoal() {
             }
         }
     } catch (err) {
-        console.error("Gagal baca soal.csv:", err);
+        console.warn(`⚠️ ${err.message}. Menggunakan soal default.`);
+        // Fallback jika file tidak ditemukan
         daftarSoal = [{
-            soal: "CPU adalah singkatan dari...",
-            pilihanAsli: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
-            kunciAsli: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
+            soal: `Soal untuk ${namaMapel} belum tersedia.`,
+            pilihanAsli: { A: "Benar", B: "Salah", C: "-", D: "-", E: "-" },
+            kunciAsli: "A", skor: 1, penjelasan: `Pastikan file ${fileCSV} sudah di-upload ke hosting.`
         }];
     }
 }
@@ -772,7 +778,15 @@ async function mulaiKuis() {
 
     mapelSiswa = mapelDipilih.mapel;
 
-    await ambilSoal();
+    // Panggil ambilSoal dan berikan nama mapelnya
+    await ambilSoal(mapelSiswa);
+    
+    // Jika soal kosong (file tidak ketemu), batalkan
+    if (daftarSoal.length === 0) {
+        alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
+        return;
+    }
+
     daftarSoal = acak(daftarSoal);
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
