@@ -160,7 +160,7 @@
 
         .grid-mapel {
             display: grid;
-            grid-template-columns: 1fr; /* 1 kolom agar mapel panjang muat */
+            grid-template-columns: 1fr;
             gap: 12px;
         }
         .tombol-mapel {
@@ -412,7 +412,7 @@
         <div class="pembahasan" id="layar-pembahasan">
             <h2 style="font-size: 1.8rem; margin-bottom: 20px;">📖 Pembahasan Lengkap</h2>
             <div class="daftar-soal" id="daftar-pembahasan"></div>
-            <button class="lanjut-btn" style="margin-top:25px;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
+            <button class="lanjut-btn" style="margin-top:25px; background:#e74c3c;" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
         </div>
     </div>
 
@@ -583,7 +583,6 @@ function bukaModalMapel(jenisUjian) {
         jadwalHariIni.forEach((j, index) => {
             const btn = document.createElement("button");
             btn.className = "tombol-mapel";
-            // Menampilkan mapel dan waktunya
             btn.innerHTML = `
                 <span class="nama-mapel">📘 ${j.mapel}</span>
                 <span class="info-waktu">⏱️ ${j.waktu}</span>
@@ -704,10 +703,9 @@ function parseCSV(teks) {
     });
 }
 
-/* ---------- AMBIL SOAL (Berdasarkan Mapel dari Jadwal) ---------- */
+/* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel) ---------- */
 async function ambilSoal(namaMapel) {
-    // Bersihkan nama mapel agar aman dijadikan nama file
-    // Contoh: "TIK - UH 1" -> "soal_tik_-_uh_1.csv"
+    // Ubah nama mapel jadi huruf kecil dan ganti spasi dengan underscore
     let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
     let fileCSV = `soal_${namaFile}.csv`;
 
@@ -781,7 +779,6 @@ async function mulaiKuis() {
     // Panggil ambilSoal dan berikan nama mapelnya
     await ambilSoal(mapelSiswa);
     
-    // Jika soal kosong (file tidak ketemu), batalkan
     if (daftarSoal.length === 0) {
         alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
         return;
