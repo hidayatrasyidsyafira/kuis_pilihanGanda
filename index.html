@@ -194,16 +194,7 @@
             border-radius: 10px; text-align: center; font-size: 0.95rem;
         }
 
-        /* Status Jadwal */
-        .status-jadwal {
-            margin-top: 15px; padding: 15px; border-radius: 10px;
-            font-weight: bold; text-align: center; font-size: 1rem; display: none;
-        }
-        .status-jadwal.aktif { background: #d4edda; color: #155724; border: 2px solid #2ecc71; }
-        .status-jadwal.belum { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
-        .status-jadwal.lewat { background: #f8d7da; color: #721c24; border: 2px solid #e74c3c; }
-
-        /* Area Mulai & Token (Disembunyikan dulu) */
+        /* Area Mulai & Token */
         .area-mulai {
             display: none; 
             margin-top: 20px;
@@ -214,13 +205,6 @@
             text-align: center;
         }
         
-        .terpilih-info {
-            font-size: 1.2rem;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-
         .form-token {
             background: #fff3cd;
             border: 2px solid #ffc107;
@@ -233,28 +217,23 @@
             color: #856404;
             display: block;
             margin-bottom: 10px;
+            font-size: 1.1rem;
         }
         .input-token {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             border: 2px solid #ffc107;
             border-radius: 8px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             font-weight: bold;
-            letter-spacing: 3px;
+            letter-spacing: 5px;
             text-transform: uppercase;
             outline: none;
         }
         .input-token:focus {
             border-color: #e65100;
             box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
-        }
-
-        .info-durasi {
-            background: #e3f2fd; color: #0c5460; padding: 15px; border-radius: 12px;
-            margin-bottom: 15px; font-size: 1rem; font-weight: 600; text-align: center;
-            border-left: 5px solid #4facfe;
         }
 
         .tombol-mulai {
@@ -399,16 +378,10 @@
         <!-- LAYAR 2: Tombol Buka Mapel (Awalnya Sembunyi) -->
         <div class="layar-form sembunyi" id="layar-pilih-kelas" style="margin-top: 20px;">
             <button class="tombol-buka-modal" id="btn-buka-modal" onclick="bukaModalMapel()">📚 PILIH MAPEL UJIAN</button>
-            <div class="status-jadwal" id="status-jadwal"></div>
         </div>
 
-        <!-- AREA MULAI & TOKEN -->
+        <!-- AREA MULAI & TOKEN (Hanya ini yang muncul setelah pilih mapel) -->
         <div class="area-mulai" id="area-mulai">
-            <div class="terpilih-info" id="terpilih-info">Mapel: -</div>
-            <div class="info-durasi" id="info-durasi">
-                ⏱️ Total waktu: <strong id="durasi-tampil">20 menit</strong>
-            </div>
-            
             <div class="form-token">
                 <label>🔐 Masukkan Token Ujian</label>
                 <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
@@ -519,10 +492,8 @@ function acak(array) {
 
 /* ---------- INFO DURASI ---------- */
 function tampilkanInfoDurasi() {
-    const menit = KONFIG.durasiMenit;
-    document.getElementById("durasi-tampil").textContent = `${menit} menit`;
-    const mm = String(Math.floor(menit)).padStart(2, "0");
-    const ss = String(Math.round((menit % 1) * 60)).padStart(2, "0");
+    const mm = String(Math.floor(KONFIG.durasiMenit)).padStart(2, "0");
+    const ss = String(Math.round((KONFIG.durasiMenit % 1) * 60)).padStart(2, "0");
     document.getElementById("timer-total").textContent = `⏱️ Sisa Waktu: ${mm}:${ss}`;
 }
 
@@ -581,11 +552,7 @@ async function ambilJadwal() {
 
 function bukaModalMapel() {
     const container = document.getElementById("container-mapel");
-    const statusDiv = document.getElementById("status-jadwal");
-    
     container.innerHTML = "";
-    statusDiv.style.display = "none";
-    statusDiv.innerHTML = "";
 
     const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const hariIni = namaHari[new Date().getDay()];
@@ -637,16 +604,16 @@ function pilihMapel(jadwal) {
     mapelDipilih = jadwal;
     tutupModalMapel();
     
-    document.getElementById("terpilih-info").textContent = `Mapel: ${jadwal.mapel}`;
+    // Sembunyikan tombol pilih mapel
     document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
     
+    // Cek validasi waktu (jika belum mulai, jangan tampilkan token)
     cekStatusWaktu(jadwal);
 }
 
 function cekStatusWaktu(jadwal) {
-    const statusDiv = document.getElementById("status-jadwal");
     const areaMulai = document.getElementById("area-mulai");
-
+    
     if (jadwalInterval) clearInterval(jadwalInterval);
 
     const waktuParts = jadwal.waktu.split("-");
@@ -657,40 +624,18 @@ function cekStatusWaktu(jadwal) {
     const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
     const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
     
-    statusDiv.style.display = "none";
     areaMulai.style.display = "none"; 
 
     jadwalInterval = setInterval(() => {
         const sekarang = new Date().getTime();
         
-        if (sekarang < dateMulai) {
-            const selisih = dateMulai - sekarang;
-            const h = Math.floor(selisih / (1000 * 60 * 60));
-            const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((selisih % (1000 * 60)) / 1000);
-            
-            let teksCountdown = "";
-            if (h > 0) teksCountdown += `${h} jam `;
-            teksCountdown += `${m} mnt ${s} dtk`;
-
-            document.getElementById("terpilih-info").innerHTML = `⏳ Ujian ${jadwal.mapel} belum dimulai.<br>Countdown: <span style="color:#e65100;">${teksCountdown}</span>`;
-            areaMulai.style.display = "block"; 
-            document.getElementById("input-token").disabled = true;
-            document.getElementById("tombol-mulai").disabled = true;
-
-        } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            document.getElementById("terpilih-info").innerHTML = `✅ Ujian ${jadwal.mapel} SEDANG BERLANGSUNG.`;
+        if (sekarang >= dateMulai && sekarang <= dateSelesai) {
+            // Waktu sudah masuk, sembunyikan timer, munculkan form token & tombol
+            clearInterval(jadwalInterval);
             areaMulai.style.display = "block";
             
             document.getElementById("input-token").disabled = false;
             document.getElementById("input-token").focus();
-
-        } else {
-            document.getElementById("terpilih-info").innerHTML = `❌ Waktu ujian ${jadwal.mapel} telah berakhir (${jamSelesai}).`;
-            areaMulai.style.display = "block";
-            document.getElementById("input-token").disabled = true;
-            document.getElementById("tombol-mulai").disabled = true;
-            clearInterval(jadwalInterval);
         }
     }, 1000);
 }
