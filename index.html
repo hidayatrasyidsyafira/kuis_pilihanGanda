@@ -355,11 +355,10 @@
         <h1 id="judul-utama">📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
 
         <!-- LAYAR 1: Form Login NISN -->
-        <div class="form-identitas layar-form" id="layar-login-nisn">
-            <h3>🔐 Login Siswa</h3>
+        <div id="layar-login-nisn">
             <div id="form-input-nisn">
                 <div class="form-group">
-                    <label for="input-nisn">Masukkan NISN</label>
+                    <label for="input-nisn" style="text-align:center; display:block; margin-bottom:10px; font-size:1.1rem;">🔐 Masukkan NISN Anda</label>
                     <input type="text" id="input-nisn" placeholder="Contoh: 12345678" autocomplete="off">
                 </div>
                 <button class="tombol-lanjut-nisn" onclick="cariSiswa()">🔍 Cari Data Siswa</button>
@@ -604,7 +603,8 @@ function pilihMapel(jadwal) {
     mapelDipilih = jadwal;
     tutupModalMapel();
     
-    // Sembunyikan tombol pilih mapel
+    // Sembunyikan seluruh layar login dan tombol mapel
+    document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
     
     // Cek validasi waktu (jika belum mulai, jangan tampilkan token)
