@@ -301,11 +301,13 @@
         }
 
         .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 1.1rem; display: none; }
+        
+        /* PERBAIKAN: Kotak soal default disembunyikan */
         .soal-box {
             background: #f8f9fa; padding: 30px 25px; border-radius: 18px; margin-bottom: 20px;
-            border-left: 6px solid #4facfe; min-height: 120px; display: flex; align-items: center;
-            justify-content: flex-start; font-size: 1.3rem; line-height: 1.6; color: #2c3e50;
-            display: none; text-align: left;
+            border-left: 6px solid #4facfe; min-height: 120px; display: none; 
+            align-items: center; justify-content: flex-start; font-size: 1.3rem; 
+            line-height: 1.6; color: #2c3e50; text-align: left;
         }
 
         .pilihan-group { display: none; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; gap: 12px; margin-bottom: 20px; }
@@ -353,23 +355,11 @@
         }
         .lanjut-btn:hover { background: #2980b9; }
         
-        /* Tombol Khusus Kembali */
         .btn-kembali {
-            background: #e74c3c;
-            color: white;
-            padding: 16px 35px;
-            border: none;
-            border-radius: 14px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 25px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: background 0.2s;
+            background: #e74c3c; color: white; padding: 16px 35px; border: none;
+            border-radius: 14px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            margin-top: 25px; width: 100%; display: flex; align-items: center; 
+            justify-content: center; gap: 10px; transition: background 0.2s;
         }
         .btn-kembali:hover { background: #c0392b; }
 
@@ -477,7 +467,8 @@
         <div class="progress" id="progress">Soal 1 dari 0</div>
 
         <div id="layar-soal">
-            <div class="soal-box" id="teks-soal"></div>
+            <!-- Kotak Soal (Default: display: none; akan jadi flex saat mulai) -->
+            <div class="soal-box" id="teks-soal" style="display: none;"></div>
             <div class="pilihan-group" id="pilihan-group"></div>
         </div>
 
@@ -499,7 +490,7 @@
             <h2 style="font-size: 1.8rem; margin-bottom: 20px;">📖 Pembahasan Lengkap</h2>
             <div class="daftar-soal" id="daftar-pembahasan"></div>
             
-            <!-- TOMBOL KEMBALI KE LOGIN YANG JELAS -->
+            <!-- TOMBOL KEMBALI KE LOGIN -->
             <button class="btn-kembali" onclick="mulaiUlang()">
                 <span>🏠</span> Tutup & Kembali ke Login
             </button>
@@ -928,7 +919,7 @@ async function mulaiKuis() {
     document.getElementById("teks-timer").parentElement.style.display = "flex";
     document.getElementById("teks-timer").style.display = "block";
     document.getElementById("progress").style.display = "block";
-    document.getElementById("teks-soal").style.display = "flex";
+    document.getElementById("teks-soal").style.display = "flex"; // Tampilkan kotak soal
 
     kuisAktif = true;
     jumlahPindahTab = 0;
@@ -1125,6 +1116,9 @@ function mulaiUlang() {
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
     
+    // Sembunyikan kotak soal kembali
+    document.getElementById("teks-soal").style.display = "none";
+
     // Reset Tampilan Awal
     document.getElementById("judul-utama").style.display = "block"; 
     document.getElementById("layar-login-nisn").style.display = "block";
