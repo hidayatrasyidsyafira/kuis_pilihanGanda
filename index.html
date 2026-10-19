@@ -219,7 +219,7 @@
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 15px;
-            display: none; /* Sembunyi awalnya */
+            display: none;
         }
         .form-token label {
             font-weight: bold;
@@ -255,14 +255,12 @@
         .tombol-mulai:disabled { background: #95a5a6; cursor: not-allowed; transform: none; opacity: 0.7; }
 
         /* --- BAGIAN KUIS & SOAL --- */
-        
-        /* Header Grid (2 Kolom) */
         .header-kuis-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
             margin-bottom: 20px;
-            display: none; /* Sembunyi sebelum mulai */
+            display: none;
         }
 
         .kartu-identitas {
@@ -354,6 +352,27 @@
             border-radius: 14px; font-size: 1.2rem; cursor: pointer; display: none; margin: 10px auto;
         }
         .lanjut-btn:hover { background: #2980b9; }
+        
+        /* Tombol Khusus Kembali */
+        .btn-kembali {
+            background: #e74c3c;
+            color: white;
+            padding: 16px 35px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        .btn-kembali:hover { background: #c0392b; }
+
         .akhir, .pembahasan { display: none; }
         .daftar-soal { text-align: left; margin-top: 20px; max-height: 400px; overflow-y: auto; }
         .item-soal { padding: 18px; border-bottom: 1px solid #eee; line-height: 1.6; }
@@ -472,14 +491,18 @@
             </div>
             <p style="margin: 15px 0; font-size: 1rem; color: #555;">Jawabanmu sudah tersimpan. Terima kasih! 🙌</p>
             <div class="status-kirim" id="status-kirim"></div>
-            <button class="lanjut-btn" style="display:inline-block;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
+            <button class="lanjut-btn" style="display:inline-block; margin-right:10px;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
             <button class="lanjut-btn" style="background:#2ecc71; display:inline-block;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
         </div>
 
         <div class="pembahasan" id="layar-pembahasan">
             <h2 style="font-size: 1.8rem; margin-bottom: 20px;">📖 Pembahasan Lengkap</h2>
             <div class="daftar-soal" id="daftar-pembahasan"></div>
-            <button class="lanjut-btn" style="margin-top:25px; background:#e74c3c;" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
+            
+            <!-- TOMBOL KEMBALI KE LOGIN YANG JELAS -->
+            <button class="btn-kembali" onclick="mulaiUlang()">
+                <span>🏠</span> Tutup & Kembali ke Login
+            </button>
         </div>
     </div>
 
@@ -902,7 +925,7 @@ async function mulaiKuis() {
     document.getElementById("info-kelas").textContent = kelasSiswa;
     document.getElementById("info-mapel").textContent = mapelSiswa;
 
-    document.getElementById("teks-timer").parentElement.style.display = "flex"; // Pastikan container timer fleksibel
+    document.getElementById("teks-timer").parentElement.style.display = "flex";
     document.getElementById("teks-timer").style.display = "block";
     document.getElementById("progress").style.display = "block";
     document.getElementById("teks-soal").style.display = "flex";
@@ -1039,7 +1062,7 @@ function tampilHasil() {
 
     document.getElementById("layar-soal").style.display = "none";
     document.getElementById("layar-akhir").style.display = "block";
-    document.getElementById("header-kuis").style.display = "none"; // Sembunyikan header kuis
+    document.getElementById("header-kuis").style.display = "none"; 
     document.getElementById("progress").style.display = "none";
 
     document.getElementById("skor-angka").textContent = skorAkhir;
@@ -1098,7 +1121,7 @@ function mulaiUlang() {
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
     document.getElementById("layar-soal").style.display = "block";
-    document.getElementById("header-kuis").style.display = "none"; // Sembunyikan header
+    document.getElementById("header-kuis").style.display = "none"; 
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
     
