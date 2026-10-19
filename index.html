@@ -254,20 +254,53 @@
         .tombol-mulai:hover:not(:disabled) { transform: scale(1.02); }
         .tombol-mulai:disabled { background: #95a5a6; cursor: not-allowed; transform: none; opacity: 0.7; }
 
-        /* --- KUIS & SOAL --- */
-        .info-siswa {
-            background: #d4edda; color: #155724; padding: 10px 15px; border-radius: 10px;
-            margin-bottom: 15px; display: none; font-size: 0.95rem;
-        }
+        /* --- BAGIAN KUIS & SOAL --- */
         
-        .timer-total {
-            background: linear-gradient(135deg, #fff3cd, #ffe69c); padding: 15px;
-            border-radius: 12px; margin-bottom: 15px; font-weight: bold; color: #856404;
-            font-size: 1.5rem; display: none; border: 2px solid #ffc107; letter-spacing: 1px;
+        /* Header Grid (2 Kolom) */
+        .header-kuis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            display: none; /* Sembunyi sebelum mulai */
         }
-        .timer-total.warning { background: linear-gradient(135deg, #ffe0b2, #ffcc80); color: #e65100; border-color: #ff9800; animation: pulse 1s infinite; }
-        .timer-total.danger { background: linear-gradient(135deg, #ffcdd2, #ef9a9a); color: #b71c1c; border-color: #f44336; animation: pulse 0.6s infinite; }
+
+        .kartu-identitas {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            font-size: 0.95rem;
+            color: #2e7d32;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+        }
+        .kartu-identitas div { display: flex; justify-content: space-between; }
+        .kartu-identitas span { font-weight: bold; color: #1b5e20; }
+
+        .kartu-timer {
+            background: linear-gradient(135deg, #fff3cd, #ffe69c);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #856404;
+            font-size: 1.3rem;
+        }
+        .kartu-timer.warning { background: linear-gradient(135deg, #ffe0b2, #ffcc80); color: #e65100; border-color: #ff9800; animation: pulse 1s infinite; }
+        .kartu-timer.danger { background: linear-gradient(135deg, #ffcdd2, #ef9a9a); color: #b71c1c; border-color: #f44336; animation: pulse 0.6s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+        @media (max-width: 600px) {
+            .header-kuis-grid { grid-template-columns: 1fr; }
+        }
 
         .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 1.1rem; display: none; }
         .soal-box {
@@ -360,7 +393,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 id="judul-utama">📝 Aplikasi Ujian<br>Berbasis ONLINE</h1>
+        <h1 id="judul-utama">📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
 
         <!-- LAYAR 1: Form Login NISN -->
         <div id="layar-login-nisn">
@@ -393,14 +426,14 @@
 
         <!-- AREA MULAI, COUNTDOWN & TOKEN -->
         <div class="area-mulai" id="area-mulai">
-            <!-- Kotak Countdown (Muncul jika belum waktunya) -->
+            <!-- Kotak Countdown -->
             <div class="countdown-box" id="countdown-box" style="display:none;">
                 <h4>⏳ Ujian belum dimulai. Harap tunggu.</h4>
                 <div class="angka" id="teks-countdown">00:00:00</div>
                 <p style="margin-top:10px; font-size:0.9rem;">Halaman ini akan otomatis menampilkan form Token saat waktu tiba.</p>
             </div>
 
-            <!-- Form Token & Tombol (Muncul jika waktu sudah masuk) -->
+            <!-- Form Token & Tombol -->
             <div class="form-token" id="form-token">
                 <label>🔐 Masukkan Token Ujian</label>
                 <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
@@ -408,9 +441,20 @@
             <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI UJIAN</button>
         </div>
 
-        <!-- KUIS & SOAL -->
-        <div class="info-siswa" id="info-siswa"></div>
-        <div class="timer-total" id="timer-total">⏱️ Sisa Waktu: 20:00</div>
+        <!-- HEADER KUIS (KIRI: IDENTITAS, KANAN: TIMER) -->
+        <div class="header-kuis-grid" id="header-kuis">
+            <div class="kartu-identitas">
+                <div><span>NISN</span> <span id="info-nisn">-</span></div>
+                <div><span>Nama</span> <span id="info-nama">-</span></div>
+                <div><span>Kelas</span> <span id="info-kelas">-</span></div>
+                <div><span>Ujian</span> <span id="info-mapel">-</span></div>
+            </div>
+            <div class="kartu-timer" id="timer-total">
+                <span style="font-size:0.9rem; font-weight:normal;">⏱️ Sisa Waktu</span>
+                <div id="teks-timer" style="font-size:1.8rem; letter-spacing:1px;">20:00</div>
+            </div>
+        </div>
+
         <div class="progress" id="progress">Soal 1 dari 0</div>
 
         <div id="layar-soal">
@@ -489,7 +533,7 @@ let daftarSoal = [];
 let nomor = 0, sudahDijawab = false;
 let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
 let riwayatJawaban = [];
-let namaSiswa = "", kelasSiswa = "", mapelSiswa = "";
+let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
 let jumlahPindahTab = 0;
 let toastTimer = null;
@@ -512,7 +556,7 @@ function acak(array) {
 function tampilkanInfoDurasi() {
     const mm = String(Math.floor(KONFIG.durasiMenit)).padStart(2, "0");
     const ss = String(Math.round((KONFIG.durasiMenit % 1) * 60)).padStart(2, "0");
-    document.getElementById("timer-total").textContent = `⏱️ Sisa Waktu: ${mm}:${ss}`;
+    document.getElementById("teks-timer").textContent = `${mm}:${ss}`;
 }
 
 /* =========================================================
@@ -531,17 +575,18 @@ async function ambilDataSiswa() {
 }
 
 function cariSiswa() {
-    const nisn = document.getElementById("input-nisn").value.trim();
+    const nisnInput = document.getElementById("input-nisn").value.trim();
     const hasilDiv = document.getElementById("hasil-cari-siswa");
 
-    if (!nisn) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
+    if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
 
-    const siswa = dataSiswaGlobal.find(s => s.nisn === nisn);
+    const siswa = dataSiswaGlobal.find(s => s.nisn === nisnInput);
 
     if (siswa) {
         document.getElementById("hasil-nama").textContent = siswa.nama;
         document.getElementById("hasil-kelas").textContent = siswa.kelas;
         
+        nisnSiswa = siswa.nisn;
         namaSiswa = siswa.nama;
         kelasSiswa = siswa.kelas;
 
@@ -651,15 +696,13 @@ function cekStatusWaktu(jadwal) {
     const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
     const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
     
-    // Tampilkan area mulai secara default
     areaMulai.style.display = "block"; 
 
-    // Fungsi untuk memperbarui tampilan
     const updateTampilan = () => {
         const sekarang = new Date().getTime();
         
         if (sekarang < dateMulai) {
-            // BELUM DIMULAI: Tampilkan Countdown, Sembunyikan Token
+            // BELUM DIMULAI
             countdownBox.style.display = "block";
             formToken.style.display = "none";
             tombolMulai.style.display = "none";
@@ -673,7 +716,7 @@ function cekStatusWaktu(jadwal) {
                 `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
         } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            // SEDANG BERLANGSUNG: Sembunyikan Countdown, Tampilkan Token
+            // SEDANG BERLANGSUNG
             clearInterval(jadwalInterval);
             countdownBox.style.display = "none";
             formToken.style.display = "block";
@@ -689,14 +732,12 @@ function cekStatusWaktu(jadwal) {
             formToken.style.display = "none";
             tombolMulai.style.display = "none";
             alert("Waktu ujian telah berakhir.");
-            mulaiUlang(); // Kembalikan ke login
+            mulaiUlang();
         }
     };
 
-    // Panggil langsung sekali (untuk antisipasi jika baru buka langsung masuk waktunya)
     updateTampilan();
 
-    // Jalankan interval setiap detik
     if (new Date().getTime() < dateMulai) {
         jadwalInterval = setInterval(updateTampilan, 1000);
     }
@@ -854,11 +895,15 @@ async function mulaiKuis() {
     document.getElementById("layar-pilih-jenis").style.display = "none";
     document.getElementById("area-mulai").style.display = "none"; 
 
-    const info = document.getElementById("info-siswa");
-    info.innerHTML = `👤 ${namaSiswa} — 🏫 ${kelasSiswa} <br> 📚 Mapel: <strong>${mapelSiswa}</strong> — ⏱️ ${KONFIG.durasiMenit} menit`;
-    info.style.display = "block";
+    // TAMPILKAN HEADER KUIS (IDENTITAS & TIMER)
+    document.getElementById("header-kuis").style.display = "grid";
+    document.getElementById("info-nisn").textContent = nisnSiswa;
+    document.getElementById("info-nama").textContent = namaSiswa;
+    document.getElementById("info-kelas").textContent = kelasSiswa;
+    document.getElementById("info-mapel").textContent = mapelSiswa;
 
-    document.getElementById("timer-total").style.display = "block";
+    document.getElementById("teks-timer").parentElement.style.display = "flex"; // Pastikan container timer fleksibel
+    document.getElementById("teks-timer").style.display = "block";
     document.getElementById("progress").style.display = "block";
     document.getElementById("teks-soal").style.display = "flex";
 
@@ -885,13 +930,16 @@ function mulaiTimerTotal() {
     }, 1000);
 }
 function updateTimerTotal() {
-    const el = document.getElementById("timer-total");
+    const el = document.getElementById("teks-timer");
+    const parent = el.parentElement;
     const menit = Math.floor(sisaWaktuTotal / 60);
     const detik = sisaWaktuTotal % 60;
-    el.textContent = `⏱️ Sisa Waktu: ${String(menit).padStart(2, "0")}:${String(detik).padStart(2, "0")}`;
-    el.classList.remove("warning", "danger");
-    if (sisaWaktuTotal <= 60) el.classList.add("danger");
-    else if (sisaWaktuTotal <= 300) el.classList.add("warning");
+    
+    el.textContent = `${String(menit).padStart(2, "0")}:${String(detik).padStart(2, "0")}`;
+    
+    parent.classList.remove("warning", "danger");
+    if (sisaWaktuTotal <= 60) parent.classList.add("danger");
+    else if (sisaWaktuTotal <= 300) parent.classList.add("warning");
 }
 
 /* ---------- TAMPIL SOAL ---------- */
@@ -991,8 +1039,8 @@ function tampilHasil() {
 
     document.getElementById("layar-soal").style.display = "none";
     document.getElementById("layar-akhir").style.display = "block";
-    document.getElementById("timer-total").style.display = "none";
-    document.getElementById("info-siswa").style.display = "none";
+    document.getElementById("header-kuis").style.display = "none"; // Sembunyikan header kuis
+    document.getElementById("progress").style.display = "none";
 
     document.getElementById("skor-angka").textContent = skorAkhir;
     document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
@@ -1044,14 +1092,13 @@ function tampilkanPembahasan() {
 function mulaiUlang() {
     clearInterval(timerInterval);
     if (jadwalInterval) clearInterval(jadwalInterval);
-    nomor = 0; riwayatJawaban = []; namaSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
+    nomor = 0; riwayatJawaban = []; namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
     kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK; jumlahPindahTab = 0; mapelDipilih = null;
 
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
     document.getElementById("layar-soal").style.display = "block";
-    document.getElementById("info-siswa").style.display = "none";
-    document.getElementById("timer-total").style.display = "none";
+    document.getElementById("header-kuis").style.display = "none"; // Sembunyikan header
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
     
