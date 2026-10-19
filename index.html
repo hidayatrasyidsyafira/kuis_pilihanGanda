@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Kuis Pilihan Ganda</title>
+    <title>Aplikasi Ujian Berbasis ONLINE</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -302,7 +302,6 @@
 
         .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 1.1rem; display: none; }
         
-        /* PERBAIKAN: Kotak soal default disembunyikan */
         .soal-box {
             background: #f8f9fa; padding: 30px 25px; border-radius: 18px; margin-bottom: 20px;
             border-left: 6px solid #4facfe; min-height: 120px; display: none; 
@@ -402,7 +401,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 id="judul-utama">📝 Kuis Pilihan Ganda<br>Materi Informatika</h1>
+        <h1 id="judul-utama">📝 Aplikasi Ujian Berbasis ONLINE</h1>
 
         <!-- LAYAR 1: Form Login NISN -->
         <div id="layar-login-nisn">
@@ -467,7 +466,6 @@
         <div class="progress" id="progress">Soal 1 dari 0</div>
 
         <div id="layar-soal">
-            <!-- Kotak Soal (Default: display: none; akan jadi flex saat mulai) -->
             <div class="soal-box" id="teks-soal" style="display: none;"></div>
             <div class="pilihan-group" id="pilihan-group"></div>
         </div>
@@ -482,8 +480,8 @@
             </div>
             <p style="margin: 15px 0; font-size: 1rem; color: #555;">Jawabanmu sudah tersimpan. Terima kasih! 🙌</p>
             <div class="status-kirim" id="status-kirim"></div>
-            <button class="lanjut-btn" style="display:inline-block; margin-right:10px;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
-            <button class="lanjut-btn" style="background:#2ecc71; display:inline-block;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
+            
+            <button class="lanjut-btn" style="display:inline-block; width: 100%;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
         </div>
 
         <div class="pembahasan" id="layar-pembahasan">
@@ -686,12 +684,49 @@ function pilihMapel(jadwal) {
     mapelDipilih = jadwal;
     tutupModalMapel();
     
-    // Sembunyikan seluruh layar login dan tombol jenis
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     
-    // Cek validasi waktu
-    cekStatusWaktu(jadwal);
+    // Tampilkan loading sementara
+    document.getElementById("area-mulai").style.display = "block";
+    document.getElementById("countdown-box").style.display = "none";
+    document.getElementById("form-token").style.display = "none";
+    document.getElementById("tombol-mulai").style.display = "none";
+    
+    // CEK APAKAH SUDAH UJIAN
+    cekRiwayatSiswa();
+}
+
+async function cekRiwayatSiswa() {
+    const params = new URLSearchParams({
+        aksi: "cek_riwayat",
+        nisn: nisnSiswa,
+        mapel: mapelDipilih.mapel
+    });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
+        const json = await res.json();
+        
+        if (json.status === "success" && json.sudahUjian) {
+            // BLOKIR JIKA SUDAH UJIAN
+            document.getElementById("area-mulai").innerHTML = `
+                <div style="background:#f8d7da; color:#721c24; padding:30px; border-radius:12px; border:2px solid #e74c3c;">
+                    <h2 style="margin-bottom:15px;">⛔ Akses Ditolak</h2>
+                    <p style="font-size:1.1rem;">Anda sudah mengerjakan ujian <strong>${mapelDipilih.mapel}</strong>.</p>
+                    <p style="margin-top:10px; font-size:0.95rem;">Siswa hanya diperbolehkan mengerjakan 1 kali untuk setiap mata pelajaran.</p>
+                    <button class="tombol-lanjut-nisn" style="background:#e74c3c; margin-top:20px;" onclick="mulaiUlang()">Kembali ke Login</button>
+                </div>
+            `;
+        } else {
+            // LANJUTKAN JIKA BELUM
+            cekStatusWaktu(mapelDipilih);
+        }
+    } catch (err) {
+        console.error("Gagal cek riwayat:", err);
+        // Jika server error, paksa lanjut agar siswa tidak dirugikan
+        cekStatusWaktu(mapelDipilih);
+    }
 }
 
 function cekStatusWaktu(jadwal) {
@@ -919,7 +954,7 @@ async function mulaiKuis() {
     document.getElementById("teks-timer").parentElement.style.display = "flex";
     document.getElementById("teks-timer").style.display = "block";
     document.getElementById("progress").style.display = "block";
-    document.getElementById("teks-soal").style.display = "flex"; // Tampilkan kotak soal
+    document.getElementById("teks-soal").style.display = "flex"; 
 
     kuisAktif = true;
     jumlahPindahTab = 0;
@@ -1032,6 +1067,7 @@ function kirimHasilAkhir() {
 
     const params = new URLSearchParams({
         nama: namaSiswa, 
+        nisn: nisnSiswa,  // <-- Dikirim untuk dicatat ke Riwayat
         kelas: kelasSiswa, 
         jumlah_benar: jumlahBenar,
         total_soal: totalSoal, 
