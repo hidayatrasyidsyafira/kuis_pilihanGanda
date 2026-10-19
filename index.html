@@ -187,7 +187,7 @@
             border-radius: 10px; text-align: center; font-size: 0.95rem;
         }
 
-        /* Area Mulai & Token */
+        /* Area Mulai, Countdown & Token */
         .area-mulai {
             display: none; 
             margin-top: 20px;
@@ -197,6 +197,21 @@
             border: 2px dashed #4facfe;
             text-align: center;
         }
+
+        .countdown-box {
+            background: linear-gradient(135deg, #fff3cd, #ffe69c);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            color: #856404;
+        }
+        .countdown-box h4 { margin-bottom: 10px; font-size: 1.1rem; }
+        .countdown-box .angka {
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
         
         .form-token {
             background: #fff3cd;
@@ -204,6 +219,7 @@
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 15px;
+            display: none; /* Sembunyi awalnya */
         }
         .form-token label {
             font-weight: bold;
@@ -375,13 +391,20 @@
             </div>
         </div>
 
-        <!-- AREA MULAI & TOKEN -->
+        <!-- AREA MULAI, COUNTDOWN & TOKEN -->
         <div class="area-mulai" id="area-mulai">
-            <div class="form-token">
+            <!-- Kotak Countdown (Muncul jika belum waktunya) -->
+            <div class="countdown-box" id="countdown-box" style="display:none;">
+                <h4>⏳ Ujian belum dimulai. Harap tunggu.</h4>
+                <div class="angka" id="teks-countdown">00:00:00</div>
+                <p style="margin-top:10px; font-size:0.9rem;">Halaman ini akan otomatis menampilkan form Token saat waktu tiba.</p>
+            </div>
+
+            <!-- Form Token & Tombol (Muncul jika waktu sudah masuk) -->
+            <div class="form-token" id="form-token">
                 <label>🔐 Masukkan Token Ujian</label>
                 <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
             </div>
-
             <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI UJIAN</button>
         </div>
 
@@ -608,12 +631,15 @@ function pilihMapel(jadwal) {
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     
-    // Cek validasi waktu (jika belum mulai, jangan tampilkan token)
+    // Cek validasi waktu
     cekStatusWaktu(jadwal);
 }
 
 function cekStatusWaktu(jadwal) {
     const areaMulai = document.getElementById("area-mulai");
+    const countdownBox = document.getElementById("countdown-box");
+    const formToken = document.getElementById("form-token");
+    const tombolMulai = document.getElementById("tombol-mulai");
     
     if (jadwalInterval) clearInterval(jadwalInterval);
 
@@ -625,20 +651,55 @@ function cekStatusWaktu(jadwal) {
     const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
     const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
     
-    areaMulai.style.display = "none"; 
+    // Tampilkan area mulai secara default
+    areaMulai.style.display = "block"; 
 
-    jadwalInterval = setInterval(() => {
+    // Fungsi untuk memperbarui tampilan
+    const updateTampilan = () => {
         const sekarang = new Date().getTime();
         
-        if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            // Waktu sudah masuk, sembunyikan timer, munculkan form token & tombol
+        if (sekarang < dateMulai) {
+            // BELUM DIMULAI: Tampilkan Countdown, Sembunyikan Token
+            countdownBox.style.display = "block";
+            formToken.style.display = "none";
+            tombolMulai.style.display = "none";
+
+            const selisih = dateMulai - sekarang;
+            const h = Math.floor(selisih / (1000 * 60 * 60));
+            const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((selisih % (1000 * 60)) / 1000);
+            
+            document.getElementById("teks-countdown").textContent = 
+                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+
+        } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
+            // SEDANG BERLANGSUNG: Sembunyikan Countdown, Tampilkan Token
             clearInterval(jadwalInterval);
-            areaMulai.style.display = "block";
+            countdownBox.style.display = "none";
+            formToken.style.display = "block";
+            tombolMulai.style.display = "block";
             
             document.getElementById("input-token").disabled = false;
             document.getElementById("input-token").focus();
+
+        } else {
+            // SUDAH SELESAI
+            clearInterval(jadwalInterval);
+            countdownBox.style.display = "none";
+            formToken.style.display = "none";
+            tombolMulai.style.display = "none";
+            alert("Waktu ujian telah berakhir.");
+            mulaiUlang(); // Kembalikan ke login
         }
-    }, 1000);
+    };
+
+    // Panggil langsung sekali (untuk antisipasi jika baru buka langsung masuk waktunya)
+    updateTampilan();
+
+    // Jalankan interval setiap detik
+    if (new Date().getTime() < dateMulai) {
+        jadwalInterval = setInterval(updateTampilan, 1000);
+    }
 }
 
 function cekToken() {
@@ -705,7 +766,6 @@ function parseCSV(teks) {
 
 /* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel) ---------- */
 async function ambilSoal(namaMapel) {
-    // Ubah nama mapel jadi huruf kecil dan ganti spasi dengan underscore
     let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
     let fileCSV = `soal_${namaFile}.csv`;
 
@@ -731,7 +791,6 @@ async function ambilSoal(namaMapel) {
         }
     } catch (err) {
         console.warn(`⚠️ ${err.message}. Menggunakan soal default.`);
-        // Fallback jika file tidak ditemukan
         daftarSoal = [{
             soal: `Soal untuk ${namaMapel} belum tersedia.`,
             pilihanAsli: { A: "Benar", B: "Salah", C: "-", D: "-", E: "-" },
@@ -776,7 +835,6 @@ async function mulaiKuis() {
 
     mapelSiswa = mapelDipilih.mapel;
 
-    // Panggil ambilSoal dan berikan nama mapelnya
     await ambilSoal(mapelSiswa);
     
     if (daftarSoal.length === 0) {
