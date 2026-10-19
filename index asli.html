@@ -26,21 +26,6 @@
         }
         h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
 
-        /* === FORM IDENTITAS & LAYAR === */
-        .form-identitas {
-            background: #f0f8ff;
-            padding: 25px;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            text-align: left;
-            border: 2px solid #4facfe;
-        }
-        .form-identitas h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 1.2rem;
-        }
         .form-group { margin-bottom: 15px; }
         .form-group label {
             display: block;
@@ -103,22 +88,30 @@
         }
         .tombol-lanjut-nisn:hover { background: #27ae60; }
 
-        /* === TOMBOL MAPEL & MODAL === */
-        .tombol-buka-modal {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-            transition: transform 0.2s;
-            display: none;
+        /* === TOMBOL JENIS UJIAN & MAPEL === */
+        .grid-jenis {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
         }
-        .tombol-buka-modal:hover { transform: scale(1.02); }
+        .tombol-jenis {
+            background: linear-gradient(135deg, #fff, #f0f8ff);
+            border: 2px solid #4facfe;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .tombol-jenis:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+            background: #e3f2fd;
+        }
 
         /* Modal Background */
         .modal-overlay {
@@ -167,7 +160,7 @@
 
         .grid-mapel {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 12px;
         }
         .tombol-mapel {
@@ -186,7 +179,7 @@
             border-color: #4facfe;
             background: #f0f8ff;
         }
-        .tombol-mapel .nama-mapel { font-weight: bold; font-size: 1.1rem; color: #2c3e50; }
+        .tombol-mapel .nama-mapel { font-weight: bold; font-size: 1.1rem; color: #2c3e50; line-height: 1.4; }
         .tombol-mapel .info-waktu { font-size: 0.85rem; color: #7f8c8d; }
         
         .pesan-kosong {
@@ -305,7 +298,6 @@
             .pilihan-group .pilihan:nth-child(1), .pilihan-group .pilihan:nth-child(2),
             .pilihan-group .pilihan:nth-child(3), .pilihan-group .pilihan:nth-child(4),
             .pilihan-group .pilihan:nth-child(5) { grid-column: 1; grid-row: auto; }
-            .grid-mapel { grid-template-columns: 1fr; }
         }
 
         .lanjut-btn {
@@ -374,12 +366,16 @@
             </div>
         </div>
 
-        <!-- LAYAR 2: Tombol Buka Mapel (Awalnya Sembunyi) -->
-        <div class="layar-form sembunyi" id="layar-pilih-kelas" style="margin-top: 20px;">
-            <button class="tombol-buka-modal" id="btn-buka-modal" onclick="bukaModalMapel()">📚 PILIH MAPEL UJIAN</button>
+        <!-- LAYAR 2: Pilih Jenis Ujian -->
+        <div class="layar-form sembunyi" id="layar-pilih-jenis" style="margin-top: 20px;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px;">Pilih Jenis Ujian</h3>
+            <div class="grid-jenis">
+                <button class="tombol-jenis" onclick="bukaModalMapel('UH')">📝 Ulangan Harian (UH)</button>
+                <button class="tombol-jenis" onclick="bukaModalMapel('UAS')">🎓 Ujian Akhir Semester (UAS)</button>
+            </div>
         </div>
 
-        <!-- AREA MULAI & TOKEN (Hanya ini yang muncul setelah pilih mapel) -->
+        <!-- AREA MULAI & TOKEN -->
         <div class="area-mulai" id="area-mulai">
             <div class="form-token">
                 <label>🔐 Masukkan Token Ujian</label>
@@ -416,14 +412,14 @@
         <div class="pembahasan" id="layar-pembahasan">
             <h2 style="font-size: 1.8rem; margin-bottom: 20px;">📖 Pembahasan Lengkap</h2>
             <div class="daftar-soal" id="daftar-pembahasan"></div>
-            <button class="lanjut-btn" style="margin-top:25px;" onclick="mulaiUlang()">🔄 Mulai Ulang</button>
+            <button class="lanjut-btn" style="margin-top:25px; background:#e74c3c;" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
         </div>
     </div>
 
     <!-- MODAL MAPEL -->
     <div class="modal-overlay" id="modal-mapel">
         <div class="modal-content">
-            <h3>Pilih Mata Pelajaran</h3>
+            <h3 id="judul-modal">Pilih Mata Pelajaran</h3>
             <div id="container-mapel">
                 <!-- Diisi oleh JS -->
             </div>
@@ -528,9 +524,9 @@ function cariSiswa() {
 
         hasilDiv.classList.add("aktif");
 
+        // Sembunyikan form input, munculkan pilihan jenis ujian
         document.getElementById("form-input-nisn").style.display = "none";
-        document.getElementById("layar-pilih-kelas").classList.remove("sembunyi");
-        document.getElementById("btn-buka-modal").style.display = "block";
+        document.getElementById("layar-pilih-jenis").classList.remove("sembunyi");
 
     } else {
         alert("❌ NISN tidak ditemukan. Periksa kembali atau hubungi guru.");
@@ -549,19 +545,24 @@ async function ambilJadwal() {
     } catch (err) { console.error("Gagal ambil jadwal:", err); }
 }
 
-function bukaModalMapel() {
+function bukaModalMapel(jenisUjian) {
     const container = document.getElementById("container-mapel");
+    const judulModal = document.getElementById("judul-modal");
+    
     container.innerHTML = "";
+    judulModal.textContent = `Pilih Mapel ${jenisUjian}`;
 
     const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const hariIni = namaHari[new Date().getDay()];
     const sekarang = new Date().getTime();
 
+    // Filter berdasarkan Kelas, Hari, Waktu, dan JENIS UJIAN
     const jadwalHariIni = jadwalData.filter(j => {
         const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelasSiswa.toUpperCase().trim());
         const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
+        const jenisCocok = String(j.jenis || "").toUpperCase().trim() === jenisUjian.toUpperCase();
         
-        if (!kelasCocok || !hariCocok) return false;
+        if (!kelasCocok || !hariCocok || !jenisCocok) return false;
 
         const waktuParts = j.waktu.split("-");
         if (waktuParts.length < 2) return false; 
@@ -574,7 +575,7 @@ function bukaModalMapel() {
     });
 
     if (jadwalHariIni.length === 0) {
-        container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian yang aktif untuk Anda hari ini.</div>`;
+        container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian ${jenisUjian} yang aktif untuk Anda hari ini.</div>`;
     } else {
         const grid = document.createElement("div");
         grid.className = "grid-mapel";
@@ -603,9 +604,9 @@ function pilihMapel(jadwal) {
     mapelDipilih = jadwal;
     tutupModalMapel();
     
-    // Sembunyikan seluruh layar login dan tombol mapel
+    // Sembunyikan seluruh layar login dan tombol jenis
     document.getElementById("layar-login-nisn").style.display = "none";
-    document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
+    document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     
     // Cek validasi waktu (jika belum mulai, jangan tampilkan token)
     cekStatusWaktu(jadwal);
@@ -702,11 +703,15 @@ function parseCSV(teks) {
     });
 }
 
-/* ---------- AMBIL SOAL ---------- */
-async function ambilSoal() {
+/* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel) ---------- */
+async function ambilSoal(namaMapel) {
+    // Ubah nama mapel jadi huruf kecil dan ganti spasi dengan underscore
+    let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
+    let fileCSV = `soal_${namaFile}.csv`;
+
     try {
-        const res = await fetch("soal.csv");
-        if (!res.ok) throw new Error("Tidak ada file soal.csv");
+        const res = await fetch(fileCSV);
+        if (!res.ok) throw new Error(`File ${fileCSV} tidak ditemukan`);
         const teks = await res.text();
         const baris = parseCSV(teks);
 
@@ -725,11 +730,12 @@ async function ambilSoal() {
             }
         }
     } catch (err) {
-        console.error("Gagal baca soal.csv:", err);
+        console.warn(`⚠️ ${err.message}. Menggunakan soal default.`);
+        // Fallback jika file tidak ditemukan
         daftarSoal = [{
-            soal: "CPU adalah singkatan dari...",
-            pilihanAsli: { A: "Central Processing Unit", B: "Computer Personal Unit", C: "Central Program Utility", D: "Control Processing Unit", E: "Central Personal Utility" },
-            kunciAsli: "A", skor: 1, penjelasan: "CPU = Central Processing Unit."
+            soal: `Soal untuk ${namaMapel} belum tersedia.`,
+            pilihanAsli: { A: "Benar", B: "Salah", C: "-", D: "-", E: "-" },
+            kunciAsli: "A", skor: 1, penjelasan: `Pastikan file ${fileCSV} sudah di-upload ke hosting.`
         }];
     }
 }
@@ -770,7 +776,14 @@ async function mulaiKuis() {
 
     mapelSiswa = mapelDipilih.mapel;
 
-    await ambilSoal();
+    // Panggil ambilSoal dan berikan nama mapelnya
+    await ambilSoal(mapelSiswa);
+    
+    if (daftarSoal.length === 0) {
+        alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
+        return;
+    }
+
     daftarSoal = acak(daftarSoal);
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
@@ -780,7 +793,7 @@ async function mulaiKuis() {
     // SEMBUNYIKAN SEMUA FORM AWAL
     document.getElementById("judul-utama").style.display = "none"; 
     document.getElementById("layar-login-nisn").style.display = "none";
-    document.getElementById("layar-pilih-kelas").style.display = "none";
+    document.getElementById("layar-pilih-jenis").style.display = "none";
     document.getElementById("area-mulai").style.display = "none"; 
 
     const info = document.getElementById("info-siswa");
@@ -989,8 +1002,7 @@ function mulaiUlang() {
     document.getElementById("layar-login-nisn").style.display = "block";
     document.getElementById("form-input-nisn").style.display = "block"; 
     document.getElementById("hasil-cari-siswa").classList.remove("aktif"); 
-    document.getElementById("layar-pilih-kelas").classList.add("sembunyi");
-    document.getElementById("btn-buka-modal").style.display = "none";
+    document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     document.getElementById("area-mulai").style.display = "none";
     
     // Reset Inputan
