@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplikasi Ujian Berbasis ONLINE</title>
-    <!-- Library AI Deteksi Objek (TensorFlow.js) -->
+    <!-- Library AI Deteksi Objek -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #e9ecef; /* Warna latar abu-abu terang khas CBT */
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -20,417 +20,261 @@
         }
         .container {
             background: white;
-            border-radius: 24px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-            padding: 40px 35px;
-            max-width: 780px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            max-width: 1000px; /* Lebih lebar untuk 2 kolom */
             width: 100%;
-            text-align: center;
             position: relative;
             overflow: hidden;
         }
-        h1 { color: #2c3e50; margin-bottom: 25px; font-size: 2rem; line-height: 1.3; }
+        
+        /* --- HALAMAN LOGIN & MENU (Tampilan Lama) --- */
+        .layar-menu { text-align: center; max-width: 700px; margin: 0 auto; }
+        h1 { color: #2c3e50; margin-bottom: 25px; font-size: 1.8rem; line-height: 1.3; }
 
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label {
-            display: block;
-            font-weight: 600;
-            color: #0c5460;
-            margin-bottom: 6px;
-            font-size: 0.95rem;
+            display: block; font-weight: 600; color: #0c5460;
+            margin-bottom: 6px; font-size: 0.95rem;
         }
         .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #b8d8e8;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border 0.2s;
-            outline: none;
-            background: white;
+            width: 100%; padding: 12px 15px; border: 2px solid #b8d8e8;
+            border-radius: 10px; font-size: 1rem; outline: none; background: white;
         }
-        .form-group input:focus {
-            border-color: #4facfe;
-            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.15);
-        }
+        .form-group input:focus { border-color: #4facfe; box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.15); }
 
-        /* === LAYAR FORM LOGIN === */
         .layar-form { display: block; }
         .layar-form.sembunyi { display: none; }
         
         .hasil-cari-siswa {
-            background: #e8f5e9;
-            border: 2px solid #4caf50;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: left;
-            display: none; 
-            margin-bottom: 20px;
+            background: #e8f5e9; border: 2px solid #4caf50; border-radius: 12px;
+            padding: 20px; text-align: left; display: none; margin-bottom: 20px;
         }
         .hasil-cari-siswa.aktif { display: block; }
         .hasil-cari-siswa h4 { color: #2e7d32; margin-bottom: 10px; font-size: 1.1rem; text-align: center; }
         
         .info-siswa-detail {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 1rem;
-            border: 1px solid #c8e6c9;
+            background: white; padding: 15px; border-radius: 8px;
+            margin-bottom: 15px; font-size: 1rem; border: 1px solid #c8e6c9;
         }
         .info-siswa-detail strong { display: inline-block; width: 80px; }
         
         .tombol-lanjut-nisn {
-            background: #2ecc71;
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-            transition: background 0.2s;
+            background: #2ecc71; color: white; border: none; padding: 15px;
+            border-radius: 10px; font-size: 1.1rem; font-weight: bold; width: 100%; cursor: pointer;
         }
         .tombol-lanjut-nisn:hover { background: #27ae60; }
 
-        /* === TOMBOL JENIS UJIAN === */
-        .grid-jenis {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
+        .grid-jenis { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
         .tombol-jenis {
-            background: linear-gradient(135deg, #fff, #f0f8ff);
-            border: 2px solid #4facfe;
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-            font-size: 1.2rem;
-            color: #2c3e50;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, #fff, #f0f8ff); border: 2px solid #4facfe;
+            border-radius: 12px; padding: 20px; cursor: pointer; font-weight: bold;
+            font-size: 1.2rem; color: #2c3e50; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        .tombol-jenis:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
-            background: #e3f2fd;
-        }
+        .tombol-jenis:hover { background: #e3f2fd; transform: translateY(-3px); }
 
-        /* Tombol Latihan & Batal */
         .tombol-latihan {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 12px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none;
+            padding: 20px; border-radius: 12px; font-size: 1.2rem; font-weight: bold;
+            width: 100%; margin-top: 15px; cursor: pointer;
         }
-        .tombol-latihan:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4); }
-
         .btn-cancel {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 20px;
-            cursor: pointer;
-            transition: background 0.2s;
+            background: #e74c3c; color: white; border: none; padding: 15px;
+            border-radius: 10px; font-size: 1.1rem; font-weight: bold; width: 100%;
+            margin-top: 20px; cursor: pointer;
         }
-        .btn-cancel:hover { background: #c0392b; }
 
         /* Modal Background */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6);
+            display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
         }
         .modal-overlay.aktif { display: flex; }
-        
-        /* Modal Content */
         .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 600px;
-            width: 100%;
+            background: white; padding: 30px; border-radius: 20px; max-width: 600px; width: 100%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: slideDown 0.3s ease;
         }
-        @keyframes slideDown {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal-content h3 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 1.4rem;
-        }
+        .modal-content h3 { color: #2c3e50; margin-bottom: 20px; text-align: center; font-size: 1.4rem; }
         .modal-content .close-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 15px;
-            width: 100%;
+            background: #e74c3c; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 15px; width: 100%;
         }
-
-        .grid-mapel {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
+        .grid-mapel { display: grid; grid-template-columns: 1fr; gap: 12px; }
         .tombol-mapel {
-            background: #f8f9fa;
-            border: 2px solid #dee2e6;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            background: #f8f9fa; border: 2px solid #dee2e6; border-radius: 12px;
+            padding: 15px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 5px;
         }
-        .tombol-mapel:hover {
-            border-color: #4facfe;
-            background: #f0f8ff;
-        }
-        .tombol-mapel .nama-mapel { font-weight: bold; font-size: 1.1rem; color: #2c3e50; line-height: 1.4; }
+        .tombol-mapel:hover { border-color: #4facfe; background: #f0f8ff; }
+        .tombol-mapel .nama-mapel { font-weight: bold; font-size: 1.1rem; color: #2c3e50; }
         .tombol-mapel .info-waktu { font-size: 0.85rem; color: #7f8c8d; }
-        
-        .pesan-kosong {
-            background: #f8d7da; color: #721c24; padding: 15px;
-            border-radius: 10px; text-align: center; font-size: 0.95rem;
-        }
+        .pesan-kosong { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; text-align: center; }
 
-        /* Area Mulai, Countdown & Token */
+        /* Area Token & Countdown */
         .area-mulai {
-            display: none; 
-            margin-top: 20px;
-            background: #f0f8ff;
-            padding: 25px;
-            border-radius: 16px;
-            border: 2px dashed #4facfe;
-            text-align: center;
+            display: none; margin-top: 20px; background: #f0f8ff; padding: 25px;
+            border-radius: 16px; border: 2px dashed #4facfe; text-align: center;
         }
-
         .countdown-box {
-            background: linear-gradient(135deg, #fff3cd, #ffe69c);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            color: #856404;
+            background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px;
+            padding: 20px; margin-bottom: 15px; color: #856404;
         }
-        .countdown-box h4 { margin-bottom: 10px; font-size: 1.1rem; }
-        .countdown-box .angka {
-            font-size: 2rem;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-        
+        .countdown-box .angka { font-size: 2rem; font-weight: bold; }
         .form-token {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            display: none;
+            background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px;
+            padding: 15px; margin-bottom: 15px; display: none;
         }
-        .form-token label {
-            font-weight: bold;
-            color: #856404;
-            display: block;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
+        .form-token label { font-weight: bold; color: #856404; display: block; margin-bottom: 10px; }
         .input-token {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-            outline: none;
+            width: 100%; padding: 15px; border: 2px solid #ffc107; border-radius: 8px;
+            text-align: center; font-size: 1.5rem; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; outline: none;
         }
-        .input-token:focus {
-            border-color: #e65100;
-            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
-        }
-
         .tombol-mulai {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white; border: none; padding: 20px 60px; border-radius: 16px;
-            font-size: 1.5rem; font-weight: bold; cursor: pointer;
-            transition: transform 0.2s; width: 100%;
+            background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border: none;
+            padding: 20px 60px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; cursor: pointer; width: 100%;
         }
-        .tombol-mulai:hover:not(:disabled) { transform: scale(1.02); }
-        .tombol-mulai:disabled { background: #95a5a6; cursor: not-allowed; transform: none; opacity: 0.7; }
+        .tombol-mulai:disabled { background: #95a5a6; cursor: not-allowed; }
 
-        /* --- BAGIAN KUIS & SOAL --- */
-        .header-kuis-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-            display: none;
+        /* =========================================
+           TAMPILAN CBT (2 KOLOM)
+           ========================================= */
+        #layar-cbt { display: none; width: 100%; text-align: left; }
+        
+        .cbt-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #dee2e6; padding-bottom: 15px; margin-bottom: 20px;
         }
-
-        .kartu-identitas {
-            background: #e8f5e9;
-            border: 2px solid #4caf50;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: left;
-            font-size: 0.95rem;
-            color: #2e7d32;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 5px;
+        .cbt-header .info-mapel { font-weight: bold; font-size: 1.2rem; color: #2c3e50; }
+        .cbt-header .timer-box {
+            background: #fff3cd; color: #856404; font-weight: bold; padding: 10px 20px;
+            border-radius: 8px; border: 1px solid #ffc107; font-size: 1.2rem;
         }
-        .kartu-identitas div { display: flex; justify-content: space-between; }
-        .kartu-identitas span { font-weight: bold; color: #1b5e20; }
-
-        .kartu-timer {
-            background: linear-gradient(135deg, #fff3cd, #ffe69c);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #856404;
-            font-size: 1.3rem;
-        }
-        .kartu-timer.warning { background: linear-gradient(135deg, #ffe0b2, #ffcc80); color: #e65100; border-color: #ff9800; animation: pulse 1s infinite; }
-        .kartu-timer.danger { background: linear-gradient(135deg, #ffcdd2, #ef9a9a); color: #b71c1c; border-color: #f44336; animation: pulse 0.6s infinite; }
+        .cbt-header .timer-box.warning { background: #ffe0b2; color: #e65100; border-color: #ff9800; }
+        .cbt-header .timer-box.danger { background: #ffcdd2; color: #b71c1c; border-color: #f44336; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
 
-        @media (max-width: 600px) {
-            .header-kuis-grid { grid-template-columns: 1fr; }
+        /* Grid Layout Kiri (Soal) & Kanan (Navigasi) */
+        .cbt-body {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 25px;
         }
 
-        .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 1.1rem; display: none; }
+        /* --- KIRI: SOAL --- */
+        .cbt-kiri {
+            background: white;
+        }
+        .soal-progress { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; color: #7f8c8d; }
         
-        .blur-soal { filter: blur(15px); pointer-events: none; user-select: none; }
-
         .soal-box {
-            background: #f8f9fa; padding: 30px 25px; border-radius: 18px; margin-bottom: 20px;
-            border-left: 6px solid #4facfe; min-height: 120px; display: none; 
-            align-items: center; justify-content: flex-start; font-size: 1.3rem; 
-            line-height: 1.6; color: #2c3e50; text-align: left;
-            transition: filter 0.2s ease;
+            background: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #dee2e6;
+            min-height: 150px; font-size: 1.2rem; line-height: 1.6; color: #2c3e50; margin-bottom: 20px;
         }
 
-        .pilihan-group { display: none; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; gap: 12px; margin-bottom: 20px; transition: filter 0.2s ease; }
-        .pilihan-group.aktif { display: grid; }
-
+        .pilihan-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
         .pilihan {
-            display: flex; align-items: center; gap: 15px; padding: 16px 20px;
-            border: none; border-radius: 14px; background: #f8f9fa; cursor: pointer;
-            transition: all 0.25s ease; text-align: left; font-size: 1.1rem; color: #2c3e50;
-            width: 100%; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06); font-weight: 500;
+            display: flex; align-items: center; gap: 15px; padding: 15px 20px;
+            border: 2px solid #dee2e6; border-radius: 10px; background: white; cursor: pointer;
+            transition: all 0.2s; text-align: left; font-size: 1.1rem; color: #2c3e50;
         }
-        .pilihan:hover:not(:disabled) { background: #e3f2fd; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79, 172, 254, 0.25); }
-        .pilihan:disabled { cursor: not-allowed; opacity: 0.75; }
-        .pilihan:disabled:not(.benar):not(.salah) { background: #f0f0f0; box-shadow: none; }
-
+        .pilihan:hover:not(:disabled) { border-color: #4facfe; background: #f0f8ff; }
+        .pilihan:disabled { cursor: not-allowed; }
         .pilihan .huruf {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;
-            font-weight: bold; width: 42px; height: 42px; display: flex; align-items: center;
-            justify-content: center; border-radius: 50%; font-size: 1.2rem; flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(79, 172, 254, 0.35);
+            background: #e9ecef; color: #2c3e50; font-weight: bold;
+            width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-size: 1rem; flex-shrink: 0;
         }
-        .pilihan .teks-pilihan { flex: 1; line-height: 1.4; }
-
-        .pilihan.benar { background: linear-gradient(135deg, #d4edda, #c3e6cb); box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3); }
-        .pilihan.benar .huruf { background: linear-gradient(135deg, #2ecc71, #27ae60); box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4); }
-        .pilihan.salah { background: linear-gradient(135deg, #f8d7da, #f5c6cb); box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3); }
-        .pilihan.salah .huruf { background: linear-gradient(135deg, #e74c3c, #c0392b); box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4); }
-
-        .pilihan-group .pilihan:nth-child(1) { grid-column: 1; grid-row: 1; }
-        .pilihan-group .pilihan:nth-child(2) { grid-column: 1; grid-row: 2; }
-        .pilihan-group .pilihan:nth-child(3) { grid-column: 1; grid-row: 3; }
-        .pilihan-group .pilihan:nth-child(4) { grid-column: 2; grid-row: 1; }
-        .pilihan-group .pilihan:nth-child(5) { grid-column: 2; grid-row: 2; }
-
-        @media (max-width: 600px) {
-            .pilihan-group { grid-template-columns: 1fr; }
-            .pilihan-group .pilihan:nth-child(1), .pilihan-group .pilihan:nth-child(2),
-            .pilihan-group .pilihan:nth-child(3), .pilihan-group .pilihan:nth-child(4),
-            .pilihan-group .pilihan:nth-child(5) { grid-column: 1; grid-row: auto; }
-        }
+        
+        /* State Jawaban */
+        .pilihan.benar { border-color: #2ecc71; background: #d4edda; }
+        .pilihan.benar .huruf { background: #2ecc71; color: white; }
+        .pilihan.salah { border-color: #e74c3c; background: #f8d7da; }
+        .pilihan.salah .huruf { background: #e74c3c; color: white; }
 
         .loader-jawaban { display: none; text-align: center; padding: 20px; color: #7f8c8d; font-style: italic; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4facfe; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .lanjut-btn {
-            background: #3498db; color: white; padding: 16px 35px; border: none;
-            border-radius: 14px; font-size: 1.2rem; cursor: pointer; display: none; margin: 10px auto;
+        /* Tombol Navigasi Bawah */
+        .nav-buttons { display: flex; justify-content: space-between; }
+        .nav-buttons button {
+            padding: 12px 25px; border: none; border-radius: 8px; font-size: 1rem;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
         }
-        .lanjut-btn:hover { background: #2980b9; }
-        
-        .btn-kembali {
-            background: #e74c3c; color: white; padding: 16px 35px; border: none;
-            border-radius: 14px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
-            margin-top: 25px; width: 100%; display: flex; align-items: center; 
-            justify-content: center; gap: 10px; transition: background 0.2s;
-        }
-        .btn-kembali:hover { background: #c0392b; }
+        .btn-prev { background: #95a5a6; color: white; }
+        .btn-prev:hover { background: #7f8c8d; }
+        .btn-next { background: #3498db; color: white; }
+        .btn-next:hover { background: #2980b9; }
+        .btn-selesai { background: #e74c3c; color: white; display: none; }
+        .btn-selesai:hover { background: #c0392b; }
 
-        .akhir, .pembahasan { display: none; }
-        .daftar-soal { text-align: left; margin-top: 20px; max-height: 400px; overflow-y: auto; }
-        .item-soal { padding: 18px; border-bottom: 1px solid #eee; line-height: 1.6; }
+        /* --- KANAN: NAVIGASI GRID --- */
+        .cbt-kanan {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 20px;
+            height: fit-content;
+        }
+        .cbt-kanan h4 { text-align: center; color: #2c3e50; margin-bottom: 15px; font-size: 1.1rem; }
+        
+        .grid-nav {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px;
+        }
+        .nav-item {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            background: white; border: 1px solid #ced4da; border-radius: 6px;
+            font-weight: bold; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+        }
+        .nav-item:hover { background: #e9ecef; }
+        .nav-item.sudah-dijawab { background: #2ecc71; color: white; border-color: #2ecc71; }
+        .nav-item.sedang-aktif { border: 3px solid #3498db; color: #3498db; font-weight: bold; }
+
+        .legend { font-size: 0.85rem; color: #555; display: flex; flex-direction: column; gap: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; }
+        .box-legend { width: 15px; height: 15px; border-radius: 3px; border: 1px solid #ccc; }
+        .box-legend.putih { background: white; }
+        .box-legend.hijau { background: #2ecc71; border-color: #2ecc71; }
+
+        /* --- LAYAR HASIL --- */
+        .layar-akhir {
+            display: none; text-align: center; padding: 20px;
+        }
+        .layar-akhir h2 { color: #2c3e50; margin-bottom: 20px; }
+        .skor-box { background: #f0f8ff; padding: 30px; border-radius: 16px; border: 2px solid #4facfe; margin-bottom: 20px; }
+        .skor-box .angka { font-size: 3.5rem; font-weight: bold; color: #2ecc71; }
+        .skor-box .label { color: #7f8c8d; font-size: 1.1rem; }
+        .btn-lanjut { background: #3498db; color: white; padding: 15px 30px; border-radius: 10px; font-size: 1.1rem; cursor: pointer; border: none; width: 100%; margin-bottom: 10px; }
+        .btn-kembali-login { background: #e74c3c; color: white; padding: 15px 30px; border-radius: 10px; font-size: 1.1rem; cursor: pointer; border: none; width: 100%; }
+
+        /* --- PEMBAHASAN --- */
+        .layar-pembahasan { display: none; text-align: left; }
+        .layar-pembahasan h2 { text-align: center; margin-bottom: 20px; }
+        .daftar-soal { max-height: 500px; overflow-y: auto; padding-right: 10px; }
+        .item-soal { padding: 20px; border-bottom: 1px solid #eee; margin-bottom: 10px; background: #fdfdfd; border-radius: 8px; }
         .item-soal strong { color: #2c3e50; }
         .label-netral { color: #3498db; font-weight: bold; }
         .label-salah { color: #e74c3c; font-weight: bold; }
-        .jawaban-pg { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: bold; margin: 0 3px; }
+        .jawaban-pg { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: bold; margin: 0 5px; }
         .jawaban-pg.benar { background: #d4edda; color: #155724; }
         .jawaban-pg.salah { background: #f8d7da; color: #721c24; }
+        .penjelasan-box { margin-top: 10px; padding: 15px; background: #f0f8ff; border-left: 4px solid #4facfe; border-radius: 6px; font-style: italic; }
 
-        .status-kirim { margin-top: 15px; font-size: 0.9rem; color: #7f8c8d; }
-        .skor-akhir { background: linear-gradient(135deg, #f0f8ff, #e3f2fd); padding: 25px; border-radius: 16px; margin: 20px 0; border: 2px solid #4facfe; }
-        .skor-akhir .angka { font-size: 3rem; font-weight: bold; color: #2c3e50; }
-        .skor-akhir .label { color: #7f8c8d; font-size: 1rem; }
-
-        .overlay-waktu-habis {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75);
-            display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px;
+        /* Responsif untuk HP */
+        @media (max-width: 768px) {
+            .cbt-body { display: flex; flex-direction: column-reverse; } /* Grid navigasi pindah ke atas */
+            .grid-nav { grid-template-columns: repeat(10, 1fr); }
+            .cbt-header { flex-direction: column; gap: 10px; }
+            .nav-buttons { flex-direction: column; gap: 10px; }
+            .nav-buttons button { width: 100%; }
         }
-        .overlay-waktu-habis .box { background: white; padding: 40px 30px; border-radius: 20px; text-align: center; max-width: 450px; }
-        .overlay-waktu-habis h2 { color: #e74c3c; font-size: 2rem; margin-bottom: 15px; }
-        .overlay-waktu-habis p { color: #555; margin-bottom: 20px; font-size: 1.1rem; }
-        .overlay-waktu-habis button { background: #3498db; color: white; border: none; padding: 14px 30px; border-radius: 12px; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
 
+        /* KAMERA PENGAWAS (Hidden) */
+        #kamera-pengawas {
+            position: fixed; bottom: 10px; right: 10px; width: 100px; height: 75px;
+            border-radius: 8px; background: #000; z-index: 9998; object-fit: cover;
+            display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.5; 
+        }
+        #kamera-pengawas:hover { opacity: 1; }
+
+        /* Toast Peringatan */
         .toast-peringatan {
             position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #ff9800, #f57c00);
             color: white; padding: 15px 22px; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
@@ -438,162 +282,143 @@
             transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); max-width: 320px;
         }
         .toast-peringatan.muncul { transform: translateX(0); }
-        .toast-peringatan .ikon { font-size: 1.4rem; flex-shrink: 0; }
-        @media (max-width: 600px) {
-            .toast-peringatan { top: 10px; right: 10px; left: 10px; max-width: none; font-size: 0.85rem; padding: 12px 16px; }
-        }
-
-        /* KAMERA PENGAWAS (Disembunyikan / Ukuran Kecil) */
-        #kamera-pengawas {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 100px;
-            height: 75px;
-            border-radius: 8px;
-            background: #000;
-            z-index: 9998;
-            object-fit: cover;
-            display: none; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            opacity: 0.5; 
-        }
-        #kamera-pengawas:hover { opacity: 1; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 id="judul-utama">📝 Aplikasi Ujian Berbasis ONLINE</h1>
+        <!-- ================= LAYAR MENU & LOGIN ================= -->
+        <div class="layar-menu" id="layar-menu">
+            <h1 id="judul-utama">📝 Aplikasi Ujian Berbasis ONLINE</h1>
 
-        <!-- LAYAR 1: Form Login NISN -->
-        <div id="layar-login-nisn">
-            <div id="form-input-nisn">
-                <div class="form-group">
-                    <label for="input-nisn" style="text-align:center; display:block; margin-bottom:10px; font-size:1.1rem;">🔐 Masukkan NISN Anda</label>
-                    <input type="text" id="input-nisn" placeholder="Contoh: 12345678" autocomplete="off">
+            <div id="layar-login-nisn">
+                <div id="form-input-nisn">
+                    <div class="form-group">
+                        <label for="input-nisn" style="text-align:center;">🔐 Masukkan NISN Anda</label>
+                        <input type="text" id="input-nisn" placeholder="Contoh: 12345678" autocomplete="off">
+                    </div>
+                    <button class="tombol-lanjut-nisn" onclick="cariSiswa()">🔍 Cari Data Siswa</button>
                 </div>
-                <button class="tombol-lanjut-nisn" onclick="cariSiswa()">🔍 Cari Data Siswa</button>
+
+                <div class="hasil-cari-siswa" id="hasil-cari-siswa">
+                    <h4>✅ Data Ditemukan</h4>
+                    <div class="info-siswa-detail" style="margin-bottom: 0;">
+                        <div><strong>Nama</strong> : <span id="hasil-nama"></span></div>
+                        <div><strong>Kelas</strong> : <span id="hasil-kelas"></span></div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Hasil Pencarian -->
-            <div class="hasil-cari-siswa" id="hasil-cari-siswa">
-                <h4>✅ Data Ditemukan</h4>
-                <div class="info-siswa-detail" style="margin-bottom: 0;">
-                    <div><strong>Nama</strong> : <span id="hasil-nama"></span></div>
-                    <div><strong>Kelas</strong> : <span id="hasil-kelas"></span></div>
+            <div class="layar-form sembunyi" id="layar-pilih-jenis" style="margin-top: 20px;">
+                <h3 style="color: #2c3e50; margin-bottom: 10px;">Pilih Jenis Ujian</h3>
+                <div class="grid-jenis">
+                    <button class="tombol-jenis" onclick="bukaModalMapel('UH')">📝 Ulangan Harian (UH)</button>
+                    <button class="tombol-jenis" onclick="bukaModalMapel('UAS')">🎓 Ujian Akhir Semester (UAS)</button>
+                </div>
+                <button class="tombol-latihan" onclick="bukaModalMapel('LTH')">🎯 Ujian Latihan (LTH)</button>
+                <button class="btn-cancel" onclick="mulaiUlang()">❌ Batal / Kembali ke Login</button>
+            </div>
+
+            <div class="area-mulai" id="area-mulai">
+                <div class="countdown-box" id="countdown-box" style="display:none;">
+                    <h4>⏳ Ujian belum dimulai. Harap tunggu.</h4>
+                    <div class="angka" id="teks-countdown">00:00:00</div>
+                </div>
+                <div class="form-token" id="form-token">
+                    <label>🔐 Masukkan Token Ujian</label>
+                    <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
+                </div>
+                <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI UJIAN</button>
+            </div>
+        </div>
+
+        <!-- ================= LAYAR UJIAN MODEL CBT ================= -->
+        <div id="layar-cbt">
+            <!-- Header CBT -->
+            <div class="cbt-header">
+                <div class="info-mapel" id="cbt-info-mapel">Memuat...</div>
+                <div class="timer-box" id="cbt-timer">⏱️ 20:00</div>
+            </div>
+
+            <!-- Body CBT (2 Kolom) -->
+            <div class="cbt-body">
+                <!-- Kiri: Area Soal -->
+                <div class="cbt-kiri">
+                    <div class="soal-progress" id="progress">Soal 1 dari 0</div>
+                    
+                    <div id="area-soal-ujian">
+                        <div class="soal-box" id="teks-soal">Memuat soal...</div>
+                        
+                        <div class="loader-jawaban" id="loader-jawaban">
+                            <div class="spinner"></div>
+                            <p>Menyiapkan pilihan jawaban...</p>
+                        </div>
+                        
+                        <div class="pilihan-group" id="pilihan-group"></div>
+                    </div>
+
+                    <!-- Tombol Navigasi -->
+                    <div class="nav-buttons">
+                        <button class="btn-prev" id="btn-prev" onclick="soalSebelumnya()" style="display: none;">← Sebelumnya</button>
+                        <button class="btn-next" id="btn-next" onclick="soalBerikutnya()">Berikutnya →</button>
+                        <button class="btn-selesai" id="btn-selesai" onclick="selesaikanUjian()">Selesaikan Ujian</button>
+                    </div>
+                </div>
+
+                <!-- Kanan: Navigasi Grid -->
+                <div class="cbt-kanan">
+                    <h4>Navigasi Soal</h4>
+                    <div class="grid-nav" id="grid-nav">
+                        <!-- Diisi oleh JS -->
+                    </div>
+                    
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="box-legend hijau"></div> <span>Sudah dijawab</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="box-legend putih"></div> <span>Belum dijawab</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- LAYAR 2: Pilih Jenis Ujian -->
-        <div class="layar-form sembunyi" id="layar-pilih-jenis" style="margin-top: 20px;">
-            <h3 style="color: #2c3e50; margin-bottom: 10px;">Pilih Jenis Ujian</h3>
-            <div class="grid-jenis">
-                <button class="tombol-jenis" onclick="bukaModalMapel('UH')">📝 Ulangan Harian (UH)</button>
-                <button class="tombol-jenis" onclick="bukaModalMapel('UAS')">🎓 Ujian Akhir Semester (UAS)</button>
-            </div>
-            
-            <!-- Tombol Latihan -->
-            <button class="tombol-latihan" onclick="bukaModalMapel('LTH')">🎯 Ujian Latihan (LTH)</button>
-
-            <!-- Tombol Batal -->
-            <button class="btn-cancel" onclick="mulaiUlang()">❌ Batal / Kembali ke Login</button>
-        </div>
-
-        <!-- AREA MULAI, COUNTDOWN & TOKEN -->
-        <div class="area-mulai" id="area-mulai">
-            <!-- Kotak Countdown -->
-            <div class="countdown-box" id="countdown-box" style="display:none;">
-                <h4>⏳ Ujian belum dimulai. Harap tunggu.</h4>
-                <div class="angka" id="teks-countdown">00:00:00</div>
-                <p style="margin-top:10px; font-size:0.9rem;">Halaman ini akan otomatis menampilkan form Token saat waktu tiba.</p>
-            </div>
-
-            <!-- Form Token & Tombol -->
-            <div class="form-token" id="form-token">
-                <label>🔐 Masukkan Token Ujian</label>
-                <input type="text" id="input-token" class="input-token" placeholder="TOKEN" autocomplete="off" oninput="cekToken()">
-            </div>
-            <button class="tombol-mulai" id="tombol-mulai" onclick="mulaiKuis()" disabled>▶️ MULAI UJIAN</button>
-        </div>
-
-        <!-- HEADER KUIS (KIRI: IDENTITAS, KANAN: TIMER) -->
-        <div class="header-kuis-grid" id="header-kuis">
-            <div class="kartu-identitas">
-                <div><span>NISN</span> <span id="info-nisn">-</span></div>
-                <div><span>Nama</span> <span id="info-nama">-</span></div>
-                <div><span>Kelas</span> <span id="info-kelas">-</span></div>
-                <div><span>Ujian</span> <span id="info-mapel">-</span></div>
-            </div>
-            <div class="kartu-timer" id="timer-total">
-                <span style="font-size:0.9rem; font-weight:normal;">⏱️ Sisa Waktu</span>
-                <div id="teks-timer" style="font-size:1.8rem; letter-spacing:1px;">20:00</div>
-            </div>
-        </div>
-
-        <div class="progress" id="progress">Soal 1 dari 0</div>
-
-        <div id="layar-soal">
-            <!-- Area yang akan diblur jika ada upaya screenshot -->
-            <div id="area-soal-ujian">
-                <div class="soal-box" id="teks-soal" style="display: none;"></div>
-                
-                <div class="loader-jawaban" id="loader-jawaban">
-                    <div class="spinner"></div>
-                    <p>Menyiapkan pilihan jawaban...</p>
-                </div>
-                
-                <div class="pilihan-group" id="pilihan-group"></div>
-            </div>
-        </div>
-
-        <!-- HASIL AKHIR -->
-        <div class="akhir" id="layar-akhir">
-            <h2 style="font-size: 1.8rem; margin-bottom: 15px;">🎉 Kuis Selesai!</h2>
-            <div class="skor-akhir">
+        <!-- ================= LAYAR HASIL AKHIR ================= -->
+        <div class="layar-akhir" id="layar-akhir">
+            <h2>🎉 Ujian Selesai!</h2>
+            <div class="skor-box">
                 <div class="label">Skor Akhir</div>
                 <div class="angka" id="skor-angka">0</div>
                 <div class="label" id="skor-detail">0 dari 0 soal benar</div>
             </div>
-            <p style="margin: 15px 0; font-size: 1rem; color: #555;">Jawabanmu sudah tersimpan. Terima kasih! 🙌</p>
-            <div class="status-kirim" id="status-kirim"></div>
+            <p style="margin-bottom: 20px; font-size: 1rem; color: #555;" id="status-kirim">⏳ Memproses hasil...</p>
             
-            <button class="lanjut-btn" style="display:inline-block; width: 100%;" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
+            <button class="btn-lanjut" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
+            <button class="btn-kembali-login" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
         </div>
 
-        <div class="pembahasan" id="layar-pembahasan">
-            <h2 style="font-size: 1.8rem; margin-bottom: 20px;">📖 Pembahasan Lengkap</h2>
+        <!-- ================= LAYAR PEMBAHASAN ================= -->
+        <div class="layar-pembahasan" id="layar-pembahasan">
+            <h2>📖 Pembahasan Lengkap</h2>
             <div class="daftar-soal" id="daftar-pembahasan"></div>
-            
-            <!-- TOMBOL KEMBALI KE LOGIN -->
-            <button class="btn-kembali" onclick="mulaiUlang()">
-                <span>🏠</span> Tutup & Kembali ke Login
-            </button>
+            <button class="btn-kembali-login" style="margin-top: 20px;" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
         </div>
+
     </div>
 
-    <!-- KAMERA PENGAWAS (Hidden) -->
+    <!-- KAMERA PENGAWAS -->
     <video id="kamera-pengawas" autoplay playsinline muted></video>
 
     <!-- MODAL MAPEL -->
     <div class="modal-overlay" id="modal-mapel">
         <div class="modal-content">
             <h3 id="judul-modal">Pilih Mata Pelajaran</h3>
-            <div id="container-mapel">
-                <!-- Diisi oleh JS -->
-            </div>
+            <div id="container-mapel"></div>
             <button class="close-btn" onclick="tutupModalMapel()">Batal / Tutup</button>
         </div>
     </div>
 
-    <div class="overlay-waktu-habis" id="overlay-waktu-habis">
-        <div class="box">
-            <h2>⏰ Waktu Habis!</h2>
-            <p>Waktu pengerjaan sudah berakhir.<br>Jawabanmu sudah tersimpan.</p>
-            <button onclick="tutupOverlayDanTampilHasil()">Lihat Hasil →</button>
-        </div>
-    </div>
-
+    <!-- TOAST PERINGATAN -->
     <div class="toast-peringatan" id="toast-peringatan">
         <span class="ikon">⚠️</span>
         <span id="teks-toast">Kamu terdeteksi keluar dari halaman kuis.</span>
@@ -601,19 +426,19 @@
 
 <script>
 /* =========================================================
-   ⚙️ KONFIGURASI
+   ⚙️ KONFIGURASI & STATE
    ========================================================= */
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
 
-/* ---------- STATE ---------- */
 let daftarSoal = [];
-let nomor = 0, sudahDijawab = false;
+let nomor = 0; // Indeks soal saat ini
+let jawabanSiswa = {}; // Menyimpan jawaban { index_soal: "A", ... }
 let sisaWaktuTotal = 0, timerInterval;
 let riwayatJawaban = [];
 let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
 let jumlahPindahTab = 0;
-let jumlahPelanggaranKamera = 0; // <-- State untuk mencatat HP kedua
+let jumlahPelanggaranKamera = 0;
 let toastTimer = null;
 let jadwalData = [];
 let dataSiswaGlobal = [];
@@ -623,233 +448,65 @@ let mapelDipilih = null;
 let streamKamera = null; 
 let modelAI = null;
 let intervalDeteksi = null;
-
-/* ---------- UTIL: AC AK (Fisher-Yates) ---------- */
-function acak(array) {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-}
+let sedangTransisi = false; // Mencegah klik ganda saat animasi
 
 /* =========================================================
-   📷 FITUR KAMERA & AI DETEKSI HP KEDUA
-   ========================================================= */
-async function nyalakanKamera() {
-    const video = document.getElementById("kamera-pengawas");
-    try {
-        streamKamera = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user" }, 
-            audio: false 
-        });
-        video.srcObject = streamKamera;
-        video.style.display = "block"; 
-    } catch (err) {
-        console.error("Kamera gagal dinyalakan:", err);
-        alert("⚠️ Akses kamera ditolak. Pastikan Anda mengizinkan kamera untuk melanjutkan ujian.");
-        throw err;
-    }
-}
-
-function matikanKamera() {
-    const video = document.getElementById("kamera-pengawas");
-    if (streamKamera) {
-        streamKamera.getTracks().forEach(track => track.stop()); 
-        streamKamera = null;
-    }
-    video.srcObject = null;
-    video.style.display = "none";
-    if (intervalDeteksi) clearInterval(intervalDeteksi);
-}
-
-async function muatModelAI() {
-    try {
-        console.log("Memuat model AI...");
-        modelAI = await cocoSsd.load();
-        console.log("Model AI siap!");
-    } catch (err) {
-        console.error("Gagal memuat AI:", err);
-    }
-}
-
-function mulaiDeteksiAI() {
-    if (!modelAI) return;
-    const video = document.getElementById("kamera-pengawas");
-
-    // Deteksi setiap 3 detik
-    intervalDeteksi = setInterval(async () => {
-        if (!kuisAktif || video.readyState !== 4) return;
-
-        const predictions = await modelAI.detect(video);
-        
-        let adaHpKedua = false;
-        let adaWajah = false;
-
-        predictions.forEach(p => {
-            // Deteksi jika ada HP (tingkat keyakinan > 60%)
-            if (p.class === "cell phone" && p.score > 0.6) {
-                adaHpKedua = true;
-            }
-            // Deteksi jika ada orang/wajah
-            if (p.class === "person" && p.score > 0.5) {
-                adaWajah = true;
-            }
-        });
-
-        // LOGIKA: Jika terdeteksi HP lain, ATAU wajah menghilang (siswa pergi)
-        if (adaHpKedua || !adaWajah) {
-            jumlahPelanggaranKamera++;
-            blokirLayarSementara(adaHpKedua ? "HP Kedua Terdeteksi!" : "Wajah Anda Tidak Terlihat!");
-        }
-
-    }, 3000);
-}
-
-/* =========================================================
-   🛡️ FITUR ANTI-SCREENSHOT & ANTI-COPY
-   ========================================================= */
-function aktifkanAntiScreenshot() {
-    document.addEventListener('contextmenu', function(e) {
-        if (kuisAktif) { e.preventDefault(); tampilkanToastPeringatan("❌ Klik kanan dilarang!"); }
-    });
-    document.addEventListener('copy', function(e) {
-        if (kuisAktif) { e.preventDefault(); tampilkanToastPeringatan("❌ Dilarang menyalin soal!"); }
-    });
-    document.addEventListener('cut', function(e) {
-        if (kuisAktif) e.preventDefault();
-    });
-    document.addEventListener('keyup', function(e) {
-        if (!kuisAktif) return;
-        if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
-            blokirLayarSementara("Upaya Screenshot terdeteksi!");
-        }
-        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
-            e.preventDefault();
-            blokirLayarSementara("Upaya Mencetak terdeteksi!");
-        }
-    });
-}
-
-function blokirLayarSementara(pesan) {
-    const areaSoal = document.getElementById("area-soal-ujian");
-    areaSoal.classList.add("blur-soal");
-    tampilkanToastPeringatan("⚠️ " + pesan);
-    
-    setTimeout(() => {
-        areaSoal.classList.remove("blur-soal");
-    }, 3000); // Blur selama 3 detik
-}
-
-function tampilkanToastPeringatan(pesanKustom = null) {
-    const toast = document.getElementById("toast-peringatan");
-    const teks = document.getElementById("teks-toast");
-    
-    if (pesanKustom) {
-        teks.textContent = pesanKustom;
-    } else {
-        teks.textContent = `Kamu terdeteksi keluar dari halaman kuis (${jumlahPindahTab}x)`;
-    }
-    
-    toast.classList.add("muncul");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove("muncul"), 3000);
-}
-
-/* =========================================================
-   🎓 FITUR LOGIN NISN
+   🎓 LOGIN & JADWAL (SAMA SEPERTI SEBELUMNYA)
    ========================================================= */
 async function ambilDataSiswa() {
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=siswa");
         const json = await res.json();
-        if (json.status === "success") {
-            dataSiswaGlobal = json.data;
-        }
-    } catch (err) {
-        console.error("Gagal ambil data siswa:", err);
-    }
+        if (json.status === "success") dataSiswaGlobal = json.data;
+    } catch (err) { console.error("Gagal ambil data siswa:", err); }
 }
 
 function cariSiswa() {
     const nisnInput = document.getElementById("input-nisn").value.trim();
-    const hasilDiv = document.getElementById("hasil-cari-siswa");
-
     if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
 
     const siswa = dataSiswaGlobal.find(s => s.nisn === nisnInput);
-
     if (siswa) {
         document.getElementById("hasil-nama").textContent = siswa.nama;
         document.getElementById("hasil-kelas").textContent = siswa.kelas;
+        nisnSiswa = siswa.nisn; namaSiswa = siswa.nama; kelasSiswa = siswa.kelas;
         
-        nisnSiswa = siswa.nisn;
-        namaSiswa = siswa.nama;
-        kelasSiswa = siswa.kelas;
-
-        hasilDiv.classList.add("aktif");
+        document.getElementById("hasil-cari-siswa").classList.add("aktif");
         document.getElementById("form-input-nisn").style.display = "none";
         document.getElementById("layar-pilih-jenis").classList.remove("sembunyi");
-
     } else {
-        alert("❌ NISN tidak ditemukan. Periksa kembali atau hubungi guru.");
-        hasilDiv.classList.remove("aktif");
+        alert("❌ NISN tidak ditemukan.");
     }
 }
 
-/* =========================================================
-   📅 FITUR JADWAL & MODAL MAPEL
-   ========================================================= */
 async function ambilJadwal() {
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal");
         const json = await res.json();
-        if (json.status === "success") { jadwalData = json.data; }
+        if (json.status === "success") jadwalData = json.data;
     } catch (err) { console.error("Gagal ambil jadwal:", err); }
 }
 
 function bukaModalMapel(jenisUjian) {
     const container = document.getElementById("container-mapel");
     const judulModal = document.getElementById("judul-modal");
-    
     container.innerHTML = "";
     
     if (jenisUjian === 'LTH') {
         judulModal.textContent = `Pilih Mapel Latihan`;
-        const grid = document.createElement("div");
-        grid.className = "grid-mapel";
-
-        const mapelLatihan = [
-            { mapel: "TIK - Latihan Algoritma", file: "soal_tik_lth_algoritma", waktu: "15 Menit", durasi: 15, token: "LTH" }
-        ];
-
+        const grid = document.createElement("div"); grid.className = "grid-mapel";
+        // Contoh latihan statis
+        const mapelLatihan = [{ mapel: "Latihan Algoritma", file: "soal_tik_lth_algoritma", waktu: "15 Menit", durasi: 15, token: "LTH" }];
         mapelLatihan.forEach((j) => {
-            const btn = document.createElement("button");
-            btn.className = "tombol-mapel";
-            btn.innerHTML = `
-                <span class="nama-mapel">📘 ${j.mapel}</span>
-                <span class="info-waktu">⏱️ ${j.waktu} (Tanpa Token)</span>
-            `;
-            btn.onclick = () => {
-                pilihMapel({
-                    mapel: j.mapel,
-                    durasi: j.durasi,
-                    token: "LTH",
-                    file: j.file,
-                    waktu: "00:00 - 23:59",
-                    tanggal: "01/01/2099"
-                }, true);
-            };
+            const btn = document.createElement("button"); btn.className = "tombol-mapel";
+            btn.innerHTML = `<span class="nama-mapel">📘 ${j.mapel}</span><span class="info-waktu">⏱️ ${j.waktu}</span>`;
+            btn.onclick = () => pilihMapel({ mapel: j.mapel, durasi: j.durasi, token: "LTH", file: j.file, waktu: "00:00 - 23:59", tanggal: "01/01/2099" }, true);
             grid.appendChild(btn);
         });
-        container.appendChild(grid);
-        document.getElementById("modal-mapel").classList.add("aktif");
-        return;
+        container.appendChild(grid); document.getElementById("modal-mapel").classList.add("aktif"); return;
     }
 
     judulModal.textContent = `Pilih Mapel ${jenisUjian}`;
-
     const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const hariIni = namaHari[new Date().getDay()];
     const sekarang = new Date().getTime();
@@ -858,53 +515,33 @@ function bukaModalMapel(jenisUjian) {
         const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelasSiswa.toUpperCase().trim());
         const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
         const jenisCocok = String(j.jenis || "").toUpperCase().trim() === jenisUjian.toUpperCase();
-        
         if (!kelasCocok || !hariCocok || !jenisCocok) return false;
-
-        const waktuParts = j.waktu.split("-");
-        if (waktuParts.length < 2) return false; 
-
-        const jamSelesai = waktuParts[1].trim();
-        const [tgl, bln, thn] = j.tanggal.split("/");
-        const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
-
-        return sekarang < dateSelesai; 
+        const waktuParts = j.waktu.split("-"); if (waktuParts.length < 2) return false; 
+        const jamSelesai = waktuParts[1].trim(); const [tgl, bln, thn] = j.tanggal.split("/");
+        return sekarang < new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime(); 
     });
 
     if (jadwalHariIni.length === 0) {
-        container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian ${jenisUjian} yang aktif untuk Anda hari ini.</div>`;
+        container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian ${jenisUjian} yang aktif.</div>`;
     } else {
-        const grid = document.createElement("div");
-        grid.className = "grid-mapel";
-
-        jadwalHariIni.forEach((j, index) => {
-            const btn = document.createElement("button");
-            btn.className = "tombol-mapel";
-            btn.innerHTML = `
-                <span class="nama-mapel">📘 ${j.mapel}</span>
-                <span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Menit)</span>
-            `;
+        const grid = document.createElement("div"); grid.className = "grid-mapel";
+        jadwalHariIni.forEach((j) => {
+            const btn = document.createElement("button"); btn.className = "tombol-mapel";
+            btn.innerHTML = `<span class="nama-mapel">📘 ${j.mapel}</span><span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Mnt)</span>`;
             btn.onclick = () => pilihMapel(j, false);
             grid.appendChild(btn);
         });
         container.appendChild(grid);
     }
-
     document.getElementById("modal-mapel").classList.add("aktif");
 }
 
-function tutupModalMapel() {
-    document.getElementById("modal-mapel").classList.remove("aktif");
-}
+function tutupModalMapel() { document.getElementById("modal-mapel").classList.remove("aktif"); }
 
 function pilihMapel(jadwal, isLatihan = false) {
-    mapelDipilih = jadwal;
-    mapelDipilih.isLatihan = isLatihan;
-    tutupModalMapel();
-    
+    mapelDipilih = jadwal; mapelDipilih.isLatihan = isLatihan; tutupModalMapel();
     sisaWaktuTotal = mapelDipilih.durasi * 60;
-    document.getElementById("teks-timer").textContent = formatWaktu(sisaWaktuTotal);
-
+    
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     
@@ -913,46 +550,24 @@ function pilihMapel(jadwal, isLatihan = false) {
     document.getElementById("form-token").style.display = "none";
     document.getElementById("tombol-mulai").style.display = "none";
     
-    if (isLatihan) {
-        cekStatusWaktu(mapelDipilih);
-    } else {
-        cekRiwayatSiswa();
-    }
-}
-
-function formatWaktu(detik) {
-    const menit = Math.floor(detik / 60);
-    const sisaDetik = detik % 60;
-    return `${String(menit).padStart(2, "0")}:${String(sisaDetik).padStart(2, "0")}`;
+    if (isLatihan) { cekStatusWaktu(mapelDipilih); } 
+    else { cekRiwayatSiswa(); }
 }
 
 async function cekRiwayatSiswa() {
-    const params = new URLSearchParams({
-        aksi: "cek_riwayat",
-        nisn: nisnSiswa,
-        mapel: mapelDipilih.mapel
-    });
-
+    const params = new URLSearchParams({ aksi: "cek_riwayat", nisn: nisnSiswa, mapel: mapelDipilih.mapel });
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
         const json = await res.json();
-        
         if (json.status === "success" && json.sudahUjian) {
             document.getElementById("area-mulai").innerHTML = `
                 <div style="background:#f8d7da; color:#721c24; padding:30px; border-radius:12px; border:2px solid #e74c3c;">
                     <h2 style="margin-bottom:15px;">⛔ Akses Ditolak</h2>
-                    <p style="font-size:1.1rem;">Anda sudah mengerjakan ujian <strong>${mapelDipilih.mapel}</strong>.</p>
-                    <p style="margin-top:10px; font-size:0.95rem;">Siswa hanya diperbolehkan mengerjakan 1 kali untuk setiap mata pelajaran.</p>
+                    <p>Anda sudah mengerjakan ujian <strong>${mapelDipilih.mapel}</strong>.</p>
                     <button class="tombol-lanjut-nisn" style="background:#e74c3c; margin-top:20px;" onclick="mulaiUlang()">Kembali ke Login</button>
-                </div>
-            `;
-        } else {
-            cekStatusWaktu(mapelDipilih);
-        }
-    } catch (err) {
-        console.error("Gagal cek riwayat:", err);
-        cekStatusWaktu(mapelDipilih);
-    }
+                </div>`;
+        } else { cekStatusWaktu(mapelDipilih); }
+    } catch (err) { cekStatusWaktu(mapelDipilih); }
 }
 
 function cekStatusWaktu(jadwal) {
@@ -964,21 +579,14 @@ function cekStatusWaktu(jadwal) {
     if (jadwalInterval) clearInterval(jadwalInterval);
 
     if (jadwal.isLatihan) {
-        areaMulai.style.display = "block"; 
-        countdownBox.style.display = "none";
-        formToken.style.display = "block";
-        tombolMulai.style.display = "block";
-        
+        areaMulai.style.display = "block"; countdownBox.style.display = "none";
+        formToken.style.display = "block"; tombolMulai.style.display = "block";
         document.getElementById("input-token").value = jadwal.token;
-        document.getElementById("input-token").disabled = false;
-        cekToken(); 
-        return;
+        document.getElementById("input-token").disabled = false; cekToken(); return;
     }
 
     const waktuParts = jadwal.waktu.split("-");
-    const jamMulai = waktuParts[0].trim();
-    const jamSelesai = waktuParts[1].trim();
-
+    const jamMulai = waktuParts[0].trim(); const jamSelesai = waktuParts[1].trim();
     const [tgl, bln, thn] = jadwal.tanggal.split("/");
     const dateMulai = new Date(`${thn}-${bln}-${tgl}T${jamMulai}:00`).getTime();
     const dateSelesai = new Date(`${thn}-${bln}-${tgl}T${jamSelesai}:00`).getTime();
@@ -987,232 +595,329 @@ function cekStatusWaktu(jadwal) {
 
     const updateTampilan = () => {
         const sekarang = new Date().getTime();
-        
         if (sekarang < dateMulai) {
-            countdownBox.style.display = "block";
-            formToken.style.display = "none";
-            tombolMulai.style.display = "none";
-
+            countdownBox.style.display = "block"; formToken.style.display = "none"; tombolMulai.style.display = "none";
             const selisih = dateMulai - sekarang;
-            const h = Math.floor(selisih / (1000 * 60 * 60));
-            const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((selisih % (1000 * 60)) / 1000);
-            
-            document.getElementById("teks-countdown").textContent = 
-                `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-
+            const h = Math.floor(selisih / (1000 * 60 * 60)); const m = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60)); const s = Math.floor((selisih % (1000 * 60)) / 1000);
+            document.getElementById("teks-countdown").textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
         } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            clearInterval(jadwalInterval);
-            countdownBox.style.display = "none";
-            formToken.style.display = "block";
-            tombolMulai.style.display = "block";
-            
-            document.getElementById("input-token").disabled = false;
-            document.getElementById("input-token").focus();
-
+            clearInterval(jadwalInterval); countdownBox.style.display = "none"; formToken.style.display = "block"; tombolMulai.style.display = "block";
+            document.getElementById("input-token").disabled = false; document.getElementById("input-token").focus();
         } else {
-            clearInterval(jadwalInterval);
-            countdownBox.style.display = "none";
-            formToken.style.display = "none";
-            tombolMulai.style.display = "none";
-            alert("Waktu ujian telah berakhir.");
-            mulaiUlang();
+            clearInterval(jadwalInterval); countdownBox.style.display = "none"; formToken.style.display = "none"; tombolMulai.style.display = "none";
+            alert("Waktu ujian telah berakhir."); mulaiUlang();
         }
     };
-
     updateTampilan();
-
-    if (new Date().getTime() < dateMulai) {
-        jadwalInterval = setInterval(updateTampilan, 1000);
-    }
+    if (new Date().getTime() < dateMulai) jadwalInterval = setInterval(updateTampilan, 1000);
 }
 
 function cekToken() {
     const inputToken = document.getElementById("input-token").value.toUpperCase().trim();
     const btnMulai = document.getElementById("tombol-mulai");
-    
     if (!mapelDipilih) return;
-
     const tokenAsli = String(mapelDipilih.token || "").toUpperCase().trim();
-
     if (inputToken === tokenAsli && tokenAsli !== "") {
-        btnMulai.disabled = false;
-        btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
-        btnMulai.style.cursor = "pointer";
-        document.getElementById("input-token").style.borderColor = "#2ecc71";
-        document.getElementById("input-token").style.background = "#d4edda";
+        btnMulai.disabled = false; btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)"; btnMulai.style.cursor = "pointer";
+        document.getElementById("input-token").style.borderColor = "#2ecc71"; document.getElementById("input-token").style.background = "#d4edda";
     } else {
-        btnMulai.disabled = true;
-        btnMulai.style.background = "#95a5a6";
-        btnMulai.style.cursor = "not-allowed";
-        document.getElementById("input-token").style.borderColor = "#ffc107";
-        document.getElementById("input-token").style.background = "#fff";
+        btnMulai.disabled = true; btnMulai.style.background = "#95a5a6"; btnMulai.style.cursor = "not-allowed";
+        document.getElementById("input-token").style.borderColor = "#ffc107"; document.getElementById("input-token").style.background = "#fff";
     }
 }
 
 /* =========================================================
-   🛡️ ANTI-CHEAT: DETEKSI PINDAH TAB
+   🎥 KAMERA & ANTI-CHEAT
    ========================================================= */
+async function nyalakanKamera() {
+    const video = document.getElementById("kamera-pengawas");
+    try {
+        streamKamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        video.srcObject = streamKamera; video.style.display = "block"; 
+    } catch (err) { alert("⚠️ Akses kamera ditolak. Ujian tidak bisa dilanjutkan."); throw err; }
+}
+
+function matikanKamera() {
+    const video = document.getElementById("kamera-pengawas");
+    if (streamKamera) { streamKamera.getTracks().forEach(track => track.stop()); streamKamera = null; }
+    video.srcObject = null; video.style.display = "none";
+    if (intervalDeteksi) clearInterval(intervalDeteksi);
+}
+
+async function muatModelAI() {
+    try { modelAI = await cocoSsd.load(); } catch (err) { console.error("Gagal memuat AI:", err); }
+}
+
+function mulaiDeteksiAI() {
+    if (!modelAI) return;
+    const video = document.getElementById("kamera-pengawas");
+    intervalDeteksi = setInterval(async () => {
+        if (!kuisAktif || video.readyState !== 4) return;
+        const predictions = await modelAI.detect(video);
+        let adaHpKedua = false; let adaWajah = false;
+        predictions.forEach(p => {
+            if (p.class === "cell phone" && p.score > 0.6) adaHpKedua = true;
+            if (p.class === "person" && p.score > 0.5) adaWajah = true;
+        });
+        if (adaHpKedua || !adaWajah) {
+            jumlahPelanggaranKamera++;
+            blokirLayarSementara(adaHpKedua ? "HP Kedua Terdeteksi!" : "Wajah Anda Tidak Terlihat!");
+        }
+    }, 3000);
+}
+
 function aktifkanDeteksiPindahTab() {
     document.addEventListener("visibilitychange", () => {
         if (!kuisAktif) return;
-        if (document.hidden) {
-            jumlahPindahTab++;
-            console.log(`⚠️ Pindah tab terdeteksi (${jumlahPindahTab}x)`);
-        } else {
-            if (jumlahPindahTab > 0) tampilkanToastPeringatan();
-        }
+        if (document.hidden) jumlahPindahTab++;
+        else if (jumlahPindahTab > 0) tampilkanToastPeringatan();
     });
 }
 
-/* ---------- PARSER CSV ---------- */
+function aktifkanAntiScreenshot() {
+    document.addEventListener('contextmenu', (e) => { if (kuisAktif) { e.preventDefault(); tampilkanToastPeringatan("❌ Klik kanan dilarang!"); }});
+    document.addEventListener('copy', (e) => { if (kuisAktif) { e.preventDefault(); tampilkanToastPeringatan("❌ Dilarang menyalin soal!"); }});
+    document.addEventListener('cut', (e) => { if (kuisAktif) e.preventDefault(); });
+    document.addEventListener('keyup', (e) => {
+        if (!kuisAktif) return;
+        if (e.key === 'PrintScreen' || e.code === 'PrintScreen') blokirLayarSementara("Upaya Screenshot terdeteksi!");
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); blokirLayarSementara("Upaya Mencetak terdeteksi!"); }
+    });
+}
+
+function blokirLayarSementara(pesan) {
+    const areaSoal = document.getElementById("area-soal-ujian");
+    areaSoal.style.filter = "blur(15px)"; areaSoal.style.pointerEvents = "none";
+    tampilkanToastPeringatan("⚠️ " + pesan);
+    setTimeout(() => { areaSoal.style.filter = "none"; areaSoal.style.pointerEvents = "auto"; }, 3000); 
+}
+
+function tampilkanToastPeringatan(pesanKustom = null) {
+    const toast = document.getElementById("toast-peringatan"); const teks = document.getElementById("teks-toast");
+    teks.textContent = pesanKustom ? pesanKustom : `Kamu terdeteksi keluar dari halaman kuis (${jumlahPindahTab}x)`;
+    toast.classList.add("muncul"); clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("muncul"), 3000);
+}
+
+/* =========================================================
+   🚀 LOGIKA UTAMA UJIAN (CBT)
+   ========================================================= */
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
-        const hasil = [];
-        let bagian = "", dalamKutip = false;
+        const hasil = []; let bagian = "", dalamKutip = false;
         for (let c of r) {
             if (c === '"') dalamKutip = !dalamKutip;
             else if (c === "," && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
             else bagian += c;
         }
-        hasil.push(bagian.trim());
-        return hasil.map(s => s.replace(/^"|"$/g, ""));
+        hasil.push(bagian.trim()); return hasil.map(s => s.replace(/^"|"$/g, ""));
     });
 }
 
-/* ---------- AMBIL SOAL ---------- */
 async function ambilSoal(namaMapel, fileKhusus = null) {
-    let fileCSV = "";
-    
-    if (fileKhusus) {
-        fileCSV = fileKhusus.endsWith('.csv') ? fileKhusus : `${fileKhusus}.csv`;
-    } else {
-        let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
-        fileCSV = `soal_${namaFile}.csv`;
-    }
-
+    let fileCSV = fileKhusus ? (fileKhusus.endsWith('.csv') ? fileKhusus : `${fileKhusus}.csv`) : `soal_${namaMapel.toLowerCase().replace(/\s+/g, '_')}.csv`;
     try {
-        const res = await fetch(fileCSV);
-        if (!res.ok) throw new Error(`File ${fileCSV} tidak ditemukan`);
-        const teks = await res.text();
-        const baris = parseCSV(teks);
-
-        daftarSoal = [];
+        const res = await fetch(fileCSV); if (!res.ok) throw new Error("File tidak ada");
+        const baris = parseCSV(await res.text()); daftarSoal = [];
         for (let i = 1; i < baris.length; i++) {
-            const k = baris[i];
-            if (!k || k.length < 8) continue;
-            const soal = k[0];
-            const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || "" };
-            const kunci = k[6].toUpperCase().trim();
-            const skor = parseInt(k[7]) || 1;
-            const penjelasan = k[8] || "";
-
-            if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) {
-                daftarSoal.push({ soal, pilihanAsli: pilihan, kunciAsli: kunci, skor, penjelasan });
-            }
+            const k = baris[i]; if (!k || k.length < 8) continue;
+            const soal = k[0]; const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || "" };
+            const kunci = k[6].toUpperCase().trim(); const skor = parseInt(k[7]) || 1; const penjelasan = k[8] || "";
+            if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) daftarSoal.push({ soal, pilihanAsli: pilihan, kunciAsli: kunci, skor, penjelasan });
         }
     } catch (err) {
-        console.warn(`⚠️ ${err.message}. Menggunakan soal default.`);
-        daftarSoal = [{
-            soal: `Soal untuk ${namaMapel} belum tersedia.`,
-            pilihanAsli: { A: "Benar", B: "Salah", C: "-", D: "-", E: "-" },
-            kunciAsli: "A", skor: 1, penjelasan: `Pastikan file ${fileCSV} sudah di-upload ke hosting.`
-        }];
+        daftarSoal = [{ soal: `Soal belum tersedia.`, pilihanAsli: { A: "A", B: "B", C: "C", D: "D", E: "E" }, kunciAsli: "A", skor: 1, penjelasan: "" }];
     }
 }
 
-/* =========================================================
-   🔀 FUNGSI ACAK PILIHAN (A-E)
-   ========================================================= */
+function acak(array) {
+    const arr = [...array]; for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr;
+}
+
 function acakPilihanSoal(soal) {
-    const daftarPilihan = [];
-    ["A", "B", "C", "D", "E"].forEach(huruf => {
-        if (soal.pilihanAsli[huruf]) daftarPilihan.push({ teks: soal.pilihanAsli[huruf], asli: huruf });
+    const daftarPilihan = []; ["A", "B", "C", "D", "E"].forEach(h => { if (soal.pilihanAsli[h]) daftarPilihan.push({ teks: soal.pilihanAsli[h], asli: h }); });
+    const pilihanDiacak = acak(daftarPilihan); const pilihanBaru = {}; let kunciBaru = soal.kunciAsli;
+    ["A", "B", "C", "D", "E"].forEach((hBaru, index) => {
+        if (pilihanDiacak[index]) { pilihanBaru[hBaru] = pilihanDiacak[index].teks; if (pilihanDiacak[index].asli === soal.kunciAsli) kunciBaru = hBaru; }
     });
-
-    const pilihanDiacak = acak(daftarPilihan);
-    const pilihanBaru = {};
-    let kunciBaru = soal.kunciAsli;
-
-    ["A", "B", "C", "D", "E"].forEach((hurufBaru, index) => {
-        if (pilihanDiacak[index]) {
-            pilihanBaru[hurufBaru] = pilihanDiacak[index].teks;
-            if (pilihanDiacak[index].asli === soal.kunciAsli) kunciBaru = hurufBaru;
-        }
-    });
-
     return { ...soal, pilihan: pilihanBaru, kunci: kunciBaru };
 }
 
-/* ---------- MULAI KUIS ---------- */
 async function mulaiKuis() {
-    if (!namaSiswa || !kelasSiswa) { 
-        alert("⚠️ Data siswa tidak valid. Silakan login ulang."); 
-        return; 
-    }
-    if (!mapelDipilih) { 
-        alert("⚠️ Pilih mata pelajaran terlebih dahulu!"); 
-        return; 
-    }
-
-    // --- PROSES MENYALAKAN KAMERA & AI ---
+    if (!namaSiswa || !mapelDipilih) return;
     try {
-        document.getElementById("tombol-mulai").textContent = "⏳ Mengaktifkan Kamera & AI...";
-        await nyalakanKamera();
-        
-        if (!modelAI) {
-            await muatModelAI();
-        }
-    } catch (error) {
-        document.getElementById("tombol-mulai").textContent = "▶️ MULAI UJIAN";
-        return; // Hentikan ujian jika kamera ditolak
-    }
-    // --------------------------------------
+        document.getElementById("tombol-mulai").textContent = "⏳ Menyiapkan...";
+        await nyalakanKamera(); if (!modelAI) await muatModelAI();
+    } catch (error) { document.getElementById("tombol-mulai").textContent = "▶️ MULAI UJIAN"; return; }
 
     mapelSiswa = mapelDipilih.mapel;
-
     await ambilSoal(mapelSiswa, mapelDipilih.file);
     
-    if (daftarSoal.length === 0) {
-        alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
-        return;
-    }
-
-    daftarSoal = acak(daftarSoal);
+    // Acak Soal & Pilihan
+    daftarSoal = acak(daftarSoal); 
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
     if (jadwalInterval) clearInterval(jadwalInterval);
 
-    document.getElementById("judul-utama").style.display = "none"; 
-    document.getElementById("layar-login-nisn").style.display = "none";
-    document.getElementById("layar-pilih-jenis").style.display = "none";
-    document.getElementById("area-mulai").style.display = "none"; 
-
-    document.getElementById("header-kuis").style.display = "grid";
-    document.getElementById("info-nisn").textContent = nisnSiswa;
-    document.getElementById("info-nama").textContent = namaSiswa;
-    document.getElementById("info-kelas").textContent = kelasSiswa;
-    document.getElementById("info-mapel").textContent = mapelSiswa;
-
-    document.getElementById("teks-timer").parentElement.style.display = "flex";
-    document.getElementById("teks-timer").style.display = "block";
-    document.getElementById("progress").style.display = "block";
-    document.getElementById("teks-soal").style.display = "flex"; 
-
-    kuisAktif = true;
-    jumlahPindahTab = 0;
-    jumlahPelanggaranKamera = 0; // Reset hitungan kamera
+    // Persiapkan UI CBT
+    document.getElementById("layar-menu").style.display = "none";
+    document.getElementById("layar-cbt").style.display = "block";
+    document.getElementById("cbt-info-mapel").textContent = `📘 ${mapelSiswa} - ${namaSiswa} (${kelasSiswa})`;
     
+    // Inisialisasi State
+    nomor = 0;
+    jawabanSiswa = {}; // Reset jawaban
+    riwayatJawaban = [];
+    kuisAktif = true;
+    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0;
+    
+    buatGridNavigasi();
     updateTimerTotal();
     mulaiTimerTotal();
-    
-    // MULAI DETEKSI AI KAMERA
     mulaiDeteksiAI();
-
-    tampilSoal();
+    
+    tampilSoalCBT();
 }
 
-/* ---------- TIMER ---------- */
+/* --- LOGIKA TAMPILAN CBT --- */
+function buatGridNavigasi() {
+    const grid = document.getElementById("grid-nav");
+    grid.innerHTML = "";
+    daftarSoal.forEach((_, index) => {
+        const div = document.createElement("div");
+        div.className = "nav-item";
+        div.textContent = index + 1;
+        div.id = `nav-item-${index}`;
+        div.onclick = () => {
+            if (!sedangTransisi) { nomor = index; tampilSoalCBT(); }
+        };
+        grid.appendChild(div);
+    });
+}
+
+function updateGridNavigasi() {
+    daftarSoal.forEach((_, index) => {
+        const item = document.getElementById(`nav-item-${index}`);
+        if (!item) return;
+        
+        // Hapus class state sebelumnya
+        item.classList.remove("sudah-dijawab", "sedang-aktif");
+        
+        // Tandai yang sudah dijawab
+        if (jawabanSiswa[index] !== undefined) item.classList.add("sudah-dijawab");
+        // Tandai soal aktif saat ini
+        if (index === nomor) item.classList.add("sedang-aktif");
+    });
+}
+
+function tampilSoalCBT() {
+    sedangTransisi = true;
+    const dataSoal = daftarSoal[nomor];
+    
+    document.getElementById("progress").textContent = `Soal ${nomor + 1} dari ${daftarSoal.length}`;
+    document.getElementById("teks-soal").textContent = dataSoal.soal;
+    
+    // Logika Tombol Navigasi
+    document.getElementById("btn-prev").style.display = nomor === 0 ? "none" : "block";
+    
+    if (nomor === daftarSoal.length - 1) {
+        document.getElementById("btn-next").style.display = "none";
+        document.getElementById("btn-selesai").style.display = "block";
+    } else {
+        document.getElementById("btn-next").style.display = "block";
+        document.getElementById("btn-selesai").style.display = "none";
+    }
+
+    const wadah = document.getElementById("pilihan-group");
+    wadah.innerHTML = "";
+    document.getElementById("loader-jawaban").style.display = "block";
+
+    setTimeout(() => {
+        document.getElementById("loader-jawaban").style.display = "none";
+        
+        const pilihan = dataSoal.pilihan;
+        ["A", "B", "C", "D", "E"].forEach(huruf => {
+            if (!pilihan[huruf]) return;
+            const btn = document.createElement("button");
+            btn.className = "pilihan";
+            
+            // Cek jika siswa sudah pernah menjawab soal ini sebelumnya
+            if (jawabanSiswa[nomor] === huruf) {
+                btn.classList.add("benar"); // Warna hijau (sebagai penanda dipilih)
+            }
+
+            btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
+            
+            // Logika saat jawaban diklik
+            btn.onclick = () => {
+                // Simpan jawaban
+                jawabanSiswa[nomor] = huruf;
+                
+                // Hapus class penanda dari tombol lain di soal ini
+                const semuaBtn = document.querySelectorAll("#pilihan-group .pilihan");
+                semuaBtn.forEach(b => b.classList.remove("benar"));
+                
+                // Tandai tombol yang dipilih
+                btn.classList.add("benar");
+                
+                // Update grid navigasi
+                updateGridNavigasi();
+            };
+            
+            wadah.appendChild(btn);
+        });
+
+        updateGridNavigasi(); // Update posisi sorot grid
+        sedangTransisi = false;
+    }, 1000); // Jeda 1 detik sebelum muncul pilihan
+}
+
+function soalBerikutnya() {
+    if (nomor < daftarSoal.length - 1) { nomor++; tampilSoalCBT(); }
+}
+
+function soalSebelumnya() {
+    if (nomor > 0) { nomor--; tampilSoalCBT(); }
+}
+
+function selesaikanUjian() {
+    // Konfirmasi sebelum selesai
+    if (confirm("Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.")) {
+        clearInterval(timerInterval);
+        kuisAktif = false;
+        matikanKamera();
+        
+        // Hitung skor
+        let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
+        daftarSoal.forEach((soal, idx) => {
+            const jwb = jawabanSiswa[idx];
+            const benar = jwb === soal.kunci;
+            
+            skorMaksimal += soal.skor;
+            if (benar) { skorDidapat += soal.skor; jumlahBenar++; }
+            
+            // Rekap untuk pembahasan
+            riwayatJawaban.push({
+                nomor: idx, jawabanSiswa: jwb || null, kunci: soal.kunci, benar: benar,
+                skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
+                teksPilihanSiswa: jwb ? soal.pilihan[jwb] : "-",
+                teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+                penjelasan: soal.penjelasan
+            });
+        });
+
+        const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+        
+        // Tampilkan hasil
+        document.getElementById("layar-cbt").style.display = "none";
+        document.getElementById("layar-akhir").style.display = "block";
+        document.getElementById("skor-angka").textContent = skorAkhir;
+        document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+        
+        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length);
+    }
+}
+
 function mulaiTimerTotal() {
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
@@ -1221,236 +926,95 @@ function mulaiTimerTotal() {
         if (sisaWaktuTotal <= 0) {
             clearInterval(timerInterval);
             kuisAktif = false;
-            document.getElementById("overlay-waktu-habis").style.display = "flex";
             matikanKamera();
+            alert("Waktu habis! Ujian akan diselesaikan otomatis.");
+            selesaikanUjian(); // Paksa selesai
         }
     }, 1000);
 }
+
 function updateTimerTotal() {
-    const el = document.getElementById("teks-timer");
-    const parent = el.parentElement;
+    const el = document.getElementById("cbt-timer");
+    const menit = Math.floor(sisaWaktuTotal / 60);
+    const detik = sisaWaktuTotal % 60;
+    el.textContent = `⏱️ ${String(menit).padStart(2, "0")}:${String(detik).padStart(2, "0")}`;
     
-    el.textContent = formatWaktu(sisaWaktuTotal);
-    
-    parent.classList.remove("warning", "danger");
-    if (sisaWaktuTotal <= 60) parent.classList.add("danger");
-    else if (sisaWaktuTotal <= 300) parent.classList.add("warning");
+    el.classList.remove("warning", "danger");
+    if (sisaWaktuTotal <= 60) el.classList.add("danger");
+    else if (sisaWaktuTotal <= 300) el.classList.add("warning");
 }
 
-/* ---------- TAMPIL SOAL ---------- */
-function tampilSoal() {
-    if (!kuisAktif) return;
-    sudahDijawab = false;
-
-    document.getElementById("progress").textContent = `Soal ${nomor + 1} dari ${daftarSoal.length}`;
-    document.getElementById("teks-soal").textContent = daftarSoal[nomor].soal;
-
-    const wadah = document.getElementById("pilihan-group");
-    wadah.innerHTML = "";
-    wadah.classList.remove("aktif"); 
-
-    const loader = document.getElementById("loader-jawaban");
-    loader.style.display = "block";
-
-    setTimeout(() => {
-        loader.style.display = "none";
-        
-        const pilihan = daftarSoal[nomor].pilihan;
-        ["A", "B", "C", "D", "E"].forEach(huruf => {
-            if (!pilihan[huruf]) return;
-            const btn = document.createElement("button");
-            btn.className = "pilihan";
-            btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
-            btn.onclick = () => cekJawaban(huruf);
-            wadah.appendChild(btn);
-        });
-
-        wadah.classList.add("aktif");
-    }, 2000); 
-}
-
-/* ---------- CEK JAWABAN ---------- */
-function cekJawaban(pilihanSiswa) {
-    if (!kuisAktif || sudahDijawab) return;
-    sudahDijawab = true;
-
-    const soal = daftarSoal[nomor];
-    const benar = pilihanSiswa === soal.kunci;
-
-    const semuaTombol = document.querySelectorAll("#pilihan-group .pilihan");
-    semuaTombol.forEach(btn => {
-        btn.disabled = true;
-        const huruf = btn.querySelector(".huruf").textContent;
-        if (huruf === soal.kunci) btn.classList.add("benar");
-        else if (huruf === pilihanSiswa) btn.classList.add("salah");
-    });
-
-    riwayatJawaban.push({
-        nomor: nomor, jawabanSiswa: pilihanSiswa, kunci: soal.kunci, benar: benar,
-        skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
-        teksPilihanSiswa: soal.pilihan[pilihanSiswa] || "-",
-        teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
-        penjelasan: soal.penjelasan
-    });
-
-    if (nomor < daftarSoal.length - 1) {
-        setTimeout(() => { nomor++; tampilSoal(); }, 800);
-    } else {
-        setTimeout(tampilHasil, 800);
-    }
-}
-
-/* ---------- HITUNG SKOR ---------- */
-function hitungSkor() {
-    let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
-    riwayatJawaban.forEach(r => {
-        skorMaksimal += r.skor;
-        skorDidapat += r.skorDidapat;
-        if (r.benar) jumlahBenar++;
-    });
-    const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
-    return { skorDidapat, skorMaksimal, jumlahBenar, skorAkhir };
-}
-
-/* ---------- KIRIM HASIL AKHIR ---------- */
-function kirimHasilAkhir() {
-    matikanKamera(); // Matikan kamera setelah selesai
-
+/* --- KIRIM HASIL KE SHEET --- */
+function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal) {
     if (mapelDipilih && mapelDipilih.isLatihan) {
-        document.getElementById("status-kirim").textContent = "🎯 Ini adalah ujian latihan. Nilai tidak disimpan ke Google Sheets.";
-        document.getElementById("status-kirim").style.color = "#e67e22";
+        document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
         return; 
     }
-
-    const { jumlahBenar, skorAkhir } = hitungSkor();
-    const totalSoal = daftarSoal.length;
-
-    if (!URL_GOOGLE_SHEETS || URL_GOOGLE_SHEETS.includes("XXXXXXXXXXXXX")) return;
-
     const params = new URLSearchParams({
-        nama: namaSiswa, 
-        nisn: nisnSiswa, 
-        kelas: kelasSiswa, 
-        jumlah_benar: jumlahBenar,
-        total_soal: totalSoal, 
-        skor: skorAkhir, 
-        pindah_tab: jumlahPindahTab,
-        pelanggaran_kamera: jumlahPelanggaranKamera, // <-- Kirim data pelanggaran kamera
-        mapel: mapelSiswa,
-        waktu_jawab: new Date().toLocaleString("id-ID")
+        nama: namaSiswa, nisn: nisnSiswa, kelas: kelasSiswa, 
+        jumlah_benar: jumlahBenar, total_soal: totalSoal, skor: skorAkhir, 
+        pindah_tab: jumlahPindahTab, pelanggaran_kamera: jumlahPelanggaranKamera,
+        mapel: mapelSiswa, waktu_jawab: new Date().toLocaleString("id-ID")
     });
-
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
-    .then(() => {
-        document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
-        document.getElementById("status-kirim").style.color = "#7f8c8d";
-    })
+    .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
     .catch(err => console.error("❌ Gagal:", err));
 }
 
-/* ---------- HASIL AKHIR ---------- */
-function tampilHasil() {
-    clearInterval(timerInterval);
-    kuisAktif = false;
-    const { jumlahBenar, skorAkhir, skorDidapat, skorMaksimal } = hitungSkor();
-
-    document.getElementById("layar-soal").style.display = "none";
-    document.getElementById("layar-akhir").style.display = "block";
-    document.getElementById("header-kuis").style.display = "none"; 
-    document.getElementById("progress").style.display = "none";
-
-    document.getElementById("skor-angka").textContent = skorAkhir;
-    document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
-    
-    document.getElementById("status-kirim").textContent = "⏳ Memproses hasil...";
-    
-    kirimHasilAkhir();
-}
-
-function tutupOverlayDanTampilHasil() {
-    document.getElementById("overlay-waktu-habis").style.display = "none";
-    tampilHasil();
-}
-
-/* ---------- PEMBAHASAN ---------- */
+/* --- PEMBAHASAN & RESET --- */
 function tampilkanPembahasan() {
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "block";
     const wadah = document.getElementById("daftar-pembahasan");
     wadah.innerHTML = "";
 
-    daftarSoal.forEach((soal, idx) => {
-        const r = riwayatJawaban.find(x => x.nomor === idx);
-        const div = document.createElement("div");
-        div.className = "item-soal";
-
+    riwayatJawaban.forEach((r) => {
+        const div = document.createElement("div"); div.className = "item-soal";
         let statusHTML = "";
-        if (r) {
+        if (r.jawabanSiswa) {
             const kelasJawaban = r.benar ? "benar" : "salah";
-            const ikonStatus = r.benar ? "✅" : "❌";
-            statusHTML = `<div style="margin-top:8px;"><span class="label-netral">Jawabanmu:</span><span class="jawaban-pg ${kelasJawaban}">${r.jawabanSiswa}. ${r.teksPilihanSiswa} ${ikonStatus}</span></div>`;
+            statusHTML = `<div style="margin-top:8px;"><span class="label-netral">Jawabanmu:</span><span class="jawaban-pg ${kelasJawaban}">${r.jawabanSiswa}. ${r.teksPilihanSiswa} ${r.benar ? '✅' : '❌'}</span></div>`;
             if (!r.benar) statusHTML += `<div style="margin-top:4px;"><span class="label-netral">Jawaban Benar:</span><span class="jawaban-pg benar">${r.kunci}. ${r.teksPilihanKunci}</span></div>`;
         } else {
             statusHTML = `<span class="label-salah">⏰ Tidak dijawab</span>`;
         }
-
         div.innerHTML = `
-            <strong>Soal ${idx + 1}:</strong> ${soal.soal}<br>
-            <div style="margin: 8px 0; font-size: 0.95rem; color: #555;">
-                A. ${soal.pilihan.A || "-"}<br> B. ${soal.pilihan.B || "-"}<br> C. ${soal.pilihan.C || "-"}<br> D. ${soal.pilihan.D || "-"}<br> ${soal.pilihan.E ? "E. " + soal.pilihan.E : ""}
-            </div>
+            <strong>Soal ${r.nomor + 1}:</strong> ${r.teksSoal}<br>
+            <div style="margin: 8px 0; font-size: 0.95rem; color: #555;">A. ${daftarSoal[r.nomor].pilihan.A}<br>B. ${daftarSoal[r.nomor].pilihan.B}<br>C. ${daftarSoal[r.nomor].pilihan.C}<br>D. ${daftarSoal[r.nomor].pilihan.D}<br>${daftarSoal[r.nomor].pilihan.E ? 'E. '+daftarSoal[r.nomor].pilihan.E : ''}</div>
             ${statusHTML}
-            ${soal.penjelasan ? `<div style="margin-top:8px; padding:10px; background:#f0f8ff; border-left:4px solid #4facfe; border-radius:6px; font-style: italic; font-size:0.95rem;">💡 ${soal.penjelasan}</div>` : ""}
+            ${r.penjelasan ? `<div class="penjelasan-box">💡 ${r.penjelasan}</div>` : ""}
         `;
         wadah.appendChild(div);
     });
 }
 
-/* ---------- MULAI ULANG ---------- */
 function mulaiUlang() {
-    clearInterval(timerInterval);
-    if (jadwalInterval) clearInterval(jadwalInterval);
-    matikanKamera(); // Pastikan kamera mati
-    nomor = 0; riwayatJawaban = []; namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
-    kuisAktif = false; sisaWaktuTotal = 0; jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; mapelDipilih = null;
-
+    clearInterval(timerInterval); if (jadwalInterval) clearInterval(jadwalInterval);
+    matikanKamera(); 
+    document.getElementById("layar-cbt").style.display = "none";
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
-    document.getElementById("layar-soal").style.display = "block";
-    document.getElementById("header-kuis").style.display = "none"; 
-    document.getElementById("progress").style.display = "none";
-    document.getElementById("pilihan-group").classList.remove("aktif");
-    document.getElementById("loader-jawaban").style.display = "none";
+    document.getElementById("layar-menu").style.display = "block";
     
-    document.getElementById("area-soal-ujian").classList.remove("blur-soal");
-    
-    document.getElementById("teks-soal").style.display = "none";
-
-    document.getElementById("judul-utama").style.display = "block"; 
     document.getElementById("layar-login-nisn").style.display = "block";
     document.getElementById("form-input-nisn").style.display = "block"; 
     document.getElementById("hasil-cari-siswa").classList.remove("aktif"); 
     document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     document.getElementById("area-mulai").style.display = "none";
     
-    document.getElementById("input-nisn").value = "";
-    document.getElementById("input-token").value = "";
-    document.getElementById("input-token").disabled = false;
-    document.getElementById("input-token").style.borderColor = "#ffc107";
-    document.getElementById("input-token").style.background = "#fff";
-    
-    document.getElementById("tombol-mulai").disabled = true;
-    document.getElementById("tombol-mulai").style.background = "#95a5a6";
+    document.getElementById("input-nisn").value = ""; document.getElementById("input-token").value = "";
+    document.getElementById("input-token").disabled = false; document.getElementById("input-token").style.borderColor = "#ffc107";
+    document.getElementById("tombol-mulai").disabled = true; document.getElementById("tombol-mulai").style.background = "#95a5a6";
     document.getElementById("tombol-mulai").textContent = "▶️ MULAI UJIAN";
-    
     document.getElementById("input-nisn").focus();
+    
+    namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = ""; mapelDipilih = null;
+    nomor = 0; jawabanSiswa = {}; riwayatJawaban = []; kuisAktif = false; sisaWaktuTotal = 0; 
+    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0;
 }
 
-/* ---------- INIT ---------- */
-aktifkanDeteksiPindahTab();
-aktifkanAntiScreenshot(); 
-ambilJadwal();
-ambilDataSiswa();
+/* --- INIT --- */
+aktifkanDeteksiPindahTab(); aktifkanAntiScreenshot(); ambilJadwal(); ambilDataSiswa();
 </script>
 </body>
 </html>
