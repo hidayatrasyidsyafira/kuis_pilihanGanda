@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Rekap Nilai - Guru</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #e9ecef; min-height: 100vh; padding: 30px; }
+        
+        .container {
+            max-width: 1200px; margin: 0 auto; background: white;
+            border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #dee2e6; padding-bottom: 20px; margin-bottom: 20px;
+        }
+        .header h1 { color: #2c3e50; font-size: 1.8rem; }
+        .header button {
+            background: #3498db; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .header button:hover { background: #2980b9; }
+
+        /* Filter Section */
+        .filter-section {
+            display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .filter-section input, .filter-section select {
+            padding: 10px 15px; border: 2px solid #b8d8e8; border-radius: 8px;
+            font-size: 1rem; outline: none; min-width: 200px;
+        }
+        .filter-section input:focus, .filter-section select:focus { border-color: #4facfe; }
+
+        /* Tabel Rekap */
+        .table-responsive { overflow-x: auto; }
+        table {
+            width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem;
+        }
+        th, td {
+            padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background: #f8f9fa; color: #2c3e50; font-weight: 600; position: sticky; top: 0;
+        }
+        tr:hover { background: #f1f8ff; }
+
+        /* Badges */
+        .badge { padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+        .badge-green { background: #d4edda; color: #155724; }
+        .badge-yellow { background: #fff3cd; color: #856404; }
+        .badge-red { background: #f8d7da; color: #721c24; }
+        
+        .skor-text { font-weight: bold; font-size: 1.1rem; }
+
+        .loading { text-align: center; padding: 40px; font-size: 1.2rem; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Dashboard Rekap Nilai Ujian</h1>
+            <button onclick="muatData()">🔄 Refresh Data</button>
+        </div>
+
+        <div class="filter-section">
+            <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabel()">
+            <select id="filter-kelas" onchange="renderTabel()">
+                <option value="">Semua Kelas</option>
+            </select>
+            <select id="filter-mapel" onchange="renderTabel()">
+                <option value="">Semua Mapel</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Waktu</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Mapel</th>
+                        <th>Skor</th>
+                        <th>Benar/Total</th>
+                        <th>Pindah Tab</th>
+                        <th>Pelanggaran Kamera</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-nilai">
+                    <tr><td colspan="9" class="loading">⏳ Memuat data dari Google Sheets...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+// GANTI DENGAN URL WEB APP APPS SCRIPT ANDA
+const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
+
+let semuaDataNilai = [];
+
+async function muatData() {
+    const tbody = document.getElementById("tbody-nilai");
+    tbody.innerHTML = `<tr><td colspan="9" class="loading">⏳ Memuat data...</td></tr>`;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=nilai");
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            semuaDataNilai = json.data;
+            isiFilter();
+            renderTabel();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal memuat data.</td></tr>`;
+        }
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error koneksi ke server.</td></tr>`;
+    }
+}
+
+function isiFilter() {
+    const setKelas = new Set();
+    const setMapel = new Set();
+
+    semuaDataNilai.forEach(d => {
+        if (d.kelas) setKelas.add(d.kelas);
+        if (d.mapel) setMapel.add(d.mapel);
+    });
+
+    const selectKelas = document.getElementById("filter-kelas");
+    const selectMapel = document.getElementById("filter-mapel");
+
+    // Simpan nilai yang sedang dipilih agar tidak reset saat refresh
+    const valKelas = selectKelas.value;
+    const valMapel = selectMapel.value;
+
+    selectKelas.innerHTML = `<option value="">Semua Kelas</option>`;
+    selectMapel.innerHTML = `<option value="">Semua Mapel</option>`;
+
+    Array.from(setKelas).sort().forEach(k => {
+        selectKelas.innerHTML += `<option value="${k}">${k}</option>`;
+    });
+    Array.from(setMapel).sort().forEach(m => {
+        selectMapel.innerHTML += `<option value="${m}">${m}</option>`;
+    });
+
+    selectKelas.value = valKelas;
+    selectMapel.value = valMapel;
+}
+
+function renderTabel() {
+    const tbody = document.getElementById("tbody-nilai");
+    const filterNama = document.getElementById("filter-nama").value.toLowerCase();
+    const filterKelas = document.getElementById("filter-kelas").value;
+    const filterMapel = document.getElementById("filter-mapel").value;
+
+    // Filter Data
+    const dataTampil = semuaDataNilai.filter(d => {
+        const cocokNama = (d.nama || "").toLowerCase().includes(filterNama);
+        const cocokKelas = filterKelas === "" || d.kelas === filterKelas;
+        const cocokMapel = filterMapel === "" || d.mapel === filterMapel;
+        return cocokNama && cocokKelas && cocokMapel;
+    });
+
+    if (dataTampil.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">Tidak ada data yang cocok dengan filter.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    dataTampil.forEach((d, index) => {
+        // Warna Skor
+        let badgeSkor = "badge-green";
+        if (d.skor < 70) badgeSkor = "badge-red";
+        else if (d.skor < 85) badgeSkor = "badge-yellow";
+
+        // Warna Pelanggaran
+        const tabColor = d.pindah_tab > 0 ? "color: #e74c3c; font-weight: bold;" : "";
+        const camColor = d.pelanggaran_kamera > 0 ? "color: #e74c3c; font-weight: bold;" : "";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${d.waktu}</td>
+            <td><strong>${d.nama}</strong></td>
+            <td>${d.kelas}</td>
+            <td>${d.mapel}</td>
+            <td><span class="badge ${badgeSkor} skor-text">${d.skor}</span></td>
+            <td>${d.jumlah_benar} / ${d.total_soal}</td>
+            <td style="${tabColor}">${d.pindah_tab}x</td>
+            <td style="${camColor}">${d.pelanggaran_kamera}x</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Panggil saat halaman dimuat
+muatData();
+</script>
+</body>
+</html>
