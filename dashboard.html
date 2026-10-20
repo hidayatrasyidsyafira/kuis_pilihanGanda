@@ -55,7 +55,6 @@
         .badge-red { background: #f8d7da; color: #721c24; }
         
         .skor-text { font-weight: bold; font-size: 1.1rem; }
-
         .loading { text-align: center; padding: 40px; font-size: 1.2rem; color: #7f8c8d; }
     </style>
 </head>
@@ -104,31 +103,31 @@ const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXM
 
 let semuaDataNilai = [];
 
-function muatData() {
+async function muatData() {
     const tbody = document.getElementById("tbody-nilai");
     tbody.innerHTML = `<tr><td colspan="9" class="loading">⏳ Memuat data...</td></tr>`;
 
-    // Hapus script JSONP lama jika ada (untuk refresh)
-    const scriptLama = document.getElementById("jsonp-script");
-    if (scriptLama) scriptLama.remove();
-
-    // Buat fungsi callback global
-    window.terimaDataNilai = function(response) {
-        if (response.status === "success") {
-            semuaDataNilai = response.data;
-            isiFilter();
-            renderTabel();
-        } else {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal memuat data.</td></tr>`;
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=nilai&t=" + new Date().getTime());
+        const teks = await res.text();
+        
+        try {
+            const json = JSON.parse(teks);
+            if (json.status === "success") {
+                semuaDataNilai = json.data;
+                isiFilter();
+                renderTabel();
+            } else {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal memuat: ${json.message}</td></tr>`;
+            }
+        } catch(e) {
+            console.error("Bukan JSON:", teks);
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error: Pastikan Apps Script sudah di <b>Deploy New Version</b> dan akses disetel ke <b>Anyone</b>.</td></tr>`;
         }
-    };
-
-    // Buat elemen script untuk JSONP
-    const script = document.createElement("script");
-    script.id = "jsonp-script";
-    // Tambahkan parameter callback=terimaDataNilai ke URL
-    script.src = URL_GOOGLE_SHEETS + "?aksi=nilai&callback=terimaDataNilai&t=" + new Date().getTime();
-    document.body.appendChild(script);
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi: Internet terputus atau URL salah.</td></tr>`;
+    }
 }
 
 function isiFilter() {
@@ -174,7 +173,7 @@ function renderTabel() {
     });
 
     if (dataTampil.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">Tidak ada data yang cocok dengan filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">Tidak ada data yang cocok.</td></tr>`;
         return;
     }
 
@@ -203,7 +202,6 @@ function renderTabel() {
     });
 }
 
-// Panggil saat halaman dimuat
 muatData();
 </script>
 </body>
