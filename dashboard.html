@@ -14,50 +14,51 @@
             padding: 30px;
         }
 
+        /* === HEADER === */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #dee2e6; padding-bottom: 20px; margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6; padding-bottom: 20px; margin-bottom: 25px;
+            flex-wrap: wrap; gap: 15px;
         }
         .header h1 { color: #2c3e50; font-size: 1.8rem; }
+        .header-actions { display: flex; gap: 10px; }
         .header button {
-            background: #3498db; color: white; border: none; padding: 10px 20px;
-            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            border: none; padding: 10px 20px; border-radius: 8px;
+            font-weight: bold; cursor: pointer; transition: 0.2s; color: white;
         }
-        .header button:hover { background: #2980b9; }
+        .btn-upload { background: #2ecc71; }
+        .btn-upload:hover { background: #27ae60; }
+        .btn-refresh { background: #3498db; }
+        .btn-refresh:hover { background: #2980b9; }
 
-        /* Filter Section */
+        /* === FILTER SECTION === */
         .filter-section {
             display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
         }
         .filter-section input, .filter-section select {
             padding: 10px 15px; border: 2px solid #b8d8e8; border-radius: 8px;
-            font-size: 1rem; outline: none; min-width: 200px;
+            font-size: 1rem; outline: none; min-width: 200px; transition: 0.2s;
         }
         .filter-section input:focus, .filter-section select:focus { border-color: #4facfe; }
 
-        /* Tabel Rekap */
-        .table-responsive { overflow-x: auto; }
-        table {
-            width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem;
-        }
-        th, td {
-            padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6;
-        }
-        th {
-            background: #f8f9fa; color: #2c3e50; font-weight: 600; position: sticky; top: 0;
-        }
+        /* === TABEL REKAP === */
+        .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #dee2e6; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        th, td { padding: 14px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background: #f8f9fa; color: #2c3e50; font-weight: 600; white-space: nowrap; }
         tr:hover { background: #f1f8ff; }
+        tr:last-child td { border-bottom: none; }
 
-        /* Badges */
-        .badge { padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+        /* === BADGES & TEKS === */
+        .badge { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: inline-block; }
         .badge-green { background: #d4edda; color: #155724; }
         .badge-yellow { background: #fff3cd; color: #856404; }
         .badge-red { background: #f8d7da; color: #721c24; }
-        
         .skor-text { font-weight: bold; font-size: 1.1rem; }
-        .loading { text-align: center; padding: 40px; font-size: 1.2rem; color: #7f8c8d; }
+        .warning-text { color: #e74c3c; font-weight: bold; }
+        .loading { text-align: center; padding: 40px; font-size: 1.2rem; color: #7f8c8d; font-style: italic; }
 
-        /* Modal */
+        /* === MODAL UPLOAD === */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.6); display: none;
@@ -65,27 +66,62 @@
         }
         .modal-overlay.aktif { display: flex; }
         .modal-content {
-            background: white; padding: 30px; border-radius: 20px;
-            max-width: 600px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: white; padding: 30px; border-radius: 16px;
+            max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease;
         }
-        .modal-content h3 { color: #2c3e50; margin-bottom: 20px; text-align: center; }
-        .modal-content .close-btn {
-            background: #e74c3c; color: white; border: none; padding: 10px 20px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
+        .modal-content h3 { color: #2c3e50; margin-bottom: 15px; text-align: center; font-size: 1.4rem; }
+        .modal-content p { font-size: 0.9rem; color: #555; margin-bottom: 15px; text-align: center; }
         
+        .upload-area {
+            border: 2px dashed #b8d8e8; border-radius: 10px; padding: 20px;
+            text-align: center; margin-bottom: 20px; background: #f8f9fa;
+        }
+        .upload-area input[type="file"] { display: none; }
+        .upload-label {
+            background: #e3f2fd; color: #0c5460; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; display: inline-block;
+            transition: 0.2s;
+        }
+        .upload-label:hover { background: #bbdefb; }
+        .file-name { margin-top: 10px; font-size: 0.9rem; color: #2ecc71; font-weight: bold; }
+
+        .btn-proses {
+            background: #2ecc71; color: white; border: none; padding: 15px;
+            border-radius: 10px; font-size: 1.1rem; font-weight: bold;
+            width: 100%; cursor: pointer; margin-bottom: 10px; transition: 0.2s;
+        }
+        .btn-proses:hover { background: #27ae60; }
+        .btn-batal {
+            background: #95a5a6; color: white; border: none; padding: 12px;
+            border-radius: 10px; font-size: 1rem; font-weight: bold;
+            width: 100%; cursor: pointer; transition: 0.2s;
+        }
+        .btn-batal:hover { background: #7f8c8d; }
+
+        .format-box {
+            background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;
+            padding: 15px; font-size: 0.85rem; color: #856404; margin-bottom: 20px;
+            font-family: monospace; line-height: 1.5;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- HEADER -->
         <div class="header">
-            <h1>📊 Dashboard Rekap Nilai Ujian</h1>
-            <div>
-                <button style="background: #2ecc71; margin-right: 10px;" onclick="bukaModalUpload()">📤 Upload Data Siswa</button>
-                <button onclick="muatData()">🔄 Refresh Data</button>
+            <h1>📊 Dashboard Rekap Ujian</h1>
+            <div class="header-actions">
+                <button class="btn-upload" onclick="bukaModalUpload()">📤 Upload Data Siswa</button>
+                <button class="btn-refresh" onclick="muatData()">🔄 Refresh Data</button>
             </div>
         </div>
 
+        <!-- FILTER -->
         <div class="filter-section">
             <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabel()">
             <select id="filter-kelas" onchange="renderTabel()">
@@ -96,6 +132,7 @@
             </select>
         </div>
 
+        <!-- TABEL -->
         <div class="table-responsive">
             <table>
                 <thead>
@@ -118,12 +155,42 @@
         </div>
     </div>
 
+    <!-- MODAL UPLOAD SISWA -->
+    <div class="modal-overlay" id="modal-upload">
+        <div class="modal-content">
+            <h3>📤 Upload Data Siswa</h3>
+            <p>Unggah file CSV untuk memperbarui daftar siswa di sistem.</p>
+            
+            <div class="format-box">
+                <strong>Format CSV (Pisahkan dengan koma):</strong><br>
+                NISN, Nama, Kelas<br>
+                0099068975, Budi Santoso, X-1<br>
+                0099068976, Siti Aminah, X-2
+            </div>
+
+            <div class="upload-area">
+                <label for="file-csv" class="upload-label">📁 Pilih File CSV</label>
+                <input type="file" id="file-csv" accept=".csv" onchange="tampilkanNamaFile()">
+                <div class="file-name" id="file-name">Belum ada file dipilih</div>
+            </div>
+            
+            <button class="btn-proses" onclick="prosesUpload()">Upload & Ganti Data Lama</button>
+            <button class="btn-batal" onclick="tutupModalUpload()">Batal</button>
+        </div>
+    </div>
+
 <script>
+/* =========================================================
+   KONFIGURASI
+   ========================================================= */
 // GANTI DENGAN URL WEB APP APPS SCRIPT ANDA
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
 
 let semuaDataNilai = [];
 
+/* =========================================================
+   FITUR DASHBOARD NILAI
+   ========================================================= */
 async function muatData() {
     const tbody = document.getElementById("tbody-nilai");
     tbody.innerHTML = `<tr><td colspan="9" class="loading">⏳ Memuat data...</td></tr>`;
@@ -143,7 +210,7 @@ async function muatData() {
             }
         } catch(e) {
             console.error("Bukan JSON:", teks);
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error: Pastikan Apps Script sudah di <b>Deploy New Version</b> dan akses disetel ke <b>Anyone</b>.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error: Pastikan Apps Script sudah di Deploy New Version.</td></tr>`;
         }
     } catch (err) {
         console.error(err);
@@ -169,12 +236,8 @@ function isiFilter() {
     selectKelas.innerHTML = `<option value="">Semua Kelas</option>`;
     selectMapel.innerHTML = `<option value="">Semua Mapel</option>`;
 
-    Array.from(setKelas).sort().forEach(k => {
-        selectKelas.innerHTML += `<option value="${k}">${k}</option>`;
-    });
-    Array.from(setMapel).sort().forEach(m => {
-        selectMapel.innerHTML += `<option value="${m}">${m}</option>`;
-    });
+    Array.from(setKelas).sort().forEach(k => { selectKelas.innerHTML += `<option value="${k}">${k}</option>`; });
+    Array.from(setMapel).sort().forEach(m => { selectMapel.innerHTML += `<option value="${m}">${m}</option>`; });
 
     selectKelas.value = valKelas;
     selectMapel.value = valMapel;
@@ -204,8 +267,8 @@ function renderTabel() {
         if (d.skor < 70) badgeSkor = "badge-red";
         else if (d.skor < 85) badgeSkor = "badge-yellow";
 
-        const tabColor = d.pindah_tab > 0 ? "color: #e74c3c; font-weight: bold;" : "";
-        const camColor = d.pelanggaran_kamera > 0 ? "color: #e74c3c; font-weight: bold;" : "";
+        const tabClass = d.pindah_tab > 0 ? "warning-text" : "";
+        const camClass = d.pelanggaran_kamera > 0 ? "warning-text" : "";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -216,22 +279,31 @@ function renderTabel() {
             <td>${d.mapel}</td>
             <td><span class="badge ${badgeSkor} skor-text">${d.skor}</span></td>
             <td>${d.jumlah_benar} / ${d.total_soal}</td>
-            <td style="${tabColor}">${d.pindah_tab}x</td>
-            <td style="${camColor}">${d.pelanggaran_kamera}x</td>
+            <td class="${tabClass}">${d.pindah_tab}x</td>
+            <td class="${camClass}">${d.pelanggaran_kamera}x</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-muatData();
-
-    /* --- FITUR UPLOAD SISWA --- */
+/* =========================================================
+   FITUR UPLOAD SISWA (CSV)
+   ========================================================= */
 function bukaModalUpload() {
     document.getElementById("modal-upload").classList.add("aktif");
 }
+
 function tutupModalUpload() {
     document.getElementById("modal-upload").classList.remove("aktif");
     document.getElementById("file-csv").value = "";
+    document.getElementById("file-name").textContent = "Belum ada file dipilih";
+}
+
+function tampilkanNamaFile() {
+    const file = document.getElementById("file-csv").files[0];
+    if (file) {
+        document.getElementById("file-name").textContent = "📄 " + file.name;
+    }
 }
 
 function prosesUpload() {
@@ -248,11 +320,11 @@ function prosesUpload() {
         const teks = e.target.result;
         const baris = parseCSV(teks);
         
-        // Asumsi: Baris 1 adalah header, jadi kita mulai dari index 1
+        // Asumsi: Baris 1 adalah header, mulai dari index 1
         const dataSiswa = [];
         for (let i = 1; i < baris.length; i++) {
             const k = baris[i];
-            if (!k || k.length < 3) continue; // Skip jika tidak ada data
+            if (!k || k.length < 3) continue; // Skip jika data kurang
             
             dataSiswa.push({
                 nisn: k[0].trim(),
@@ -266,41 +338,51 @@ function prosesUpload() {
             return;
         }
 
+        // Konfirmasi sebelum menimpa data lama
+        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa. Data lama di Sheet "Siswa" akan DIHAPUS dan diganti dengan data baru ini. Lanjutkan?`)) {
+            return;
+        }
+
         try {
-            // Kirim data ke Apps Script menggunakan URLSearchParams
             const params = new URLSearchParams({
                 aksi: "upload_siswa",
                 data: JSON.stringify(dataSiswa)
             });
 
+            // Ubah tombol jadi loading
+            const btn = document.querySelector('.btn-proses');
+            btn.textContent = "⏳ Mengupload...";
+            btn.disabled = true;
+
             const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
             const json = await res.json();
 
             if (json.status === "success") {
-                alert(`✅ Berhasil mengupload ${dataSiswa.length} data siswa!`);
+                alert(`✅ Berhasil! ${dataSiswa.length} data siswa telah disimpan.`);
                 tutupModalUpload();
-                muatData(); // Refresh tabel dashboard
             } else {
                 alert("❌ Gagal mengupload: " + json.message);
             }
         } catch (err) {
             console.error(err);
-            alert("❌ Terjadi kesalahan saat menghubungi server.");
+            alert("❌ Terjadi kesalahan koneksi ke server.");
+        } finally {
+            const btn = document.querySelector('.btn-proses');
+            btn.textContent = "Upload & Ganti Data Lama";
+            btn.disabled = false;
         }
     };
     reader.readAsText(file);
 }
 
-// Fungsi Parser CSV (Sama seperti di index.html)
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
         const hasil = [];
         let bagian = "", dalamKutip = false;
         for (let c of r) {
             if (c === '"') dalamKutip = !dalamKutip;
-            else if ((c === "," || c === ";") && !dalamKutip) { // Mendukung koma atau titik koma
-                hasil.push(bagian.trim()); 
-                bagian = ""; 
+            else if ((c === "," || c === ";") && !dalamKutip) { 
+                hasil.push(bagian.trim()); bagian = ""; 
             }
             else bagian += c;
         }
@@ -308,26 +390,9 @@ function parseCSV(teks) {
         return hasil.map(s => s.replace(/^"|"$/g, ""));
     });
 }
+
+// Muat data saat halaman pertama kali dibuka
+muatData();
 </script>
-    <!-- MODAL UPLOAD SISWA -->
-    <div class="modal-overlay" id="modal-upload">
-        <div class="modal-content">
-            <h3>Upload Data Siswa (CSV)</h3>
-            <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
-                Pastikan file CSV memiliki kolom: <strong>NISN, Nama, Kelas</strong>.
-            </p>
-            <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 15px; display: block; width: 100%;">
-            
-            <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px;">
-                <strong>Contoh Format:</strong><br>
-                NISN,Nama,Kelas<br>
-                0099068975,Budi Santoso,X-1<br>
-                0099068976,Siti Aminah,X-2
-            </div>
-            
-            <button class="tombol-lanjut-nisn" onclick="prosesUpload()">Upload Data</button>
-            <button class="close-btn" style="background: #95a5a6; margin-top: 10px;" onclick="tutupModalUpload()">Batal</button>
-        </div>
-    </div>
 </body>
 </html>
