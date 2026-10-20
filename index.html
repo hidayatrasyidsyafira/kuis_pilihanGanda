@@ -89,7 +89,7 @@
         }
         .tombol-lanjut-nisn:hover { background: #27ae60; }
 
-        /* === TOMBOL JENIS UJIAN & MAPEL === */
+        /* === TOMBOL JENIS UJIAN === */
         .grid-jenis {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -114,7 +114,23 @@
             background: #e3f2fd;
         }
 
-        /* Tombol Batal */
+        /* Tombol Latihan & Batal */
+        .tombol-latihan {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .tombol-latihan:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4); }
+
         .btn-cancel {
             background: #e74c3c;
             color: white;
@@ -466,6 +482,10 @@
                 <button class="tombol-jenis" onclick="bukaModalMapel('UH')">📝 Ulangan Harian (UH)</button>
                 <button class="tombol-jenis" onclick="bukaModalMapel('UAS')">🎓 Ujian Akhir Semester (UAS)</button>
             </div>
+            
+            <!-- Tombol Latihan -->
+            <button class="tombol-latihan" onclick="bukaModalMapel('LTH')">🎯 Ujian Latihan (LTH)</button>
+
             <!-- Tombol Batal -->
             <button class="btn-cancel" onclick="mulaiUlang()">❌ Batal / Kembali ke Login</button>
         </div>
@@ -651,13 +671,50 @@ function bukaModalMapel(jenisUjian) {
     const judulModal = document.getElementById("judul-modal");
     
     container.innerHTML = "";
+    
+    // Khusus Ujian Latihan (LTH)
+    if (jenisUjian === 'LTH') {
+        judulModal.textContent = `Pilih Mapel Latihan`;
+        const grid = document.createElement("div");
+        grid.className = "grid-mapel";
+
+        // Daftar mapel latihan statis (bisa Anda tambah/ubah sesuai kebutuhan)
+        const mapelLatihan = [
+            { mapel: "TIK - Latihan Algoritma", file: "soal_tik_lth_algoritma", waktu: "15 Menit", durasi: 15, token: "LTH" }
+        ];
+
+        mapelLatihan.forEach((j) => {
+            const btn = document.createElement("button");
+            btn.className = "tombol-mapel";
+            btn.innerHTML = `
+                <span class="nama-mapel">📘 ${j.mapel}</span>
+                <span class="info-waktu">⏱️ ${j.waktu} (Tanpa Token)</span>
+            `;
+            btn.onclick = () => {
+                // Buat objek jadwal tiruan untuk latihan
+                pilihMapel({
+                    mapel: j.mapel,
+                    durasi: j.durasi,
+                    token: "LTH", // Token otomatis benar
+                    file: j.file,
+                    waktu: "00:00 - 23:59", // Agar lolos cek waktu
+                    tanggal: "01/01/2099" // Tanggal jauh di masa depan
+                }, true); // true = mode latihan
+            };
+            grid.appendChild(btn);
+        });
+        container.appendChild(grid);
+        document.getElementById("modal-mapel").classList.add("aktif");
+        return;
+    }
+
+    // --- Untuk UH dan UAS (Ambil dari Google Sheet) ---
     judulModal.textContent = `Pilih Mapel ${jenisUjian}`;
 
     const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const hariIni = namaHari[new Date().getDay()];
     const sekarang = new Date().getTime();
 
-    // Filter berdasarkan Kelas, Hari, Waktu, dan JENIS UJIAN
     const jadwalHariIni = jadwalData.filter(j => {
         const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelasSiswa.toUpperCase().trim());
         const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
@@ -688,7 +745,7 @@ function bukaModalMapel(jenisUjian) {
                 <span class="nama-mapel">📘 ${j.mapel}</span>
                 <span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Menit)</span>
             `;
-            btn.onclick = () => pilihMapel(j);
+            btn.onclick = () => pilihMapel(j, false);
             grid.appendChild(btn);
         });
         container.appendChild(grid);
@@ -701,8 +758,9 @@ function tutupModalMapel() {
     document.getElementById("modal-mapel").classList.remove("aktif");
 }
 
-function pilihMapel(jadwal) {
+function pilihMapel(jadwal, isLatihan = false) {
     mapelDipilih = jadwal;
+    mapelDipilih.isLatihan = isLatihan; // Simpan status latihan
     tutupModalMapel();
     
     // Set durasi dari data jadwal yang dipilih
@@ -718,8 +776,13 @@ function pilihMapel(jadwal) {
     document.getElementById("form-token").style.display = "none";
     document.getElementById("tombol-mulai").style.display = "none";
     
-    // CEK APAKAH SUDAH UJIAN
-    cekRiwayatSiswa();
+    if (isLatihan) {
+        // LEWATI CEK RIWAYAT UNTUK LATIHAN
+        cekStatusWaktu(mapelDipilih);
+    } else {
+        // CEK APAKAH SUDAH UJIAN UNTUK UH/UAS
+        cekRiwayatSiswa();
+    }
 }
 
 function formatWaktu(detik) {
@@ -768,6 +831,21 @@ function cekStatusWaktu(jadwal) {
     
     if (jadwalInterval) clearInterval(jadwalInterval);
 
+    // Jika mode latihan, langsung buka form token
+    if (jadwal.isLatihan) {
+        areaMulai.style.display = "block"; 
+        countdownBox.style.display = "none";
+        formToken.style.display = "block";
+        tombolMulai.style.display = "block";
+        
+        // Auto isi token untuk latihan agar siswa tidak perlu mengetik
+        document.getElementById("input-token").value = jadwal.token;
+        document.getElementById("input-token").disabled = false;
+        cekToken(); // Panggil cekToken agar tombol mulai langsung menyala
+        return;
+    }
+
+    // Jika bukan latihan (UH/UAS), cek jadwal seperti biasa
     const waktuParts = jadwal.waktu.split("-");
     const jamMulai = waktuParts[0].trim();
     const jamSelesai = waktuParts[1].trim();
@@ -782,7 +860,6 @@ function cekStatusWaktu(jadwal) {
         const sekarang = new Date().getTime();
         
         if (sekarang < dateMulai) {
-            // BELUM DIMULAI
             countdownBox.style.display = "block";
             formToken.style.display = "none";
             tombolMulai.style.display = "none";
@@ -796,7 +873,6 @@ function cekStatusWaktu(jadwal) {
                 `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
         } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            // SEDANG BERLANGSUNG
             clearInterval(jadwalInterval);
             countdownBox.style.display = "none";
             formToken.style.display = "block";
@@ -806,7 +882,6 @@ function cekStatusWaktu(jadwal) {
             document.getElementById("input-token").focus();
 
         } else {
-            // SUDAH SELESAI
             clearInterval(jadwalInterval);
             countdownBox.style.display = "none";
             formToken.style.display = "none";
@@ -885,10 +960,18 @@ function parseCSV(teks) {
     });
 }
 
-/* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel) ---------- */
-async function ambilSoal(namaMapel) {
-    let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
-    let fileCSV = `soal_${namaFile}.csv`;
+/* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel / File) ---------- */
+async function ambilSoal(namaMapel, fileKhusus = null) {
+    let fileCSV = "";
+    
+    // Jika ada nama file khusus (untuk latihan), gunakan itu
+    if (fileKhusus) {
+        fileCSV = fileKhusus.endsWith('.csv') ? fileKhusus : `${fileKhusus}.csv`;
+    } else {
+        // Untuk UH/UAS, ambil dari nama mapel
+        let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
+        fileCSV = `soal_${namaFile}.csv`;
+    }
 
     try {
         const res = await fetch(fileCSV);
@@ -956,7 +1039,8 @@ async function mulaiKuis() {
 
     mapelSiswa = mapelDipilih.mapel;
 
-    await ambilSoal(mapelSiswa);
+    // Panggil ambilSoal dengan parameter file khusus jika ada
+    await ambilSoal(mapelSiswa, mapelDipilih.file);
     
     if (daftarSoal.length === 0) {
         alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
@@ -1100,6 +1184,13 @@ function hitungSkor() {
 
 /* ---------- KIRIM HASIL AKHIR ---------- */
 function kirimHasilAkhir() {
+    // JIKA LATIHAN, JANGAN KIRIM KE GOOGLE SHEETS
+    if (mapelDipilih && mapelDipilih.isLatihan) {
+        document.getElementById("status-kirim").textContent = "🎯 Ini adalah ujian latihan. Nilai tidak disimpan ke Google Sheets.";
+        document.getElementById("status-kirim").style.color = "#e67e22";
+        return; 
+    }
+
     const { jumlahBenar, skorAkhir } = hitungSkor();
     const totalSoal = daftarSoal.length;
 
@@ -1118,6 +1209,10 @@ function kirimHasilAkhir() {
     });
 
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
+    .then(() => {
+        document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
+        document.getElementById("status-kirim").style.color = "#7f8c8d";
+    })
     .catch(err => console.error("❌ Gagal:", err));
 }
 
@@ -1134,8 +1229,10 @@ function tampilHasil() {
 
     document.getElementById("skor-angka").textContent = skorAkhir;
     document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
-    document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
-
+    
+    // Reset status kirim sebelum memanggil fungsi kirim
+    document.getElementById("status-kirim").textContent = "⏳ Memproses hasil...";
+    
     kirimHasilAkhir();
 }
 
