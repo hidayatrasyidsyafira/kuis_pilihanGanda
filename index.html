@@ -348,6 +348,25 @@
             .pilihan-group .pilihan:nth-child(5) { grid-column: 1; grid-row: auto; }
         }
 
+        /* ANIMASI LOADING JAWABAN */
+        .loader-jawaban {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         .lanjut-btn {
             background: #3498db; color: white; padding: 16px 35px; border: none;
             border-radius: 14px; font-size: 1.2rem; cursor: pointer; display: none; margin: 10px auto;
@@ -467,6 +486,11 @@
 
         <div id="layar-soal">
             <div class="soal-box" id="teks-soal" style="display: none;"></div>
+            <!-- Animasi Loading Jawaban -->
+            <div class="loader-jawaban" id="loader-jawaban">
+                <div class="spinner"></div>
+                <p>Menyiapkan pilihan jawaban...</p>
+            </div>
             <div class="pilihan-group" id="pilihan-group"></div>
         </div>
 
@@ -1001,18 +1025,28 @@ function tampilSoal() {
 
     const wadah = document.getElementById("pilihan-group");
     wadah.innerHTML = "";
+    wadah.classList.remove("aktif"); // Sembunyikan pilihan dulu
 
-    const pilihan = daftarSoal[nomor].pilihan;
-    ["A", "B", "C", "D", "E"].forEach(huruf => {
-        if (!pilihan[huruf]) return;
-        const btn = document.createElement("button");
-        btn.className = "pilihan";
-        btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
-        btn.onclick = () => cekJawaban(huruf);
-        wadah.appendChild(btn);
-    });
+    // Tampilkan loader
+    const loader = document.getElementById("loader-jawaban");
+    loader.style.display = "block";
 
-    wadah.classList.add("aktif");
+    // Jeda 2 detik (2000 ms) sebelum memunculkan pilihan
+    setTimeout(() => {
+        loader.style.display = "none";
+        
+        const pilihan = daftarSoal[nomor].pilihan;
+        ["A", "B", "C", "D", "E"].forEach(huruf => {
+            if (!pilihan[huruf]) return;
+            const btn = document.createElement("button");
+            btn.className = "pilihan";
+            btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
+            btn.onclick = () => cekJawaban(huruf);
+            wadah.appendChild(btn);
+        });
+
+        wadah.classList.add("aktif");
+    }, 2000); // <-- Ubah angka 2000 ini jika ingin lebih cepat/lama (dalam milidetik)
 }
 
 /* ---------- CEK JAWABAN ---------- */
@@ -1067,7 +1101,7 @@ function kirimHasilAkhir() {
 
     const params = new URLSearchParams({
         nama: namaSiswa, 
-        nisn: nisnSiswa,  // <-- Dikirim untuk dicatat ke Riwayat
+        nisn: nisnSiswa, 
         kelas: kelasSiswa, 
         jumlah_benar: jumlahBenar,
         total_soal: totalSoal, 
@@ -1151,6 +1185,7 @@ function mulaiUlang() {
     document.getElementById("header-kuis").style.display = "none"; 
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
+    document.getElementById("loader-jawaban").style.display = "none";
     
     // Sembunyikan kotak soal kembali
     document.getElementById("teks-soal").style.display = "none";
