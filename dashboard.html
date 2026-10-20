@@ -25,6 +25,7 @@
         .header button {
             border: none; padding: 10px 20px; border-radius: 8px;
             font-weight: bold; cursor: pointer; transition: 0.2s; color: white;
+            display: flex; align-items: center; gap: 8px;
         }
         .btn-upload { background: #2ecc71; }
         .btn-upload:hover { background: #27ae60; }
@@ -63,51 +64,71 @@
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.6); display: none;
             align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+            backdrop-filter: blur(4px);
         }
         .modal-overlay.aktif { display: flex; }
         .modal-content {
-            background: white; padding: 30px; border-radius: 16px;
-            max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: white; padding: 30px; border-radius: 20px;
+            max-width: 500px; width: 100%; box-shadow: 0 15px 40px rgba(0,0,0,0.2);
             animation: slideDown 0.3s ease;
         }
         @keyframes slideDown {
             from { transform: translateY(-30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        .modal-content h3 { color: #2c3e50; margin-bottom: 15px; text-align: center; font-size: 1.4rem; }
-        .modal-content p { font-size: 0.9rem; color: #555; margin-bottom: 15px; text-align: center; }
+        .modal-content h3 { color: #2c3e50; margin-bottom: 10px; text-align: center; font-size: 1.5rem; }
+        .modal-content p { font-size: 0.95rem; color: #666; margin-bottom: 20px; text-align: center; }
         
+        /* Kotak Format */
+        .format-box {
+            background: #f8f9fa; border-left: 4px solid #3498db; border-radius: 8px;
+            padding: 15px; font-size: 0.85rem; color: #333; margin-bottom: 20px;
+            font-family: 'Courier New', monospace; line-height: 1.5;
+        }
+        .format-box strong { color: #2c3e50; display: block; margin-bottom: 5px; font-family: 'Segoe UI', sans-serif;}
+
+        /* Area Upload */
         .upload-area {
-            border: 2px dashed #b8d8e8; border-radius: 10px; padding: 20px;
-            text-align: center; margin-bottom: 20px; background: #f8f9fa;
+            border: 2px dashed #b8d8e8; border-radius: 12px; padding: 30px 20px;
+            text-align: center; margin-bottom: 20px; background: #f0f8ff;
+            transition: all 0.3s ease; position: relative;
+        }
+        .upload-area:hover {
+            background: #e3f2fd; border-color: #4facfe;
         }
         .upload-area input[type="file"] { display: none; }
+        
         .upload-label {
-            background: #e3f2fd; color: #0c5460; padding: 10px 20px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; display: inline-block;
-            transition: 0.2s;
+            background: white; color: #3498db; border: 2px solid #3498db;
+            padding: 12px 25px; border-radius: 25px; cursor: pointer; font-weight: bold;
+            display: inline-flex; align-items: center; gap: 8px; font-size: 1rem;
+            transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .upload-label:hover { background: #bbdefb; }
-        .file-name { margin-top: 10px; font-size: 0.9rem; color: #2ecc71; font-weight: bold; }
+        .upload-label:hover { background: #3498db; color: white; transform: translateY(-2px); }
+        
+        .file-name {
+            margin-top: 15px; font-size: 0.95rem; color: #27ae60; font-weight: bold;
+            background: #e8f5e9; padding: 8px 15px; border-radius: 8px; display: none;
+        }
 
+        /* Tombol Proses */
         .btn-proses {
-            background: #2ecc71; color: white; border: none; padding: 15px;
-            border-radius: 10px; font-size: 1.1rem; font-weight: bold;
-            width: 100%; cursor: pointer; margin-bottom: 10px; transition: 0.2s;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white; border: none; padding: 16px; border-radius: 12px;
+            font-size: 1.1rem; font-weight: bold; width: 100%; cursor: pointer;
+            margin-bottom: 12px; transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+            display: flex; justify-content: center; align-items: center; gap: 10px;
         }
-        .btn-proses:hover { background: #27ae60; }
-        .btn-batal {
-            background: #95a5a6; color: white; border: none; padding: 12px;
-            border-radius: 10px; font-size: 1rem; font-weight: bold;
-            width: 100%; cursor: pointer; transition: 0.2s;
-        }
-        .btn-batal:hover { background: #7f8c8d; }
+        .btn-proses:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4); }
+        .btn-proses:disabled { background: #95a5a6; cursor: not-allowed; box-shadow: none; }
 
-        .format-box {
-            background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;
-            padding: 15px; font-size: 0.85rem; color: #856404; margin-bottom: 20px;
-            font-family: monospace; line-height: 1.5;
+        .btn-batal {
+            background: transparent; color: #7f8c8d; border: 2px solid #bdc3c7;
+            padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold;
+            width: 100%; cursor: pointer; transition: 0.3s;
         }
+        .btn-batal:hover { background: #ecf0f1; color: #2c3e50; border-color: #95a5a6; }
     </style>
 </head>
 <body>
@@ -159,22 +180,26 @@
     <div class="modal-overlay" id="modal-upload">
         <div class="modal-content">
             <h3>📤 Upload Data Siswa</h3>
-            <p>Unggah file CSV untuk memperbarui daftar siswa di sistem.</p>
+            <p>Unggah file CSV untuk memperbarui daftar siswa. Data lama akan ditimpa.</p>
             
             <div class="format-box">
-                <strong>Format CSV (Pisahkan dengan koma):</strong><br>
+                <strong>Format CSV:</strong>
                 NISN, Nama, Kelas<br>
                 0099068975, Budi Santoso, X-1<br>
                 0099068976, Siti Aminah, X-2
             </div>
 
             <div class="upload-area">
-                <label for="file-csv" class="upload-label">📁 Pilih File CSV</label>
+                <label for="file-csv" class="upload-label">
+                    <span>📁</span> Pilih File CSV
+                </label>
                 <input type="file" id="file-csv" accept=".csv" onchange="tampilkanNamaFile()">
                 <div class="file-name" id="file-name">Belum ada file dipilih</div>
             </div>
             
-            <button class="btn-proses" onclick="prosesUpload()">Upload & Ganti Data Lama</button>
+            <button class="btn-proses" id="btn-proses-upload" onclick="prosesUpload()">
+                <span>🚀</span> Upload & Ganti Data
+            </button>
             <button class="btn-batal" onclick="tutupModalUpload()">Batal</button>
         </div>
     </div>
@@ -183,7 +208,6 @@
 /* =========================================================
    KONFIGURASI
    ========================================================= */
-// GANTI DENGAN URL WEB APP APPS SCRIPT ANDA
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
 
 let semuaDataNilai = [];
@@ -296,13 +320,20 @@ function bukaModalUpload() {
 function tutupModalUpload() {
     document.getElementById("modal-upload").classList.remove("aktif");
     document.getElementById("file-csv").value = "";
-    document.getElementById("file-name").textContent = "Belum ada file dipilih";
+    const fileNameDiv = document.getElementById("file-name");
+    fileNameDiv.textContent = "Belum ada file dipilih";
+    fileNameDiv.style.display = "none";
 }
 
 function tampilkanNamaFile() {
     const file = document.getElementById("file-csv").files[0];
+    const fileNameDiv = document.getElementById("file-name");
+    
     if (file) {
-        document.getElementById("file-name").textContent = "📄 " + file.name;
+        fileNameDiv.textContent = "✅ " + file.name;
+        fileNameDiv.style.display = "block";
+    } else {
+        fileNameDiv.style.display = "none";
     }
 }
 
@@ -320,12 +351,10 @@ function prosesUpload() {
         const teks = e.target.result;
         const baris = parseCSV(teks);
         
-        // Asumsi: Baris 1 adalah header, mulai dari index 1
         const dataSiswa = [];
         for (let i = 1; i < baris.length; i++) {
             const k = baris[i];
-            if (!k || k.length < 3) continue; // Skip jika data kurang
-            
+            if (!k || k.length < 3) continue;
             dataSiswa.push({
                 nisn: k[0].trim(),
                 nama: k[1].trim(),
@@ -338,8 +367,7 @@ function prosesUpload() {
             return;
         }
 
-        // Konfirmasi sebelum menimpa data lama
-        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa. Data lama di Sheet "Siswa" akan DIHAPUS dan diganti dengan data baru ini. Lanjutkan?`)) {
+        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa.\n\nData lama di Sheet "Siswa" akan DIHAPUS dan diganti dengan data baru ini. Lanjutkan?`)) {
             return;
         }
 
@@ -349,9 +377,9 @@ function prosesUpload() {
                 data: JSON.stringify(dataSiswa)
             });
 
-            // Ubah tombol jadi loading
-            const btn = document.querySelector('.btn-proses');
-            btn.textContent = "⏳ Mengupload...";
+            const btn = document.getElementById('btn-proses-upload');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<span>⏳</span> Memproses...`;
             btn.disabled = true;
 
             const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
@@ -367,8 +395,8 @@ function prosesUpload() {
             console.error(err);
             alert("❌ Terjadi kesalahan koneksi ke server.");
         } finally {
-            const btn = document.querySelector('.btn-proses');
-            btn.textContent = "Upload & Ganti Data Lama";
+            const btn = document.getElementById('btn-proses-upload');
+            btn.innerHTML = `<span>🚀</span> Upload & Ganti Data`;
             btn.disabled = false;
         }
     };
