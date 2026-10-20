@@ -367,7 +367,7 @@ function prosesUpload() {
             return;
         }
 
-        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa.\n\nData lama di Sheet "Siswa" akan DIHAPUS dan diganti dengan data baru ini. Lanjutkan?`)) {
+        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa dalam file.\n\nSistem akan menambahkan siswa baru dan memperbarui data siswa lama berdasarkan NISN. Lanjutkan?`)) {
             return;
         }
 
