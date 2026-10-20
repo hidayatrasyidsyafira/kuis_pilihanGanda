@@ -60,6 +60,7 @@
             padding: 20px;
             text-align: left;
             display: none; 
+            margin-bottom: 20px;
         }
         .hasil-cari-siswa.aktif { display: block; }
         .hasil-cari-siswa h4 { color: #2e7d32; margin-bottom: 10px; font-size: 1.1rem; text-align: center; }
@@ -112,6 +113,22 @@
             box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
             background: #e3f2fd;
         }
+
+        /* Tombol Batal */
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-cancel:hover { background: #c0392b; }
 
         /* Modal Background */
         .modal-overlay {
@@ -449,6 +466,8 @@
                 <button class="tombol-jenis" onclick="bukaModalMapel('UH')">📝 Ulangan Harian (UH)</button>
                 <button class="tombol-jenis" onclick="bukaModalMapel('UAS')">🎓 Ujian Akhir Semester (UAS)</button>
             </div>
+            <!-- Tombol Batal -->
+            <button class="btn-cancel" onclick="mulaiUlang()">❌ Batal / Kembali ke Login</button>
         </div>
 
         <!-- AREA MULAI, COUNTDOWN & TOKEN -->
@@ -540,7 +559,7 @@
 
     <div class="toast-peringatan" id="toast-peringatan">
         <span class="ikon">⚠️</span>
-        <span id="toast-teks">Kamu terdeteksi keluar dari halaman kuis.</span>
+        <span id="teks-toast">Kamu terdeteksi keluar dari halaman kuis.</span>
     </div>
 
 <script>
@@ -548,26 +567,11 @@
    ⚙️ KONFIGURASI
    ========================================================= */
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
-const DURASI_DEFAULT_MENIT = 20;
-
-/* ---------- BACA PARAMETER URL ---------- */
-function ambilParameterURL() {
-    const params = new URLSearchParams(window.location.search);
-    const durasiParam = params.get("durasi");
-    let durasiMenit = DURASI_DEFAULT_MENIT;
-    if (durasiParam !== null) {
-        const nilai = parseFloat(durasiParam);
-        if (!isNaN(nilai) && nilai >= 1 && nilai <= 180) durasiMenit = nilai;
-    }
-    return { durasiMenit };
-}
-const KONFIG = ambilParameterURL();
-const DURASI_TOTAL_DETIK = Math.round(KONFIG.durasiMenit * 60);
 
 /* ---------- STATE ---------- */
 let daftarSoal = [];
 let nomor = 0, sudahDijawab = false;
-let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
+let sisaWaktuTotal = 0, timerInterval;
 let riwayatJawaban = [];
 let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
@@ -586,13 +590,6 @@ function acak(array) {
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-}
-
-/* ---------- INFO DURASI ---------- */
-function tampilkanInfoDurasi() {
-    const mm = String(Math.floor(KONFIG.durasiMenit)).padStart(2, "0");
-    const ss = String(Math.round((KONFIG.durasiMenit % 1) * 60)).padStart(2, "0");
-    document.getElementById("teks-timer").textContent = `${mm}:${ss}`;
 }
 
 /* =========================================================
@@ -689,7 +686,7 @@ function bukaModalMapel(jenisUjian) {
             btn.className = "tombol-mapel";
             btn.innerHTML = `
                 <span class="nama-mapel">📘 ${j.mapel}</span>
-                <span class="info-waktu">⏱️ ${j.waktu}</span>
+                <span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Menit)</span>
             `;
             btn.onclick = () => pilihMapel(j);
             grid.appendChild(btn);
@@ -708,6 +705,10 @@ function pilihMapel(jadwal) {
     mapelDipilih = jadwal;
     tutupModalMapel();
     
+    // Set durasi dari data jadwal yang dipilih
+    sisaWaktuTotal = mapelDipilih.durasi * 60;
+    document.getElementById("teks-timer").textContent = formatWaktu(sisaWaktuTotal);
+
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     
@@ -719,6 +720,12 @@ function pilihMapel(jadwal) {
     
     // CEK APAKAH SUDAH UJIAN
     cekRiwayatSiswa();
+}
+
+function formatWaktu(detik) {
+    const menit = Math.floor(detik / 60);
+    const sisaDetik = detik % 60;
+    return `${String(menit).padStart(2, "0")}:${String(sisaDetik).padStart(2, "0")}`;
 }
 
 async function cekRiwayatSiswa() {
@@ -856,7 +863,7 @@ function aktifkanDeteksiPindahTab() {
 
 function tampilkanToastPeringatan() {
     const toast = document.getElementById("toast-peringatan");
-    const teks = document.getElementById("toast-teks");
+    const teks = document.getElementById("teks-toast");
     teks.textContent = `Kamu terdeteksi keluar dari halaman kuis (${jumlahPindahTab}x)`;
     toast.classList.add("muncul");
     clearTimeout(toastTimer);
@@ -982,7 +989,8 @@ async function mulaiKuis() {
 
     kuisAktif = true;
     jumlahPindahTab = 0;
-    sisaWaktuTotal = DURASI_TOTAL_DETIK;
+    
+    // Sisa waktu sudah di-set di fungsi pilihMapel
     updateTimerTotal();
     mulaiTimerTotal();
 
@@ -1005,10 +1013,8 @@ function mulaiTimerTotal() {
 function updateTimerTotal() {
     const el = document.getElementById("teks-timer");
     const parent = el.parentElement;
-    const menit = Math.floor(sisaWaktuTotal / 60);
-    const detik = sisaWaktuTotal % 60;
     
-    el.textContent = `${String(menit).padStart(2, "0")}:${String(detik).padStart(2, "0")}`;
+    el.textContent = formatWaktu(sisaWaktuTotal);
     
     parent.classList.remove("warning", "danger");
     if (sisaWaktuTotal <= 60) parent.classList.add("danger");
@@ -1046,7 +1052,7 @@ function tampilSoal() {
         });
 
         wadah.classList.add("aktif");
-    }, 3000); // <-- Ubah angka 2000 ini jika ingin lebih cepat/lama (dalam milidetik)
+    }, 2000); 
 }
 
 /* ---------- CEK JAWABAN ---------- */
@@ -1177,7 +1183,7 @@ function mulaiUlang() {
     clearInterval(timerInterval);
     if (jadwalInterval) clearInterval(jadwalInterval);
     nomor = 0; riwayatJawaban = []; namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
-    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK; jumlahPindahTab = 0; mapelDipilih = null;
+    kuisAktif = false; sisaWaktuTotal = 0; jumlahPindahTab = 0; mapelDipilih = null;
 
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
@@ -1209,12 +1215,9 @@ function mulaiUlang() {
     document.getElementById("tombol-mulai").style.background = "#95a5a6";
     
     document.getElementById("input-nisn").focus();
-
-    tampilkanInfoDurasi();
 }
 
 /* ---------- INIT ---------- */
-tampilkanInfoDurasi();
 aktifkanDeteksiPindahTab();
 ambilJadwal();
 ambilDataSiswa();
