@@ -60,6 +60,7 @@
             padding: 20px;
             text-align: left;
             display: none; 
+            margin-bottom: 20px;
         }
         .hasil-cari-siswa.aktif { display: block; }
         .hasil-cari-siswa h4 { color: #2e7d32; margin-bottom: 10px; font-size: 1.1rem; text-align: center; }
@@ -88,7 +89,7 @@
         }
         .tombol-lanjut-nisn:hover { background: #27ae60; }
 
-        /* === TOMBOL JENIS UJIAN & MAPEL === */
+        /* === TOMBOL JENIS UJIAN === */
         .grid-jenis {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -112,6 +113,38 @@
             box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
             background: #e3f2fd;
         }
+
+        /* Tombol Latihan & Batal */
+        .tombol-latihan {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .tombol-latihan:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4); }
+
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-cancel:hover { background: #c0392b; }
 
         /* Modal Background */
         .modal-overlay {
@@ -348,6 +381,25 @@
             .pilihan-group .pilihan:nth-child(5) { grid-column: 1; grid-row: auto; }
         }
 
+        /* ANIMASI LOADING JAWABAN */
+        .loader-jawaban {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         .lanjut-btn {
             background: #3498db; color: white; padding: 16px 35px; border: none;
             border-radius: 14px; font-size: 1.2rem; cursor: pointer; display: none; margin: 10px auto;
@@ -430,6 +482,12 @@
                 <button class="tombol-jenis" onclick="bukaModalMapel('UH')">📝 Ulangan Harian (UH)</button>
                 <button class="tombol-jenis" onclick="bukaModalMapel('UAS')">🎓 Ujian Akhir Semester (UAS)</button>
             </div>
+            
+            <!-- Tombol Latihan -->
+            <button class="tombol-latihan" onclick="bukaModalMapel('LTH')">🎯 Ujian Latihan (LTH)</button>
+
+            <!-- Tombol Batal -->
+            <button class="btn-cancel" onclick="mulaiUlang()">❌ Batal / Kembali ke Login</button>
         </div>
 
         <!-- AREA MULAI, COUNTDOWN & TOKEN -->
@@ -467,6 +525,11 @@
 
         <div id="layar-soal">
             <div class="soal-box" id="teks-soal" style="display: none;"></div>
+            <!-- Animasi Loading Jawaban -->
+            <div class="loader-jawaban" id="loader-jawaban">
+                <div class="spinner"></div>
+                <p>Menyiapkan pilihan jawaban...</p>
+            </div>
             <div class="pilihan-group" id="pilihan-group"></div>
         </div>
 
@@ -516,7 +579,7 @@
 
     <div class="toast-peringatan" id="toast-peringatan">
         <span class="ikon">⚠️</span>
-        <span id="toast-teks">Kamu terdeteksi keluar dari halaman kuis.</span>
+        <span id="teks-toast">Kamu terdeteksi keluar dari halaman kuis.</span>
     </div>
 
 <script>
@@ -524,26 +587,11 @@
    ⚙️ KONFIGURASI
    ========================================================= */
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
-const DURASI_DEFAULT_MENIT = 20;
-
-/* ---------- BACA PARAMETER URL ---------- */
-function ambilParameterURL() {
-    const params = new URLSearchParams(window.location.search);
-    const durasiParam = params.get("durasi");
-    let durasiMenit = DURASI_DEFAULT_MENIT;
-    if (durasiParam !== null) {
-        const nilai = parseFloat(durasiParam);
-        if (!isNaN(nilai) && nilai >= 1 && nilai <= 180) durasiMenit = nilai;
-    }
-    return { durasiMenit };
-}
-const KONFIG = ambilParameterURL();
-const DURASI_TOTAL_DETIK = Math.round(KONFIG.durasiMenit * 60);
 
 /* ---------- STATE ---------- */
 let daftarSoal = [];
 let nomor = 0, sudahDijawab = false;
-let sisaWaktuTotal = DURASI_TOTAL_DETIK, timerInterval;
+let sisaWaktuTotal = 0, timerInterval;
 let riwayatJawaban = [];
 let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
@@ -562,13 +610,6 @@ function acak(array) {
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-}
-
-/* ---------- INFO DURASI ---------- */
-function tampilkanInfoDurasi() {
-    const mm = String(Math.floor(KONFIG.durasiMenit)).padStart(2, "0");
-    const ss = String(Math.round((KONFIG.durasiMenit % 1) * 60)).padStart(2, "0");
-    document.getElementById("teks-timer").textContent = `${mm}:${ss}`;
 }
 
 /* =========================================================
@@ -630,13 +671,50 @@ function bukaModalMapel(jenisUjian) {
     const judulModal = document.getElementById("judul-modal");
     
     container.innerHTML = "";
+    
+    // Khusus Ujian Latihan (LTH)
+    if (jenisUjian === 'LTH') {
+        judulModal.textContent = `Pilih Mapel Latihan`;
+        const grid = document.createElement("div");
+        grid.className = "grid-mapel";
+
+        // Daftar mapel latihan statis (bisa Anda tambah/ubah sesuai kebutuhan)
+        const mapelLatihan = [
+            { mapel: "TIK - Latihan Algoritma", file: "soal_tik_lth_algoritma", waktu: "15 Menit", durasi: 15, token: "LTH" }
+        ];
+
+        mapelLatihan.forEach((j) => {
+            const btn = document.createElement("button");
+            btn.className = "tombol-mapel";
+            btn.innerHTML = `
+                <span class="nama-mapel">📘 ${j.mapel}</span>
+                <span class="info-waktu">⏱️ ${j.waktu} (Tanpa Token)</span>
+            `;
+            btn.onclick = () => {
+                // Buat objek jadwal tiruan untuk latihan
+                pilihMapel({
+                    mapel: j.mapel,
+                    durasi: j.durasi,
+                    token: "LTH", // Token otomatis benar
+                    file: j.file,
+                    waktu: "00:00 - 23:59", // Agar lolos cek waktu
+                    tanggal: "01/01/2099" // Tanggal jauh di masa depan
+                }, true); // true = mode latihan
+            };
+            grid.appendChild(btn);
+        });
+        container.appendChild(grid);
+        document.getElementById("modal-mapel").classList.add("aktif");
+        return;
+    }
+
+    // --- Untuk UH dan UAS (Ambil dari Google Sheet) ---
     judulModal.textContent = `Pilih Mapel ${jenisUjian}`;
 
     const namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const hariIni = namaHari[new Date().getDay()];
     const sekarang = new Date().getTime();
 
-    // Filter berdasarkan Kelas, Hari, Waktu, dan JENIS UJIAN
     const jadwalHariIni = jadwalData.filter(j => {
         const kelasCocok = String(j.kelas).toUpperCase().split(",").map(k => k.trim()).includes(kelasSiswa.toUpperCase().trim());
         const hariCocok = String(j.hari).toLowerCase().trim() === hariIni.toLowerCase();
@@ -665,9 +743,9 @@ function bukaModalMapel(jenisUjian) {
             btn.className = "tombol-mapel";
             btn.innerHTML = `
                 <span class="nama-mapel">📘 ${j.mapel}</span>
-                <span class="info-waktu">⏱️ ${j.waktu}</span>
+                <span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Menit)</span>
             `;
-            btn.onclick = () => pilihMapel(j);
+            btn.onclick = () => pilihMapel(j, false);
             grid.appendChild(btn);
         });
         container.appendChild(grid);
@@ -680,10 +758,15 @@ function tutupModalMapel() {
     document.getElementById("modal-mapel").classList.remove("aktif");
 }
 
-function pilihMapel(jadwal) {
+function pilihMapel(jadwal, isLatihan = false) {
     mapelDipilih = jadwal;
+    mapelDipilih.isLatihan = isLatihan; // Simpan status latihan
     tutupModalMapel();
     
+    // Set durasi dari data jadwal yang dipilih
+    sisaWaktuTotal = mapelDipilih.durasi * 60;
+    document.getElementById("teks-timer").textContent = formatWaktu(sisaWaktuTotal);
+
     document.getElementById("layar-login-nisn").style.display = "none";
     document.getElementById("layar-pilih-jenis").classList.add("sembunyi");
     
@@ -693,8 +776,19 @@ function pilihMapel(jadwal) {
     document.getElementById("form-token").style.display = "none";
     document.getElementById("tombol-mulai").style.display = "none";
     
-    // CEK APAKAH SUDAH UJIAN
-    cekRiwayatSiswa();
+    if (isLatihan) {
+        // LEWATI CEK RIWAYAT UNTUK LATIHAN
+        cekStatusWaktu(mapelDipilih);
+    } else {
+        // CEK APAKAH SUDAH UJIAN UNTUK UH/UAS
+        cekRiwayatSiswa();
+    }
+}
+
+function formatWaktu(detik) {
+    const menit = Math.floor(detik / 60);
+    const sisaDetik = detik % 60;
+    return `${String(menit).padStart(2, "0")}:${String(sisaDetik).padStart(2, "0")}`;
 }
 
 async function cekRiwayatSiswa() {
@@ -737,6 +831,21 @@ function cekStatusWaktu(jadwal) {
     
     if (jadwalInterval) clearInterval(jadwalInterval);
 
+    // Jika mode latihan, langsung buka form token
+    if (jadwal.isLatihan) {
+        areaMulai.style.display = "block"; 
+        countdownBox.style.display = "none";
+        formToken.style.display = "block";
+        tombolMulai.style.display = "block";
+        
+        // Auto isi token untuk latihan agar siswa tidak perlu mengetik
+        document.getElementById("input-token").value = jadwal.token;
+        document.getElementById("input-token").disabled = false;
+        cekToken(); // Panggil cekToken agar tombol mulai langsung menyala
+        return;
+    }
+
+    // Jika bukan latihan (UH/UAS), cek jadwal seperti biasa
     const waktuParts = jadwal.waktu.split("-");
     const jamMulai = waktuParts[0].trim();
     const jamSelesai = waktuParts[1].trim();
@@ -751,7 +860,6 @@ function cekStatusWaktu(jadwal) {
         const sekarang = new Date().getTime();
         
         if (sekarang < dateMulai) {
-            // BELUM DIMULAI
             countdownBox.style.display = "block";
             formToken.style.display = "none";
             tombolMulai.style.display = "none";
@@ -765,7 +873,6 @@ function cekStatusWaktu(jadwal) {
                 `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
         } else if (sekarang >= dateMulai && sekarang <= dateSelesai) {
-            // SEDANG BERLANGSUNG
             clearInterval(jadwalInterval);
             countdownBox.style.display = "none";
             formToken.style.display = "block";
@@ -775,7 +882,6 @@ function cekStatusWaktu(jadwal) {
             document.getElementById("input-token").focus();
 
         } else {
-            // SUDAH SELESAI
             clearInterval(jadwalInterval);
             countdownBox.style.display = "none";
             formToken.style.display = "none";
@@ -832,7 +938,7 @@ function aktifkanDeteksiPindahTab() {
 
 function tampilkanToastPeringatan() {
     const toast = document.getElementById("toast-peringatan");
-    const teks = document.getElementById("toast-teks");
+    const teks = document.getElementById("teks-toast");
     teks.textContent = `Kamu terdeteksi keluar dari halaman kuis (${jumlahPindahTab}x)`;
     toast.classList.add("muncul");
     clearTimeout(toastTimer);
@@ -854,10 +960,18 @@ function parseCSV(teks) {
     });
 }
 
-/* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel) ---------- */
-async function ambilSoal(namaMapel) {
-    let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
-    let fileCSV = `soal_${namaFile}.csv`;
+/* ---------- AMBIL SOAL (Dinamis berdasarkan Mapel / File) ---------- */
+async function ambilSoal(namaMapel, fileKhusus = null) {
+    let fileCSV = "";
+    
+    // Jika ada nama file khusus (untuk latihan), gunakan itu
+    if (fileKhusus) {
+        fileCSV = fileKhusus.endsWith('.csv') ? fileKhusus : `${fileKhusus}.csv`;
+    } else {
+        // Untuk UH/UAS, ambil dari nama mapel
+        let namaFile = namaMapel.toLowerCase().replace(/\s+/g, '_'); 
+        fileCSV = `soal_${namaFile}.csv`;
+    }
 
     try {
         const res = await fetch(fileCSV);
@@ -925,7 +1039,8 @@ async function mulaiKuis() {
 
     mapelSiswa = mapelDipilih.mapel;
 
-    await ambilSoal(mapelSiswa);
+    // Panggil ambilSoal dengan parameter file khusus jika ada
+    await ambilSoal(mapelSiswa, mapelDipilih.file);
     
     if (daftarSoal.length === 0) {
         alert("⚠️ Soal untuk mata pelajaran ini belum tersedia.");
@@ -958,7 +1073,8 @@ async function mulaiKuis() {
 
     kuisAktif = true;
     jumlahPindahTab = 0;
-    sisaWaktuTotal = DURASI_TOTAL_DETIK;
+    
+    // Sisa waktu sudah di-set di fungsi pilihMapel
     updateTimerTotal();
     mulaiTimerTotal();
 
@@ -981,10 +1097,8 @@ function mulaiTimerTotal() {
 function updateTimerTotal() {
     const el = document.getElementById("teks-timer");
     const parent = el.parentElement;
-    const menit = Math.floor(sisaWaktuTotal / 60);
-    const detik = sisaWaktuTotal % 60;
     
-    el.textContent = `${String(menit).padStart(2, "0")}:${String(detik).padStart(2, "0")}`;
+    el.textContent = formatWaktu(sisaWaktuTotal);
     
     parent.classList.remove("warning", "danger");
     if (sisaWaktuTotal <= 60) parent.classList.add("danger");
@@ -1001,18 +1115,28 @@ function tampilSoal() {
 
     const wadah = document.getElementById("pilihan-group");
     wadah.innerHTML = "";
+    wadah.classList.remove("aktif"); // Sembunyikan pilihan dulu
 
-    const pilihan = daftarSoal[nomor].pilihan;
-    ["A", "B", "C", "D", "E"].forEach(huruf => {
-        if (!pilihan[huruf]) return;
-        const btn = document.createElement("button");
-        btn.className = "pilihan";
-        btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
-        btn.onclick = () => cekJawaban(huruf);
-        wadah.appendChild(btn);
-    });
+    // Tampilkan loader
+    const loader = document.getElementById("loader-jawaban");
+    loader.style.display = "block";
 
-    wadah.classList.add("aktif");
+    // Jeda 2 detik (2000 ms) sebelum memunculkan pilihan
+    setTimeout(() => {
+        loader.style.display = "none";
+        
+        const pilihan = daftarSoal[nomor].pilihan;
+        ["A", "B", "C", "D", "E"].forEach(huruf => {
+            if (!pilihan[huruf]) return;
+            const btn = document.createElement("button");
+            btn.className = "pilihan";
+            btn.innerHTML = `<span class="huruf">${huruf}</span><span class="teks-pilihan">${pilihan[huruf]}</span>`;
+            btn.onclick = () => cekJawaban(huruf);
+            wadah.appendChild(btn);
+        });
+
+        wadah.classList.add("aktif");
+    }, 2000); 
 }
 
 /* ---------- CEK JAWABAN ---------- */
@@ -1060,6 +1184,13 @@ function hitungSkor() {
 
 /* ---------- KIRIM HASIL AKHIR ---------- */
 function kirimHasilAkhir() {
+    // JIKA LATIHAN, JANGAN KIRIM KE GOOGLE SHEETS
+    if (mapelDipilih && mapelDipilih.isLatihan) {
+        document.getElementById("status-kirim").textContent = "🎯 Ini adalah ujian latihan. Nilai tidak disimpan ke Google Sheets.";
+        document.getElementById("status-kirim").style.color = "#e67e22";
+        return; 
+    }
+
     const { jumlahBenar, skorAkhir } = hitungSkor();
     const totalSoal = daftarSoal.length;
 
@@ -1067,7 +1198,7 @@ function kirimHasilAkhir() {
 
     const params = new URLSearchParams({
         nama: namaSiswa, 
-        nisn: nisnSiswa,  // <-- Dikirim untuk dicatat ke Riwayat
+        nisn: nisnSiswa, 
         kelas: kelasSiswa, 
         jumlah_benar: jumlahBenar,
         total_soal: totalSoal, 
@@ -1078,6 +1209,10 @@ function kirimHasilAkhir() {
     });
 
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
+    .then(() => {
+        document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
+        document.getElementById("status-kirim").style.color = "#7f8c8d";
+    })
     .catch(err => console.error("❌ Gagal:", err));
 }
 
@@ -1094,8 +1229,10 @@ function tampilHasil() {
 
     document.getElementById("skor-angka").textContent = skorAkhir;
     document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
-    document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets.";
-
+    
+    // Reset status kirim sebelum memanggil fungsi kirim
+    document.getElementById("status-kirim").textContent = "⏳ Memproses hasil...";
+    
     kirimHasilAkhir();
 }
 
@@ -1143,7 +1280,7 @@ function mulaiUlang() {
     clearInterval(timerInterval);
     if (jadwalInterval) clearInterval(jadwalInterval);
     nomor = 0; riwayatJawaban = []; namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = "";
-    kuisAktif = false; sisaWaktuTotal = DURASI_TOTAL_DETIK; jumlahPindahTab = 0; mapelDipilih = null;
+    kuisAktif = false; sisaWaktuTotal = 0; jumlahPindahTab = 0; mapelDipilih = null;
 
     document.getElementById("layar-akhir").style.display = "none";
     document.getElementById("layar-pembahasan").style.display = "none";
@@ -1151,6 +1288,7 @@ function mulaiUlang() {
     document.getElementById("header-kuis").style.display = "none"; 
     document.getElementById("progress").style.display = "none";
     document.getElementById("pilihan-group").classList.remove("aktif");
+    document.getElementById("loader-jawaban").style.display = "none";
     
     // Sembunyikan kotak soal kembali
     document.getElementById("teks-soal").style.display = "none";
@@ -1174,12 +1312,9 @@ function mulaiUlang() {
     document.getElementById("tombol-mulai").style.background = "#95a5a6";
     
     document.getElementById("input-nisn").focus();
-
-    tampilkanInfoDurasi();
 }
 
 /* ---------- INIT ---------- */
-tampilkanInfoDurasi();
 aktifkanDeteksiPindahTab();
 ambilJadwal();
 ambilDataSiswa();
