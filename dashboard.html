@@ -56,6 +56,24 @@
         
         .skor-text { font-weight: bold; font-size: 1.1rem; }
         .loading { text-align: center; padding: 40px; font-size: 1.2rem; color: #7f8c8d; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); display: none;
+            align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        .modal-overlay.aktif { display: flex; }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px;
+            max-width: 600px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { color: #2c3e50; margin-bottom: 20px; text-align: center; }
+        .modal-content .close-btn {
+            background: #e74c3c; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;
+        }
+        
     </style>
 </head>
 <body>
@@ -206,6 +224,90 @@ function renderTabel() {
 }
 
 muatData();
+
+    /* --- FITUR UPLOAD SISWA --- */
+function bukaModalUpload() {
+    document.getElementById("modal-upload").classList.add("aktif");
+}
+function tutupModalUpload() {
+    document.getElementById("modal-upload").classList.remove("aktif");
+    document.getElementById("file-csv").value = "";
+}
+
+function prosesUpload() {
+    const fileInput = document.getElementById("file-csv");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("⚠️ Pilih file CSV terlebih dahulu!");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const teks = e.target.result;
+        const baris = parseCSV(teks);
+        
+        // Asumsi: Baris 1 adalah header, jadi kita mulai dari index 1
+        const dataSiswa = [];
+        for (let i = 1; i < baris.length; i++) {
+            const k = baris[i];
+            if (!k || k.length < 3) continue; // Skip jika tidak ada data
+            
+            dataSiswa.push({
+                nisn: k[0].trim(),
+                nama: k[1].trim(),
+                kelas: k[2].trim()
+            });
+        }
+
+        if (dataSiswa.length === 0) {
+            alert("⚠️ Tidak ada data siswa yang valid dalam file CSV.");
+            return;
+        }
+
+        try {
+            // Kirim data ke Apps Script menggunakan URLSearchParams
+            const params = new URLSearchParams({
+                aksi: "upload_siswa",
+                data: JSON.stringify(dataSiswa)
+            });
+
+            const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
+            const json = await res.json();
+
+            if (json.status === "success") {
+                alert(`✅ Berhasil mengupload ${dataSiswa.length} data siswa!`);
+                tutupModalUpload();
+                muatData(); // Refresh tabel dashboard
+            } else {
+                alert("❌ Gagal mengupload: " + json.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("❌ Terjadi kesalahan saat menghubungi server.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Fungsi Parser CSV (Sama seperti di index.html)
+function parseCSV(teks) {
+    return teks.split("\n").map(r => {
+        const hasil = [];
+        let bagian = "", dalamKutip = false;
+        for (let c of r) {
+            if (c === '"') dalamKutip = !dalamKutip;
+            else if ((c === "," || c === ";") && !dalamKutip) { // Mendukung koma atau titik koma
+                hasil.push(bagian.trim()); 
+                bagian = ""; 
+            }
+            else bagian += c;
+        }
+        hasil.push(bagian.trim());
+        return hasil.map(s => s.replace(/^"|"$/g, ""));
+    });
+}
 </script>
     <!-- MODAL UPLOAD SISWA -->
     <div class="modal-overlay" id="modal-upload">
