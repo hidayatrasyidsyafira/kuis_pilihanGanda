@@ -112,7 +112,8 @@
                 <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
                 <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
                 <!-- TOMBOL EXPORT -->
-                <button class="btn btn-blue" onclick="exportKeCSV()" style="margin-left: auto;">📥 Export ke CSV</button>
+                <!-- <button class="btn btn-blue" onclick="exportKeCSV()" style="margin-left: auto;">📥 Export ke CSV</button> -->
+                <button class="btn btn-blue" onclick="exportKeCSV()" style="margin-left: auto;">📥 Export ke Excel (.xls)</button>
             </div>
             <div class="table-responsive">
                 <table>
@@ -264,49 +265,129 @@ function renderTabelNilai() {
 /* =========================================
    FITUR EXPORT KE EXCEL (CSV)
    ========================================= */
-    function exportKeCSV() {
-        // Filter data yang sama persis dengan yang tampil di layar
-        const fNama = document.getElementById("filter-nama").value.toLowerCase();
-        const fKelas = document.getElementById("filter-kelas").value;
-        const fMapel = document.getElementById("filter-mapel").value;
+    // function exportKeCSV() {
+    //     // Filter data yang sama persis dengan yang tampil di layar
+    //     const fNama = document.getElementById("filter-nama").value.toLowerCase();
+    //     const fKelas = document.getElementById("filter-kelas").value;
+    //     const fMapel = document.getElementById("filter-mapel").value;
     
-        const dataTampil = semuaDataNilai.filter(d => 
-            (d.nama || "").toLowerCase().includes(fNama) &&
-            (fKelas === "" || d.kelas === fKelas) &&
-            (fMapel === "" || d.mapel === fMapel)
-        );
+    //     const dataTampil = semuaDataNilai.filter(d => 
+    //         (d.nama || "").toLowerCase().includes(fNama) &&
+    //         (fKelas === "" || d.kelas === fKelas) &&
+    //         (fMapel === "" || d.mapel === fMapel)
+    //     );
     
-        if (dataTampil.length === 0) {
-            alert("⚠️ Tidak ada data untuk diexport.");
-            return;
-        }
+    //     if (dataTampil.length === 0) {
+    //         alert("⚠️ Tidak ada data untuk diexport.");
+    //         return;
+    //     }
     
-        // Siapkan Header Kolom
-        let csvContent = "No,Waktu,Nama Siswa,Kelas,Matapelajaran,Skor,Nilai Benar,Total Soal,Pindah Tab,Pelanggaran Kamera\n";
+    //     // Siapkan Header Kolom
+    //     let csvContent = "No,Waktu,Nama Siswa,Kelas,Matapelajaran,Skor,Nilai Benar,Total Soal,Pindah Tab,Pelanggaran Kamera\n";
     
-        // Masukkan Data
-        dataTampil.forEach((d, index) => {
-            // Bersihkan teks dari tanda koma agar tidak merusak format CSV
-            const namaBersih = `"${d.nama}"`;
-            const mapelBersih = `"${d.mapel}"`;
+    //     // Masukkan Data
+    //     dataTampil.forEach((d, index) => {
+    //         // Bersihkan teks dari tanda koma agar tidak merusak format CSV
+    //         const namaBersih = `"${d.nama}"`;
+    //         const mapelBersih = `"${d.mapel}"`;
             
-            csvContent += `${index + 1},${d.waktu},${namaBersih},${d.kelas},${mapelBersih},${d.skor},${d.jumlah_benar},${d.total_soal},${d.pindah_tab},${d.pelanggaran_kamera}\n`;
-        });
+    //         csvContent += `${index + 1},${d.waktu},${namaBersih},${d.kelas},${mapelBersih},${d.skor},${d.jumlah_benar},${d.total_soal},${d.pindah_tab},${d.pelanggaran_kamera}\n`;
+    //     });
     
-        // Proses Download
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
+    //     // Proses Download
+    //     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    //     const link = document.createElement("a");
+    //     const url = URL.createObjectURL(blob);
         
-        // Penamaan File Otomatis (Tanggal-Bulan-Tahun)
-        const tanggalSekarang = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Rekap_Nilai_Ujian_${tanggalSekarang}.csv`);
+    //     // Penamaan File Otomatis (Tanggal-Bulan-Tahun)
+    //     const tanggalSekarang = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+    //     link.setAttribute("href", url);
+    //     link.setAttribute("download", `Rekap_Nilai_Ujian_${tanggalSekarang}.csv`);
         
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }    
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     document.body.removeChild(link);
+    // }    
+/* =========================================
+   FITUR EXPORT KE EXCEL (XLS)
+   ========================================= */
+    function exportKeCSV() {
+    // Filter data yang sama persis dengan yang tampil di layar
+    const fNama = document.getElementById("filter-nama").value.toLowerCase();
+    const fKelas = document.getElementById("filter-kelas").value;
+    const fMapel = document.getElementById("filter-mapel").value;
+
+    const dataTampil = semuaDataNilai.filter(d => 
+        (d.nama || "").toLowerCase().includes(fNama) &&
+        (fKelas === "" || d.kelas === fKelas) &&
+        (fMapel === "" || d.mapel === fMapel)
+    );
+
+    if (dataTampil.length === 0) {
+        alert("⚠️ Tidak ada data untuk diexport.");
+        return;
+    }
+
+    // --- MEMBUAT FILE EXCEL LANGSUNG (TANPA CSV) ---
+    
+    // 1. Buat kerangka HTML Table dengan gaya (style) khusus Excel
+    let tableHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>
+                table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+                th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; }
+                td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+                td.text-left { text-align: left; }
+            </style>
+        </head>
+        <body>
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th><th>Waktu</th><th>Nama Siswa</th><th>Kelas</th><th>Matapelajaran</th>
+                    <th>Skor</th><th>Nilai Benar</th><th>Total Soal</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    // 2. Masukkan datanya
+    dataTampil.forEach((d, index) => {
+        tableHtml += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${d.waktu}</td>
+                <td class="text-left">${d.nama}</td>
+                <td>${d.kelas}</td>
+                <td class="text-left">${d.mapel}</td>
+                <td>${d.skor}</td>
+                <td>${d.jumlah_benar}</td>
+                <td>${d.total_soal}</td>
+                <td>${d.pindah_tab}</td>
+                <td>${d.pelanggaran_kamera}</td>
+            </tr>`;
+    });
+
+    tableHtml += `</tbody></table></body></html>`;
+
+    // 3. Proses Download
+    // Kita gunakan tipe 'application/vnd.ms-excel' agar Excel langsung membukanya
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    // Penamaan File Otomatis (Tanggal-Bulan-Tahun)
+    const tanggalSekarang = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekap_Nilai_Ujian_${tanggalSekarang}.xls`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+    
 /* =========================================
    FITUR JADWAL (READ, CREATE, UPDATE)
    ========================================= */
