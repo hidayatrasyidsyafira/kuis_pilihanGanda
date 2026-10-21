@@ -306,10 +306,15 @@ async function muatDataNilai() {
             semuaDataNilai = json.data;
             isiFilterNilai();
             renderTabelNilai();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+    } catch (err) { 
+        console.error("Detail Error Nilai:", err); 
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
 }
-
+    
 function isiFilterNilai() {
     const setKelas = new Set(); const setMapel = new Set();
     semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
@@ -388,8 +393,13 @@ async function muatDataJadwal() {
         if (json.status === "success") {
             semuaDataJadwal = json.data;
             renderTabelJadwal();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+    } catch (err) { 
+        console.error("Detail Error Jadwal:", err); 
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
 }
 
 function renderTabelJadwal() {
@@ -479,8 +489,13 @@ async function muatBankSoal() {
             semuaDataSoal = json.data;
             isiFilterSoal();
             renderTabelSoal();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+    } catch (err) { 
+        console.error("Detail Error Bank Soal:", err); 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
 }
 
 function isiFilterSoal() {
