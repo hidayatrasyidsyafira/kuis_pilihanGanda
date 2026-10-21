@@ -337,7 +337,7 @@ function tampilkanNamaFile() {
     }
 }
 
-function prosesUpload() {
+async function prosesUpload() {
     const fileInput = document.getElementById("file-csv");
     const file = fileInput.files[0];
 
@@ -363,37 +363,40 @@ function prosesUpload() {
         }
 
         if (dataSiswa.length === 0) {
-            alert("⚠️ Tidak ada data siswa yang valid dalam file CSV.");
+            alert("⚠️ Tidak ada data siswa yang valid.");
             return;
         }
 
-        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa dalam file.\n\nSistem akan menambahkan siswa baru dan memperbarui data siswa lama berdasarkan NISN. Lanjutkan?`)) {
+        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa dalam file.\n\nSistem akan menambahkan siswa baru dan memperbarui data lama berdasarkan NISN. Lanjutkan?`)) {
             return;
         }
 
         try {
-            const params = new URLSearchParams({
-                aksi: "upload_siswa",
-                data: JSON.stringify(dataSiswa)
-            });
-
             const btn = document.getElementById('btn-proses-upload');
-            const originalText = btn.innerHTML;
             btn.innerHTML = `<span>⏳</span> Memproses...`;
             btn.disabled = true;
 
-            const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
+            // MENGGUNAKAN METODE POST AGAR DATA BESAR AMAN
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({
+                    aksi: "upload_siswa",
+                    siswa: dataSiswa
+                })
+            });
+
             const json = await res.json();
 
             if (json.status === "success") {
-                alert(`✅ Berhasil! ${dataSiswa.length} data siswa telah disimpan.`);
+                alert(`✅ Berhasil!\n\n${json.message}`);
                 tutupModalUpload();
+                // muatData(); // Opsional: Refresh tabel dashboard jika perlu
             } else {
                 alert("❌ Gagal mengupload: " + json.message);
             }
         } catch (err) {
             console.error(err);
-            alert("❌ Terjadi kesalahan koneksi ke server.");
+            alert("❌ Terjadi kesalahan koneksi ke server. Pastikan Apps Script sudah di Deploy ulang.");
         } finally {
             const btn = document.getElementById('btn-proses-upload');
             btn.innerHTML = `<span>🚀</span> Upload & Ganti Data`;
@@ -402,7 +405,6 @@ function prosesUpload() {
     };
     reader.readAsText(file);
 }
-
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
         const hasil = [];
