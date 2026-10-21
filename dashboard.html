@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Rekap Nilai - Guru</title>
+    <title>Dashboard Admin - Guru</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #e9ecef; min-height: 100vh; padding: 30px; }
@@ -14,415 +14,438 @@
             padding: 30px;
         }
 
-        /* === HEADER === */
+        /* === HEADER & TABS === */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #dee2e6; padding-bottom: 20px; margin-bottom: 25px;
+            border-bottom: 2px solid #dee2e6; padding-bottom: 20px; margin-bottom: 20px;
             flex-wrap: wrap; gap: 15px;
         }
         .header h1 { color: #2c3e50; font-size: 1.8rem; }
-        .header-actions { display: flex; gap: 10px; }
-        .header button {
-            border: none; padding: 10px 20px; border-radius: 8px;
-            font-weight: bold; cursor: pointer; transition: 0.2s; color: white;
-            display: flex; align-items: center; gap: 8px;
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold;
+            cursor: pointer; transition: 0.2s; background: #e9ecef; color: #7f8c8d;
         }
-        .btn-upload { background: #2ecc71; }
-        .btn-upload:hover { background: #27ae60; }
-        .btn-refresh { background: #3498db; }
-        .btn-refresh:hover { background: #2980b9; }
+        .tab-btn.aktif { background: #3498db; color: white; }
+        .tab-btn:hover:not(.aktif) { background: #d1d8dd; }
 
-        /* === FILTER SECTION === */
-        .filter-section {
-            display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
-        }
+        /* === AREA TABEL === */
+        .tab-content { display: none; }
+        .tab-content.aktif { display: block; }
+
+        .filter-section { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .filter-section input, .filter-section select {
             padding: 10px 15px; border: 2px solid #b8d8e8; border-radius: 8px;
-            font-size: 1rem; outline: none; min-width: 200px; transition: 0.2s;
+            font-size: 1rem; outline: none; min-width: 200px;
         }
-        .filter-section input:focus, .filter-section select:focus { border-color: #4facfe; }
 
-        /* === TABEL REKAP === */
-        .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #dee2e6; }
+        .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-        th, td { padding: 14px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
         th { background: #f8f9fa; color: #2c3e50; font-weight: 600; white-space: nowrap; }
         tr:hover { background: #f1f8ff; }
-        tr:last-child td { border-bottom: none; }
 
-        /* === BADGES & TEKS === */
-        .badge { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: inline-block; }
+        /* === EDIT INLINE === */
+        .editable {
+            cursor: pointer; padding: 5px; border-radius: 4px; transition: 0.2s;
+            display: block; min-height: 24px;
+        }
+        .editable:hover { background: #e3f2fd; outline: 1px dashed #3498db; }
+        .editable-edit {
+            width: 100%; padding: 5px; border: 2px solid #3498db; border-radius: 4px;
+            font-family: inherit; font-size: inherit;
+        }
+
+        /* === BADGES === */
+        .badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; }
         .badge-green { background: #d4edda; color: #155724; }
         .badge-yellow { background: #fff3cd; color: #856404; }
         .badge-red { background: #f8d7da; color: #721c24; }
-        .skor-text { font-weight: bold; font-size: 1.1rem; }
         .warning-text { color: #e74c3c; font-weight: bold; }
-        .loading { text-align: center; padding: 40px; font-size: 1.2rem; color: #7f8c8d; font-style: italic; }
 
-        /* === MODAL UPLOAD === */
+        /* === BUTTONS === */
+        .btn { border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s;}
+        .btn-green { background: #2ecc71; } .btn-green:hover { background: #27ae60; }
+        .btn-blue { background: #3498db; } .btn-blue:hover { background: #2980b9; }
+        
+        /* === MODAL === */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.6); display: none;
             align-items: center; justify-content: center; z-index: 1000; padding: 20px;
-            backdrop-filter: blur(4px);
         }
         .modal-overlay.aktif { display: flex; }
         .modal-content {
-            background: white; padding: 30px; border-radius: 20px;
-            max-width: 500px; width: 100%; box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-            animation: slideDown 0.3s ease;
+            background: white; padding: 30px; border-radius: 16px;
+            max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
         }
-        @keyframes slideDown {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal-content h3 { color: #2c3e50; margin-bottom: 10px; text-align: center; font-size: 1.5rem; }
-        .modal-content p { font-size: 0.95rem; color: #666; margin-bottom: 20px; text-align: center; }
+        .modal-content h3 { margin-bottom: 20px; color: #2c3e50; text-align: center; }
         
-        /* Kotak Format */
-        .format-box {
-            background: #f8f9fa; border-left: 4px solid #3498db; border-radius: 8px;
-            padding: 15px; font-size: 0.85rem; color: #333; margin-bottom: 20px;
-            font-family: 'Courier New', monospace; line-height: 1.5;
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #555;}
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem;
         }
-        .format-box strong { color: #2c3e50; display: block; margin-bottom: 5px; font-family: 'Segoe UI', sans-serif;}
-
-        /* Area Upload */
-        .upload-area {
-            border: 2px dashed #b8d8e8; border-radius: 12px; padding: 30px 20px;
-            text-align: center; margin-bottom: 20px; background: #f0f8ff;
-            transition: all 0.3s ease; position: relative;
-        }
-        .upload-area:hover {
-            background: #e3f2fd; border-color: #4facfe;
-        }
-        .upload-area input[type="file"] { display: none; }
-        
-        .upload-label {
-            background: white; color: #3498db; border: 2px solid #3498db;
-            padding: 12px 25px; border-radius: 25px; cursor: pointer; font-weight: bold;
-            display: inline-flex; align-items: center; gap: 8px; font-size: 1rem;
-            transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .upload-label:hover { background: #3498db; color: white; transform: translateY(-2px); }
-        
-        .file-name {
-            margin-top: 15px; font-size: 0.95rem; color: #27ae60; font-weight: bold;
-            background: #e8f5e9; padding: 8px 15px; border-radius: 8px; display: none;
-        }
-
-        /* Tombol Proses */
-        .btn-proses {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white; border: none; padding: 16px; border-radius: 12px;
-            font-size: 1.1rem; font-weight: bold; width: 100%; cursor: pointer;
-            margin-bottom: 12px; transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
-            display: flex; justify-content: center; align-items: center; gap: 10px;
-        }
-        .btn-proses:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4); }
-        .btn-proses:disabled { background: #95a5a6; cursor: not-allowed; box-shadow: none; }
-
-        .btn-batal {
-            background: transparent; color: #7f8c8d; border: 2px solid #bdc3c7;
-            padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold;
-            width: 100%; cursor: pointer; transition: 0.3s;
-        }
-        .btn-batal:hover { background: #ecf0f1; color: #2c3e50; border-color: #95a5a6; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- HEADER -->
         <div class="header">
-            <h1>📊 Dashboard Rekap Ujian</h1>
-            <div class="header-actions">
-                <button class="btn-upload" onclick="bukaModalUpload()">📤 Upload Data Siswa</button>
-                <button class="btn-refresh" onclick="muatData()">🔄 Refresh Data</button>
+            <h1>⚙️ Dashboard Admin Ujian</h1>
+            <div>
+                <button class="btn btn-green" onclick="bukaModalUpload()">📤 Upload Data Siswa</button>
+                <button class="btn btn-blue" onclick="muatDataNilai()">🔄 Refresh Data</button>
             </div>
         </div>
 
-        <!-- FILTER -->
-        <div class="filter-section">
-            <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabel()">
-            <select id="filter-kelas" onchange="renderTabel()">
-                <option value="">Semua Kelas</option>
-            </select>
-            <select id="filter-mapel" onchange="renderTabel()">
-                <option value="">Semua Mapel</option>
-            </select>
+        <!-- TAB MENU -->
+        <div class="tabs">
+            <button class="tab-btn aktif" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
+            <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
         </div>
 
-        <!-- TABEL -->
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Waktu</th>
-                        <th>Nama Siswa</th>
-                        <th>Kelas</th>
-                        <th>Mapel</th>
-                        <th>Skor</th>
-                        <th>Benar/Total</th>
-                        <th>Pindah Tab</th>
-                        <th>Pelanggaran Kamera</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-nilai">
-                    <tr><td colspan="9" class="loading">⏳ Memuat data dari Google Sheets...</td></tr>
-                </tbody>
-            </table>
+        <!-- TAB REKAP NILAI -->
+        <div class="tab-content aktif" id="tab-nilai">
+            <div class="filter-section">
+                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabelNilai()">
+                <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
+                <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
+                            <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-nilai"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB JADWAL UJIAN -->
+        <div class="tab-content" id="tab-jadwal">
+            <div style="margin-bottom: 15px; text-align: right;">
+                <button class="btn btn-green" onclick="bukaModalJadwal()">+ Tambah Jadwal Baru</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
+                            <th>Matapelajaran</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-jadwal"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                </table>
+            </div>
+            <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
+                💡 <strong>Tips Edit:</strong> Klik langsung pada teks di tabel (Waktu, Hari, Mapel, dll) untuk mengubahnya. Tekan <strong>Enter</strong> untuk menyimpan.
+            </p>
         </div>
     </div>
 
-    <!-- MODAL UPLOAD SISWA -->
+    <!-- MODAL UPLOAD SISWA (Sama seperti sebelumnya) -->
     <div class="modal-overlay" id="modal-upload">
         <div class="modal-content">
             <h3>📤 Upload Data Siswa</h3>
-            <p>Unggah file CSV untuk memperbarui daftar siswa. Data lama akan ditimpa.</p>
-            
-            <div class="format-box">
-                <strong>Format CSV:</strong>
-                NISN, Nama, Kelas<br>
-                0099068975, Budi Santoso, X-1<br>
-                0099068976, Siti Aminah, X-2
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace;">
+                NISN, Nama, Kelas<br>0099068975, Budi, X-1
             </div>
+            <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 20px;">
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUpload()">Upload & Simpan</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="document.getElementById('modal-upload').classList.remove('aktif')">Batal</button>
+        </div>
+    </div>
 
-            <div class="upload-area">
-                <label for="file-csv" class="upload-label">
-                    <span>📁</span> Pilih File CSV
-                </label>
-                <input type="file" id="file-csv" accept=".csv" onchange="tampilkanNamaFile()">
-                <div class="file-name" id="file-name">Belum ada file dipilih</div>
+    <!-- MODAL TAMBAH JADWAL -->
+    <div class="modal-overlay" id="modal-jadwal">
+        <div class="modal-content">
+            <h3>📅 Tambah Jadwal Baru</h3>
+            <div class="form-grid">
+                <div class="form-group"><label>Waktu (Cth: 09:00 - 10:30)</label><input type="text" id="j-waktu" placeholder="08:00 - 09:30"></div>
+                <div class="form-group"><label>Hari</label>
+                    <select id="j-hari">
+                        <option>Ahad</option><option>Senin</option><option>Selasa</option><option>Rabu</option>
+                        <option>Kamis</option><option>Jumat</option><option>Sabtu</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Tanggal (Cth: 21/10/2026)</label><input type="text" id="j-tanggal" placeholder="DD/MM/YYYY"></div>
+                <div class="form-group"><label>Matapelajaran</label><input type="text" id="j-mapel" placeholder="TIK UH 1"></div>
+                <div class="form-group"><label>Kelas (Pisahkan koma)</label><input type="text" id="j-kelas" placeholder="X-1, X-2"></div>
+                <div class="form-group"><label>Token</label><input type="text" id="j-token" placeholder="TIK123"></div>
+                <div class="form-group"><label>Jenis Ujian</label>
+                    <select id="j-jenis"><option value="UH">UH</option><option value="UAS">UAS</option></select>
+                </div>
+                <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
             </div>
-            
-            <button class="btn-proses" id="btn-proses-upload" onclick="prosesUpload()">
-                <span>🚀</span> Upload & Ganti Data
-            </button>
-            <button class="btn-batal" onclick="tutupModalUpload()">Batal</button>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="document.getElementById('modal-jadwal').classList.remove('aktif')">Batal</button>
         </div>
     </div>
 
 <script>
-/* =========================================================
-   KONFIGURASI
-   ========================================================= */
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
 
 let semuaDataNilai = [];
+let semuaDataJadwal = [];
 
-/* =========================================================
-   FITUR DASHBOARD NILAI
-   ========================================================= */
-async function muatData() {
+/* =========================================
+   TAB NAVIGASI
+   ========================================= */
+function bukaTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('aktif'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('aktif'));
+    
+    document.getElementById(`tab-${tab}`).classList.add('aktif');
+    document.getElementById(`tab-btn-${tab}`).classList.add('aktif');
+    
+    if (tab === 'jadwal') muatDataJadwal();
+}
+
+/* =========================================
+   FITUR NILAI (READ ONLY)
+   ========================================= */
+async function muatDataNilai() {
     const tbody = document.getElementById("tbody-nilai");
-    tbody.innerHTML = `<tr><td colspan="9" class="loading">⏳ Memuat data...</td></tr>`;
-
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>`;
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=nilai&t=" + new Date().getTime());
-        const teks = await res.text();
-        
-        try {
-            const json = JSON.parse(teks);
-            if (json.status === "success") {
-                semuaDataNilai = json.data;
-                isiFilter();
-                renderTabel();
-            } else {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal memuat: ${json.message}</td></tr>`;
-            }
-        } catch(e) {
-            console.error("Bukan JSON:", teks);
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error: Pastikan Apps Script sudah di Deploy New Version.</td></tr>`;
+        const json = await res.json();
+        if (json.status === "success") {
+            semuaDataNilai = json.data;
+            isiFilterNilai();
+            renderTabelNilai();
         }
-    } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi: Internet terputus atau URL salah.</td></tr>`;
-    }
+    } catch (err) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
 }
 
-function isiFilter() {
-    const setKelas = new Set();
-    const setMapel = new Set();
-
-    semuaDataNilai.forEach(d => {
-        if (d.kelas) setKelas.add(d.kelas);
-        if (d.mapel) setMapel.add(d.mapel);
-    });
-
-    const selectKelas = document.getElementById("filter-kelas");
-    const selectMapel = document.getElementById("filter-mapel");
-
-    const valKelas = selectKelas.value;
-    const valMapel = selectMapel.value;
-
-    selectKelas.innerHTML = `<option value="">Semua Kelas</option>`;
-    selectMapel.innerHTML = `<option value="">Semua Mapel</option>`;
-
-    Array.from(setKelas).sort().forEach(k => { selectKelas.innerHTML += `<option value="${k}">${k}</option>`; });
-    Array.from(setMapel).sort().forEach(m => { selectMapel.innerHTML += `<option value="${m}">${m}</option>`; });
-
-    selectKelas.value = valKelas;
-    selectMapel.value = valMapel;
+function isiFilterNilai() {
+    const setKelas = new Set(); const setMapel = new Set();
+    semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
+    const sKelas = document.getElementById("filter-kelas"); const sMapel = document.getElementById("filter-mapel");
+    sKelas.innerHTML = `<option value="">Semua Kelas</option>` + Array.from(setKelas).sort().map(k => `<option value="${k}">${k}</option>`).join('');
+    sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
-function renderTabel() {
+function renderTabelNilai() {
     const tbody = document.getElementById("tbody-nilai");
-    const filterNama = document.getElementById("filter-nama").value.toLowerCase();
-    const filterKelas = document.getElementById("filter-kelas").value;
-    const filterMapel = document.getElementById("filter-mapel").value;
+    const fNama = document.getElementById("filter-nama").value.toLowerCase();
+    const fKelas = document.getElementById("filter-kelas").value;
+    const fMapel = document.getElementById("filter-mapel").value;
 
-    const dataTampil = semuaDataNilai.filter(d => {
-        const cocokNama = (d.nama || "").toLowerCase().includes(filterNama);
-        const cocokKelas = filterKelas === "" || d.kelas === filterKelas;
-        const cocokMapel = filterMapel === "" || d.mapel === filterMapel;
-        return cocokNama && cocokKelas && cocokMapel;
-    });
+    const dataTampil = semuaDataNilai.filter(d => 
+        (d.nama || "").toLowerCase().includes(fNama) &&
+        (fKelas === "" || d.kelas === fKelas) &&
+        (fMapel === "" || d.mapel === fMapel)
+    );
 
-    if (dataTampil.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">Tidak ada data yang cocok.</td></tr>`;
-        return;
-    }
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada data.</td></tr>`; return; }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, index) => {
-        let badgeSkor = "badge-green";
-        if (d.skor < 70) badgeSkor = "badge-red";
-        else if (d.skor < 85) badgeSkor = "badge-yellow";
-
-        const tabClass = d.pindah_tab > 0 ? "warning-text" : "";
-        const camClass = d.pelanggaran_kamera > 0 ? "warning-text" : "";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${d.waktu}</td>
-            <td><strong>${d.nama}</strong></td>
-            <td>${d.kelas}</td>
-            <td>${d.mapel}</td>
-            <td><span class="badge ${badgeSkor} skor-text">${d.skor}</span></td>
-            <td>${d.jumlah_benar} / ${d.total_soal}</td>
-            <td class="${tabClass}">${d.pindah_tab}x</td>
-            <td class="${camClass}">${d.pelanggaran_kamera}x</td>
-        `;
-        tbody.appendChild(tr);
+        let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
+        tbody.innerHTML += `
+            <tr>
+                <td>${index + 1}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
+                <td>${d.kelas}</td><td>${d.mapel}</td>
+                <td><span class="badge ${bSkor}">${d.skor}</span></td>
+                <td>${d.jumlah_benar} / ${d.total_soal}</td>
+                <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
+                <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
+            </tr>`;
     });
 }
 
-/* =========================================================
-   FITUR UPLOAD SISWA (CSV)
-   ========================================================= */
-function bukaModalUpload() {
-    document.getElementById("modal-upload").classList.add("aktif");
+/* =========================================
+   FITUR JADWAL (READ, CREATE, UPDATE)
+   ========================================= */
+async function muatDataJadwal() {
+    const tbody = document.getElementById("tbody-jadwal");
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>`;
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal&t=" + new Date().getTime());
+        const json = await res.json();
+        if (json.status === "success") {
+            semuaDataJadwal = json.data;
+            renderTabelJadwal();
+        }
+    } catch (err) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
 }
 
-function tutupModalUpload() {
-    document.getElementById("modal-upload").classList.remove("aktif");
-    document.getElementById("file-csv").value = "";
-    const fileNameDiv = document.getElementById("file-name");
-    fileNameDiv.textContent = "Belum ada file dipilih";
-    fileNameDiv.style.display = "none";
-}
-
-function tampilkanNamaFile() {
-    const file = document.getElementById("file-csv").files[0];
-    const fileNameDiv = document.getElementById("file-name");
+function renderTabelJadwal() {
+    const tbody = document.getElementById("tbody-jadwal");
+    tbody.innerHTML = "";
     
-    if (file) {
-        fileNameDiv.textContent = "✅ " + file.name;
-        fileNameDiv.style.display = "block";
-    } else {
-        fileNameDiv.style.display = "none";
-    }
-}
-
-async function prosesUpload() {
-    const fileInput = document.getElementById("file-csv");
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("⚠️ Pilih file CSV terlebih dahulu!");
+    if (semuaDataJadwal.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Belum ada jadwal.</td></tr>`;
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const teks = e.target.result;
-        const baris = parseCSV(teks);
+    semuaDataJadwal.forEach((j, index) => {
+        // index+2 karena baris 1 adalah header
+        const barisSheet = index + 2; 
         
-        const dataSiswa = [];
-        for (let i = 1; i < baris.length; i++) {
-            const k = baris[i];
-            if (!k || k.length < 3) continue;
-            dataSiswa.push({
-                nisn: k[0].trim(),
-                nama: k[1].trim(),
-                kelas: k[2].trim()
-            });
-        }
-
-        if (dataSiswa.length === 0) {
-            alert("⚠️ Tidak ada data siswa yang valid.");
-            return;
-        }
-
-        if (!confirm(`Ditemukan ${dataSiswa.length} data siswa dalam file.\n\nSistem akan menambahkan siswa baru dan memperbarui data lama berdasarkan NISN. Lanjutkan?`)) {
-            return;
-        }
-
-        try {
-            const btn = document.getElementById('btn-proses-upload');
-            btn.innerHTML = `<span>⏳</span> Memproses...`;
-            btn.disabled = true;
-
-            // MENGGUNAKAN METODE POST AGAR DATA BESAR AMAN
-            const res = await fetch(URL_GOOGLE_SHEETS, {
-                method: "POST",
-                body: JSON.stringify({
-                    aksi: "upload_siswa",
-                    siswa: dataSiswa
-                })
-            });
-
-            const json = await res.json();
-
-            if (json.status === "success") {
-                alert(`✅ Berhasil!\n\n${json.message}`);
-                tutupModalUpload();
-                // muatData(); // Opsional: Refresh tabel dashboard jika perlu
-            } else {
-                alert("❌ Gagal mengupload: " + json.message);
-            }
-        } catch (err) {
-            console.error(err);
-            alert("❌ Terjadi kesalahan koneksi ke server. Pastikan Apps Script sudah di Deploy ulang.");
-        } finally {
-            const btn = document.getElementById('btn-proses-upload');
-            btn.innerHTML = `<span>🚀</span> Upload & Ganti Data`;
-            btn.disabled = false;
-        }
-    };
-    reader.readAsText(file);
-}
-function parseCSV(teks) {
-    return teks.split("\n").map(r => {
-        const hasil = [];
-        let bagian = "", dalamKutip = false;
-        for (let c of r) {
-            if (c === '"') dalamKutip = !dalamKutip;
-            else if ((c === "," || c === ";") && !dalamKutip) { 
-                hasil.push(bagian.trim()); bagian = ""; 
-            }
-            else bagian += c;
-        }
-        hasil.push(bagian.trim());
-        return hasil.map(s => s.replace(/^"|"$/g, ""));
+        tbody.innerHTML += `
+            <tr>
+                <td>${j.no}</td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 2, '${j.waktu}')">${j.waktu}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 4, '${j.tanggal}')">${j.tanggal}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 5, '${j.mapel}')">${j.mapel}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 6, '${j.kelas}')">${j.kelas}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+            </tr>`;
     });
 }
 
-// Muat data saat halaman pertama kali dibuka
-muatData();
+// Fungsi Edit Inline (Klik langsung di tabel)
+function editSel(elemen, baris, kolom, nilaiLama) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = nilaiLama;
+    input.className = "editable-edit";
+    
+    input.onblur = function() {
+        if (input.value !== nilaiLama) {
+            simpanEdit(baris, kolom, input.value, elemen);
+        } else {
+            elemen.innerHTML = nilaiLama;
+            elemen.style.display = "block";
+        }
+    };
+
+    input.onkeydown = function(e) {
+        if (e.key === "Enter") input.blur();
+    };
+
+    elemen.style.display = "none";
+    elemen.parentNode.appendChild(input);
+    input.focus();
+}
+
+async function simpanEdit(baris, kolom, nilaiBaru, elemen) {
+    elemen.innerHTML = "⏳...";
+    elemen.style.display = "block";
+    
+    try {
+        await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "edit_jadwal",
+                baris: baris,
+                kolom: kolom,
+                nilaiBaru: nilaiBaru
+            })
+        });
+        
+        elemen.innerHTML = nilaiBaru; // Update tampilan jika sukses
+        elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+        
+    } catch (err) {
+        alert("Gagal menyimpan perubahan.");
+        elemen.innerHTML = "❌ Error";
+    }
+}
+
+/* =========================================
+   TAMBAH JADWAL BARU
+   ========================================= */
+function bukaModalJadwal() {
+    document.getElementById("modal-jadwal").classList.add("aktif");
+}
+
+async function simpanJadwalBaru() {
+    const data = {
+        waktu: document.getElementById("j-waktu").value,
+        hari: document.getElementById("j-hari").value,
+        tanggal: document.getElementById("j-tanggal").value,
+        mapel: document.getElementById("j-mapel").value,
+        kelas: document.getElementById("j-kelas").value,
+        token: document.getElementById("j-token").value,
+        jenis: document.getElementById("j-jenis").value,
+        durasi: document.getElementById("j-durasi").value
+    };
+
+    if(!data.waktu || !data.tanggal || !data.mapel) {
+        alert("⚠️ Lengkapi data terlebih dahulu!"); return;
+    }
+
+    const btn = document.querySelector("#modal-jadwal .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "tambah_jadwal", jadwal: data })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ Jadwal berhasil ditambahkan!");
+            document.getElementById("modal-jadwal").classList.remove("aktif");
+            muatDataJadwal(); // Refresh tabel
+        } else {
+            alert("❌ Gagal: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    } finally {
+        btn.textContent = "Simpan Jadwal"; btn.disabled = false;
+    }
+}
+
+/* =========================================
+   UPLOAD SISWA (Dari kode sebelumnya)
+   ========================================= */
+function bukaModalUpload() { document.getElementById("modal-upload").classList.add("aktif"); }
+
+async function prosesUpload() {
+    const file = document.getElementById("file-csv").files[0];
+    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const baris = parseCSV(e.target.result);
+        const dataSiswa = [];
+        for (let i = 1; i < baris.length; i++) {
+            if (baris[i].length >= 3) dataSiswa.push({ nisn: baris[i][0], nama: baris[i][1], kelas: baris[i][2] });
+        }
+        if (dataSiswa.length === 0) { alert("⚠️ Format file salah."); return; }
+        
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "upload_siswa", siswa: dataSiswa })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert("✅ " + json.message);
+                document.getElementById("modal-upload").classList.remove("aktif");
+            } else { alert("❌ " + json.message); }
+        } catch (err) { alert("❌ Koneksi Error."); }
+    };
+    reader.readAsText(file);
+}
+
+function parseCSV(teks) {
+    return teks.split("\n").map(r => {
+        const hasil = []; let bagian = "", dalamKutip = false;
+        for (let c of r) {
+            if (c === '"') dalamKutip = !dalamKutip;
+            else if ((c === "," || c === ";") && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
+            else bagian += c;
+        }
+        hasil.push(bagian.trim()); return hasil.map(s => s.replace(/^"|"$/g, ""));
+    });
+}
+
+/* --- INIT --- */
+muatDataNilai();
 </script>
 </body>
 </html>
