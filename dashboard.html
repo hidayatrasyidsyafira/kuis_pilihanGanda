@@ -22,7 +22,7 @@
         }
         .header h1 { color: #2c3e50; font-size: 1.8rem; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab-btn {
             padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold;
             cursor: pointer; transition: 0.2s; background: #e9ecef; color: #7f8c8d;
@@ -34,7 +34,7 @@
         .tab-content { display: none; }
         .tab-content.aktif { display: block; }
 
-        .filter-section { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-section { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
         .filter-section input, .filter-section select {
             padding: 10px 15px; border: 2px solid #b8d8e8; border-radius: 8px;
             font-size: 1rem; outline: none; min-width: 200px;
@@ -68,6 +68,7 @@
         .btn { border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s;}
         .btn-green { background: #2ecc71; } .btn-green:hover { background: #27ae60; }
         .btn-blue { background: #3498db; } .btn-blue:hover { background: #2980b9; }
+        .btn-orange { background: #f39c12; } .btn-orange:hover { background: #e67e22; }
         
         /* === MODAL === */
         .modal-overlay {
@@ -78,15 +79,16 @@
         .modal-overlay.aktif { display: flex; }
         .modal-content {
             background: white; padding: 30px; border-radius: 16px;
-            max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
+            max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;
         }
         .modal-content h3 { margin-bottom: 20px; color: #2c3e50; text-align: center; }
         
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #555;}
-        .form-group input, .form-group select {
-            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem;
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; font-family: inherit;
         }
+        .form-group textarea { resize: vertical; min-height: 80px; }
     </style>
 </head>
 <body>
@@ -94,8 +96,8 @@
         <div class="header">
             <h1>⚙️ Dashboard Admin Ujian</h1>
             <div>
-                <button class="btn btn-green" onclick="bukaModalUpload()">📤 Upload Data Siswa</button>
-                <button class="btn btn-blue" onclick="muatDataNilai()">🔄 Refresh Data</button>
+                <button class="btn btn-green" onclick="bukaModalUploadSiswa()">📤 Upload Data Siswa</button>
+                <button class="btn btn-blue" onclick="muatSemuaData()">🔄 Refresh Data</button>
             </div>
         </div>
 
@@ -103,6 +105,7 @@
         <div class="tabs">
             <button class="tab-btn aktif" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
             <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
+            <button class="tab-btn" onclick="bukaTab('bank-soal')" id="tab-btn-bank-soal">📚 Bank Soal</button>
         </div>
 
         <!-- TAB REKAP NILAI -->
@@ -111,9 +114,7 @@
                 <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabelNilai()">
                 <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
                 <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
-                <!-- TOMBOL EXPORT -->
-                <!-- <button class="btn btn-blue" onclick="exportKeCSV()" style="margin-left: auto;">📥 Export ke CSV</button> -->
-                <button class="btn btn-blue" onclick="exportKeCSV()" style="margin-left: auto;">📥 Export ke Excel (.xls)</button>
+                <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
             </div>
             <div class="table-responsive">
                 <table>
@@ -145,21 +146,47 @@
                 </table>
             </div>
             <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
-                💡 <strong>Tips Edit:</strong> Klik langsung pada teks di tabel (Waktu, Hari, Mapel, dll) untuk mengubahnya. Tekan <strong>Enter</strong> untuk menyimpan.
+                💡 <strong>Tips Edit:</strong> Klik langsung pada teks di tabel untuk mengubahnya. Tekan <strong>Enter</strong> untuk menyimpan.
             </p>
+        </div>
+
+        <!-- TAB BANK SOAL -->
+        <div class="tab-content" id="tab-bank-soal">
+            <div class="filter-section">
+                <select id="filter-mapel-soal" onchange="renderTabelSoal()">
+                    <option value="">Semua Mapel</option>
+                </select>
+                <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
+                <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="50">No</th>
+                            <th>Mapel</th>
+                            <th>Pertanyaan</th>
+                            <th width="80">Kunci</th>
+                            <th width="80">Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-soal"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- MODAL UPLOAD SISWA (Sama seperti sebelumnya) -->
+    <!-- MODAL UPLOAD SISWA -->
     <div class="modal-overlay" id="modal-upload">
         <div class="modal-content">
             <h3>📤 Upload Data Siswa</h3>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace;">
-                NISN, Nama, Kelas<br>0099068975, Budi, X-1
+                Format CSV: NISN, Nama, Kelas<br>0099068975, Budi, X-1
             </div>
             <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 20px;">
-            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUpload()">Upload & Simpan</button>
-            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="document.getElementById('modal-upload').classList.remove('aktif')">Batal</button>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSiswa()">Upload & Simpan</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload')">Batal</button>
         </div>
     </div>
 
@@ -185,7 +212,54 @@
                 <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
             </div>
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
-            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="document.getElementById('modal-jadwal').classList.remove('aktif')">Batal</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH SOAL -->
+    <div class="modal-overlay" id="modal-tambah-soal">
+        <div class="modal-content">
+            <h3>📝 Tambah Soal Baru</h3>
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Mata Pelajaran (Harus sama dengan Jadwal)</label>
+                    <input type="text" id="s-mapel" placeholder="Contoh: TIK UH 3 Queue">
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Pertanyaan</label>
+                    <textarea id="s-soal" placeholder="Tulis pertanyaan di sini..."></textarea>
+                </div>
+                <div class="form-group"><label>Pilihan A</label><input type="text" id="s-a"></div>
+                <div class="form-group"><label>Pilihan B</label><input type="text" id="s-b"></div>
+                <div class="form-group"><label>Pilihan C</label><input type="text" id="s-c"></div>
+                <div class="form-group"><label>Pilihan D</label><input type="text" id="s-d"></div>
+                <div class="form-group"><label>Pilihan E (Opsional)</label><input type="text" id="s-e"></div>
+                <div class="form-group"><label>Kunci Jawaban</label>
+                    <select id="s-kunci"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option></select>
+                </div>
+                <div class="form-group"><label>Skor (Angka)</label><input type="number" id="s-skor" value="1"></div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Penjelasan (Opsional)</label>
+                    <textarea id="s-penjelasan" placeholder="Penjelasan jawaban..."></textarea>
+                </div>
+            </div>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanSoalBaru()">Simpan Soal</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-tambah-soal')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL UPLOAD SOAL -->
+    <div class="modal-overlay" id="modal-upload-soal">
+        <div class="modal-content">
+            <h3>📤 Upload Soal (CSV)</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace; overflow-x: auto; white-space: nowrap;">
+                Format CSV (Gunakan Koma):<br>
+                Mapel,Soal,PilA,PilB,PilC,PilD,PilE,Kunci,Skor,Penjelasan<br>
+                TIK UH 1,Apa itu CPU?,Prosessor,RAM,Hardisk,VGA,PSU,A,5,CPU adalah...
+            </div>
+            <input type="file" id="file-csv-soal" accept=".csv" style="margin-bottom: 20px;">
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSoal()">Upload Soal</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload-soal')">Batal</button>
         </div>
     </div>
 
@@ -194,9 +268,10 @@ const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXM
 
 let semuaDataNilai = [];
 let semuaDataJadwal = [];
+let semuaDataSoal = [];
 
 /* =========================================
-   TAB NAVIGASI
+   NAVIGASI TAB & UTIL
    ========================================= */
 function bukaTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('aktif'));
@@ -206,10 +281,20 @@ function bukaTab(tab) {
     document.getElementById(`tab-btn-${tab}`).classList.add('aktif');
     
     if (tab === 'jadwal') muatDataJadwal();
+    if (tab === 'bank-soal') muatBankSoal();
+}
+
+function bukaModal(id) { document.getElementById(id).classList.add("aktif"); }
+function tutupModal(id) { document.getElementById(id).classList.remove("aktif"); }
+
+function muatSemuaData() {
+    muatDataNilai();
+    if(document.getElementById('tab-jadwal').classList.contains('aktif')) muatDataJadwal();
+    if(document.getElementById('tab-bank-soal').classList.contains('aktif')) muatBankSoal();
 }
 
 /* =========================================
-   FITUR NILAI (READ ONLY)
+   TAB 1: NILAI
    ========================================= */
 async function muatDataNilai() {
     const tbody = document.getElementById("tbody-nilai");
@@ -262,134 +347,37 @@ function renderTabelNilai() {
     });
 }
 
-/* =========================================
-   FITUR EXPORT KE EXCEL (CSV)
-   ========================================= */
-    // function exportKeCSV() {
-    //     // Filter data yang sama persis dengan yang tampil di layar
-    //     const fNama = document.getElementById("filter-nama").value.toLowerCase();
-    //     const fKelas = document.getElementById("filter-kelas").value;
-    //     const fMapel = document.getElementById("filter-mapel").value;
-    
-    //     const dataTampil = semuaDataNilai.filter(d => 
-    //         (d.nama || "").toLowerCase().includes(fNama) &&
-    //         (fKelas === "" || d.kelas === fKelas) &&
-    //         (fMapel === "" || d.mapel === fMapel)
-    //     );
-    
-    //     if (dataTampil.length === 0) {
-    //         alert("⚠️ Tidak ada data untuk diexport.");
-    //         return;
-    //     }
-    
-    //     // Siapkan Header Kolom
-    //     let csvContent = "No,Waktu,Nama Siswa,Kelas,Matapelajaran,Skor,Nilai Benar,Total Soal,Pindah Tab,Pelanggaran Kamera\n";
-    
-    //     // Masukkan Data
-    //     dataTampil.forEach((d, index) => {
-    //         // Bersihkan teks dari tanda koma agar tidak merusak format CSV
-    //         const namaBersih = `"${d.nama}"`;
-    //         const mapelBersih = `"${d.mapel}"`;
-            
-    //         csvContent += `${index + 1},${d.waktu},${namaBersih},${d.kelas},${mapelBersih},${d.skor},${d.jumlah_benar},${d.total_soal},${d.pindah_tab},${d.pelanggaran_kamera}\n`;
-    //     });
-    
-    //     // Proses Download
-    //     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    //     const link = document.createElement("a");
-    //     const url = URL.createObjectURL(blob);
-        
-    //     // Penamaan File Otomatis (Tanggal-Bulan-Tahun)
-    //     const tanggalSekarang = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-    //     link.setAttribute("href", url);
-    //     link.setAttribute("download", `Rekap_Nilai_Ujian_${tanggalSekarang}.csv`);
-        
-    //     document.body.appendChild(link);
-    //     link.click();
-    //     document.body.removeChild(link);
-    // }    
-/* =========================================
-   FITUR EXPORT KE EXCEL (XLS)
-   ========================================= */
-    function exportKeCSV() {
-    // Filter data yang sama persis dengan yang tampil di layar
+function exportKeExcel() {
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
     const fKelas = document.getElementById("filter-kelas").value;
     const fMapel = document.getElementById("filter-mapel").value;
 
     const dataTampil = semuaDataNilai.filter(d => 
-        (d.nama || "").toLowerCase().includes(fNama) &&
-        (fKelas === "" || d.kelas === fKelas) &&
-        (fMapel === "" || d.mapel === fMapel)
+        (d.nama || "").toLowerCase().includes(fNama) && (fKelas === "" || d.kelas === fKelas) && (fMapel === "" || d.mapel === fMapel)
     );
 
-    if (dataTampil.length === 0) {
-        alert("⚠️ Tidak ada data untuk diexport.");
-        return;
-    }
+    if (dataTampil.length === 0) { alert("⚠️ Tidak ada data untuk diexport."); return; }
 
-    // --- MEMBUAT FILE EXCEL LANGSUNG (TANPA CSV) ---
-    
-    // 1. Buat kerangka HTML Table dengan gaya (style) khusus Excel
     let tableHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="UTF-8">
-            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-            <style>
-                table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
-                th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; }
-                td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-                td.text-left { text-align: left; }
-            </style>
-        </head>
-        <body>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th><th>Waktu</th><th>Nama Siswa</th><th>Kelas</th><th>Matapelajaran</th>
-                    <th>Skor</th><th>Nilai Benar</th><th>Total Soal</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
-                </tr>
-            </thead>
-            <tbody>`;
+        <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+        <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; } td { border: 1px solid #ddd; padding: 8px; text-align: center; } td.text-left { text-align: left; }</style>
+        </head><body><table><thead><tr><th>No</th><th>Waktu</th><th>Nama Siswa</th><th>Kelas</th><th>Matapelajaran</th><th>Skor</th><th>Nilai Benar</th><th>Total Soal</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th></tr></thead><tbody>`;
 
-    // 2. Masukkan datanya
     dataTampil.forEach((d, index) => {
-        tableHtml += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${d.waktu}</td>
-                <td class="text-left">${d.nama}</td>
-                <td>${d.kelas}</td>
-                <td class="text-left">${d.mapel}</td>
-                <td>${d.skor}</td>
-                <td>${d.jumlah_benar}</td>
-                <td>${d.total_soal}</td>
-                <td>${d.pindah_tab}</td>
-                <td>${d.pelanggaran_kamera}</td>
-            </tr>`;
+        tableHtml += `<tr><td>${index + 1}</td><td>${d.waktu}</td><td class="text-left">${d.nama}</td><td>${d.kelas}</td><td class="text-left">${d.mapel}</td><td>${d.skor}</td><td>${d.jumlah_benar}</td><td>${d.total_soal}</td><td>${d.pindah_tab}</td><td>${d.pelanggaran_kamera}</td></tr>`;
     });
 
     tableHtml += `</tbody></table></body></html>`;
-
-    // 3. Proses Download
-    // Kita gunakan tipe 'application/vnd.ms-excel' agar Excel langsung membukanya
     const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    
-    // Penamaan File Otomatis (Tanggal-Bulan-Tahun)
-    const tanggalSekarang = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Rekap_Nilai_Ujian_${tanggalSekarang}.xls`);
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    link.href = URL.createObjectURL(blob);
+    link.download = `Rekap_Nilai_${new Date().toLocaleDateString('id-ID').replace(/\//g, '-')}.xls`;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
-    
+
 /* =========================================
-   FITUR JADWAL (READ, CREATE, UPDATE)
+   TAB 2: JADWAL (Baca, Tambah, Edit)
    ========================================= */
 async function muatDataJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
@@ -407,16 +395,10 @@ async function muatDataJadwal() {
 function renderTabelJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
     tbody.innerHTML = "";
-    
-    if (semuaDataJadwal.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Belum ada jadwal.</td></tr>`;
-        return;
-    }
+    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
 
     semuaDataJadwal.forEach((j, index) => {
-        // index+2 karena baris 1 adalah header
         const barisSheet = index + 2; 
-        
         tbody.innerHTML += `
             <tr>
                 <td>${j.no}</td>
@@ -432,61 +414,29 @@ function renderTabelJadwal() {
     });
 }
 
-// Fungsi Edit Inline (Klik langsung di tabel)
 function editSel(elemen, baris, kolom, nilaiLama) {
     const input = document.createElement("input");
-    input.type = "text";
-    input.value = nilaiLama;
-    input.className = "editable-edit";
-    
+    input.type = "text"; input.value = nilaiLama; input.className = "editable-edit";
     input.onblur = function() {
-        if (input.value !== nilaiLama) {
-            simpanEdit(baris, kolom, input.value, elemen);
-        } else {
-            elemen.innerHTML = nilaiLama;
-            elemen.style.display = "block";
-        }
+        if (input.value !== nilaiLama) { simpanEdit(baris, kolom, input.value, elemen); } 
+        else { elemen.innerHTML = nilaiLama; elemen.style.display = "block"; }
     };
-
-    input.onkeydown = function(e) {
-        if (e.key === "Enter") input.blur();
-    };
-
-    elemen.style.display = "none";
-    elemen.parentNode.appendChild(input);
-    input.focus();
+    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+    elemen.style.display = "none"; elemen.parentNode.appendChild(input); input.focus();
 }
 
 async function simpanEdit(baris, kolom, nilaiBaru, elemen) {
-    elemen.innerHTML = "⏳...";
-    elemen.style.display = "block";
-    
+    elemen.innerHTML = "⏳..."; elemen.style.display = "block";
     try {
         await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST",
-            body: JSON.stringify({
-                aksi: "edit_jadwal",
-                baris: baris,
-                kolom: kolom,
-                nilaiBaru: nilaiBaru
-            })
+            method: "POST", body: JSON.stringify({ aksi: "edit_jadwal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
         });
-        
-        elemen.innerHTML = nilaiBaru; // Update tampilan jika sukses
+        elemen.innerHTML = nilaiBaru; 
         elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
-        
-    } catch (err) {
-        alert("Gagal menyimpan perubahan.");
-        elemen.innerHTML = "❌ Error";
-    }
+    } catch (err) { alert("Gagal menyimpan perubahan."); elemen.innerHTML = "❌ Error"; }
 }
 
-/* =========================================
-   TAMBAH JADWAL BARU
-   ========================================= */
-function bukaModalJadwal() {
-    document.getElementById("modal-jadwal").classList.add("aktif");
-}
+function bukaModalJadwal() { bukaModal("modal-jadwal"); }
 
 async function simpanJadwalBaru() {
     const data = {
@@ -500,40 +450,174 @@ async function simpanJadwalBaru() {
         durasi: document.getElementById("j-durasi").value
     };
 
-    if(!data.waktu || !data.tanggal || !data.mapel) {
-        alert("⚠️ Lengkapi data terlebih dahulu!"); return;
-    }
-
+    if(!data.waktu || !data.tanggal || !data.mapel) { alert("⚠️ Lengkapi data terlebih dahulu!"); return; }
     const btn = document.querySelector("#modal-jadwal .btn-green");
     btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
 
     try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST",
-            body: JSON.stringify({ aksi: "tambah_jadwal", jadwal: data })
-        });
+        const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_jadwal", jadwal: data }) });
         const json = await res.json();
-        
         if (json.status === "success") {
             alert("✅ Jadwal berhasil ditambahkan!");
-            document.getElementById("modal-jadwal").classList.remove("aktif");
-            muatDataJadwal(); // Refresh tabel
-        } else {
-            alert("❌ Gagal: " + json.message);
+            tutupModal("modal-jadwal");
+            muatDataJadwal();
+        } else { alert("❌ Gagal: " + json.message); }
+    } catch (err) { alert("❌ Error koneksi server."); } 
+    finally { btn.textContent = "Simpan Jadwal"; btn.disabled = false; }
+}
+
+/* =========================================
+   TAB 3: BANK SOAL (Baca, Tambah, Upload)
+   ========================================= */
+async function muatBankSoal() {
+    const tbody = document.getElementById("tbody-soal");
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">⏳ Memuat data soal...</td></tr>`;
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&t=" + new Date().getTime());
+        const json = await res.json();
+        if (json.status === "success") {
+            semuaDataSoal = json.data;
+            isiFilterSoal();
+            renderTabelSoal();
         }
-    } catch (err) {
-        alert("❌ Error koneksi server.");
-    } finally {
-        btn.textContent = "Simpan Jadwal"; btn.disabled = false;
-    }
+    } catch (err) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+}
+
+function isiFilterSoal() {
+    const setMapel = new Set();
+    semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+    const sMapel = document.getElementById("filter-mapel-soal");
+    const val = sMapel.value;
+    sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+    sMapel.value = val;
+}
+
+function renderTabelSoal() {
+    const tbody = document.getElementById("tbody-soal");
+    const fMapel = document.getElementById("filter-mapel-soal").value;
+
+    const dataTampil = semuaDataSoal.filter(d => fMapel === "" || d.mapel === fMapel);
+    
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+
+    tbody.innerHTML = "";
+    dataTampil.forEach((d, index) => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${d.mapel}</strong></td>
+                <td style="max-width: 400px; white-space: normal;">${d.soal}</td>
+                <td style="text-align:center;"><span class="badge badge-green">${d.kunci}</span></td>
+                <td style="text-align:center;">${d.skor}</td>
+            </tr>`;
+    });
+}
+
+function bukaModalTambahSoal() { bukaModal("modal-tambah-soal"); }
+
+async function simpanSoalBaru() {
+    const data = {
+        mapel: document.getElementById("s-mapel").value,
+        soal: document.getElementById("s-soal").value,
+        pilihanA: document.getElementById("s-a").value,
+        pilihanB: document.getElementById("s-b").value,
+        pilihanC: document.getElementById("s-c").value,
+        pilihanD: document.getElementById("s-d").value,
+        pilihanE: document.getElementById("s-e").value || "",
+        kunci: document.getElementById("s-kunci").value,
+        skor: document.getElementById("s-skor").value,
+        penjelasan: document.getElementById("s-penjelasan").value
+    };
+
+    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { alert("⚠️ Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!"); return; }
+    
+    const btn = document.querySelector("#modal-tambah-soal .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_soal", soal: data }) });
+        const json = await res.json();
+        if (json.status === "success") {
+            alert("✅ Soal berhasil ditambahkan!");
+            tutupModal("modal-tambah-soal");
+            muatBankSoal();
+        } else { alert("❌ Gagal: " + json.message); }
+    } catch (err) { alert("❌ Error koneksi server."); } 
+    finally { btn.textContent = "Simpan Soal"; btn.disabled = false; }
+}
+
+function bukaModalUploadSoal() { bukaModal("modal-upload-soal"); }
+
+async function prosesUploadSoal() {
+    const file = document.getElementById("file-csv-soal").files[0];
+    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const baris = parseCSV(e.target.result);
+        const daftarSoal = [];
+        
+        // Asumsi: Baris 1 adalah header, mulai dari index 1
+        for (let i = 1; i < baris.length; i++) {
+            if (baris[i].length >= 8) { // Minimal harus ada 8 kolom (Mapel s.d Kunci)
+                daftarSoal.push({
+                    mapel: baris[i][0],
+                    soal: baris[i][1],
+                    pilihanA: baris[i][2],
+                    pilihanB: baris[i][3],
+                    pilihanC: baris[i][4],
+                    pilihanD: baris[i][5],
+                    pilihanE: baris[i][6],
+                    kunci: baris[i][7].toUpperCase(),
+                    skor: parseInt(baris[i][8]) || 1,
+                    penjelasan: baris[i][9] || ""
+                });
+            }
+        }
+
+        if (daftarSoal.length === 0) { alert("⚠️ Format file tidak sesuai atau data kosong."); return; }
+        
+        if (!confirm(`Ditemukan ${daftarSoal.length} soal valid. Lanjutkan upload?`)) return;
+
+        const btn = document.querySelector("#modal-upload-soal .btn-green");
+        btn.textContent = "⏳ Memproses..."; btn.disabled = true;
+
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "upload_soal", daftarSoal: daftarSoal })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                alert("✅ " + json.message);
+                tutupModal("modal-upload-soal");
+                muatBankSoal();
+            } else { alert("❌ " + json.message); }
+        } catch (err) { alert("❌ Koneksi Error."); }
+        finally { btn.textContent = "Upload Soal"; btn.disabled = false; }
+    };
+    reader.readAsText(file);
+}
+
+function parseCSV(teks) {
+    return teks.split("\n").map(r => {
+        const hasil = []; let bagian = "", dalamKutip = false;
+        for (let c of r) {
+            if (c === '"') dalamKutip = !dalamKutip;
+            else if ((c === "," || c === ";") && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
+            else bagian += c;
+        }
+        hasil.push(bagian.trim()); return hasil.map(s => s.replace(/^"|"$/g, ""));
+    });
 }
 
 /* =========================================
    UPLOAD SISWA (Dari kode sebelumnya)
    ========================================= */
-function bukaModalUpload() { document.getElementById("modal-upload").classList.add("aktif"); }
+function bukaModalUploadSiswa() { bukaModal("modal-upload"); }
 
-async function prosesUpload() {
+async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
     if (!file) { alert("⚠️ Pilih file CSV!"); return; }
 
@@ -554,23 +638,11 @@ async function prosesUpload() {
             const json = await res.json();
             if (json.status === "success") {
                 alert("✅ " + json.message);
-                document.getElementById("modal-upload").classList.remove("aktif");
+                tutupModal("modal-upload");
             } else { alert("❌ " + json.message); }
         } catch (err) { alert("❌ Koneksi Error."); }
     };
     reader.readAsText(file);
-}
-
-function parseCSV(teks) {
-    return teks.split("\n").map(r => {
-        const hasil = []; let bagian = "", dalamKutip = false;
-        for (let c of r) {
-            if (c === '"') dalamKutip = !dalamKutip;
-            else if ((c === "," || c === ";") && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
-            else bagian += c;
-        }
-        hasil.push(bagian.trim()); return hasil.map(s => s.replace(/^"|"$/g, ""));
-    });
 }
 
 /* --- INIT --- */
