@@ -908,13 +908,19 @@ function selesaikanUjian() {
 
         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
         
+        // --- SIMPAN DATA PELANGGARAN KE VARIABEL SEMENTARA SEBELUM DIKIRIM ---
+        // Ini mencegah variabel ter-reset jika ada fungsi lain yang berjalan
+        const finalPindahTab = jumlahPindahTab;
+        const finalPelanggaranKamera = jumlahPelanggaranKamera;
+        
         // Tampilkan hasil
         document.getElementById("layar-cbt").style.display = "none";
         document.getElementById("layar-akhir").style.display = "block";
         document.getElementById("skor-angka").textContent = skorAkhir;
         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
         
-        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length);
+        // Kirim data menggunakan variabel sementara
+        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera);
     }
 }
 
@@ -945,22 +951,29 @@ function updateTimerTotal() {
 }
 
 /* --- KIRIM HASIL KE SHEET --- */
-function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal) {
+function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera) {
     if (mapelDipilih && mapelDipilih.isLatihan) {
         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
         return; 
     }
+    
     const params = new URLSearchParams({
-        nama: namaSiswa, nisn: nisnSiswa, kelas: kelasSiswa, 
-        jumlah_benar: jumlahBenar, total_soal: totalSoal, skor: skorAkhir, 
-        pindah_tab: jumlahPindahTab, pelanggaran_kamera: jumlahPelanggaranKamera,
-        mapel: mapelSiswa, waktu_jawab: new Date().toLocaleString("id-ID")
+        nama: namaSiswa, 
+        nisn: nisnSiswa, 
+        kelas: kelasSiswa, 
+        jumlah_benar: jumlahBenar, 
+        total_soal: totalSoal, 
+        skor: skorAkhir, 
+        pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
+        pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
+        mapel: mapelSiswa, 
+        waktu_jawab: new Date().toLocaleString("id-ID")
     });
+    
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
     .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
     .catch(err => console.error("❌ Gagal:", err));
 }
-
 /* --- PEMBAHASAN & RESET --- */
 function tampilkanPembahasan() {
     document.getElementById("layar-akhir").style.display = "none";
