@@ -809,23 +809,78 @@ function bukaModalUploadSiswa() { bukaModal("modal-upload"); }
    FITUR DOWNLOAD TEMPLATE SOAL
    ========================================= */
 function downloadTemplateSoal() {
-    // Buat header dan 1 baris contoh
-    let csvContent = "Mapel,Soal,Pilihan A,Pilihan B,Pilihan C,Pilihan D,Pilihan E,Kunci,Skor,Penjelasan\n";
-    csvContent += '"TIK UH 1","Apa singkatan dari CPU?","Central Processing Unit","Computer Personal Unit","Central Program Utility","Control Processing Unit","Central Personal Utility","A",5,"CPU adalah otak dari komputer."\n';
-    csvContent += '"TIK UH 1","Fungsi utama RAM adalah...","Menyimpan data permanen","Menyimpan data sementara","Memproses grafis","Menampilkan gambar","Mendinginkan prosesor","B",5,"RAM bersifat sementara dan hilang saat komputer dimatikan."\n';
+    // Membuat format XML khusus untuk Excel
+    let excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>
+                table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+                th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; }
+                td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+            </style>
+        </head>
+        <body>
+        <table>
+            <thead>
+                <tr>
+                    <th>Mapel</th>
+                    <th>Soal</th>
+                    <th>Pilihan A</th>
+                    <th>Pilihan B</th>
+                    <th>Pilihan C</th>
+                    <th>Pilihan D</th>
+                    <th>Pilihan E</th>
+                    <th>Kunci</th>
+                    <th>Skor</th>
+                    <th>Penjelasan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Baris Contoh 1 -->
+                <tr>
+                    <td>TIK UH 1</td>
+                    <td>Apa singkatan dari CPU?</td>
+                    <td>Central Processing Unit</td>
+                    <td>Computer Personal Unit</td>
+                    <td>Central Program Utility</td>
+                    <td>Control Processing Unit</td>
+                    <td>Central Personal Utility</td>
+                    <td>A</td>
+                    <td>5</td>
+                    <td>CPU adalah otak dari komputer.</td>
+                </tr>
+                <!-- Baris Contoh 2 -->
+                <tr>
+                    <td>TIK UH 1</td>
+                    <td>Fungsi utama RAM adalah...</td>
+                    <td>Menyimpan data permanen</td>
+                    <td>Menyimpan data sementara</td>
+                    <td>Memproses grafis</td>
+                    <td>Menampilkan gambar</td>
+                    <td>Mendinginkan prosesor</td>
+                    <td>B</td>
+                    <td>5</td>
+                    <td>RAM bersifat sementara dan hilang saat komputer dimatikan.</td>
+                </tr>
+            </tbody>
+        </table>
+        </body></html>
+    `;
 
-    // Proses download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Proses download file sebagai .xls
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     
     link.setAttribute("href", url);
-    link.setAttribute("download", "Template_Soal_Ujian.csv");
+    link.setAttribute("download", "Template_Soal_Ujian.xls");
     
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}    
+}  
     
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
