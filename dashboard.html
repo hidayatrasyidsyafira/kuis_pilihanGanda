@@ -169,9 +169,10 @@
                             <th>Pertanyaan</th>
                             <th width="80">Kunci</th>
                             <th width="80">Skor</th>
+                            <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-soal"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-soal"><tr><td colspan="6" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -511,22 +512,119 @@ function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
 
-    const dataTampil = semuaDataSoal.filter(d => fMapel === "" || d.mapel === fMapel);
-    
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+    // Kita butuh index asli dari Sheet, jadi kita simpan di semuaDataSoal
+    // dan filter tanpa kehilangan index aslinya
+    const dataTampil = [];
+    semuaDataSoal.forEach((d, indexAsli) => {
+        if (fMapel === "" || d.mapel === fMapel) {
+            dataTampil.push({ ...d, indexAsli: indexAsli });
+        }
+    });
+
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
 
     tbody.innerHTML = "";
-    dataTampil.forEach((d, index) => {
+    dataTampil.forEach((d, indexTampil) => {
+        const barisSheet = d.indexAsli + 2; // +2 karena baris 1 adalah header
+        
         tbody.innerHTML += `
             <tr>
-                <td>${index + 1}</td>
-                <td><strong>${d.mapel}</strong></td>
-                <td style="max-width: 400px; white-space: normal;">${d.soal}</td>
-                <td style="text-align:center;"><span class="badge badge-green">${d.kunci}</span></td>
-                <td style="text-align:center;">${d.skor}</td>
+                <td>${indexTampil + 1}</td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 1, '${d.mapel}', 'soal')">${d.mapel}</div></td>
+                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 2, '${d.soal}', 'soal')">${d.soal}</div></td>
+                <td style="text-align:center;"><div class="editable" onclick="editSel(this, ${barisSheet}, 8, '${d.kunci}', 'soal')"><span class="badge badge-green">${d.kunci}</span></div></td>
+                <td style="text-align:center;"><div class="editable" onclick="editSel(this, ${barisSheet}, 9, '${d.skor}', 'soal')">${d.skor}</div></td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 5px 10px; font-size: 0.85rem;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
+                </td>
             </tr>`;
     });
 }
+
+/* =========================================
+   FITUR EDIT & HAPUS SOAL
+   ========================================= */
+function editSel(elemen, baris, kolom, nilaiLama, tipe) {
+    // Jika yang diklik adalah kunci (ada tag span), ambil teks aslinya
+    let teksLama = nilaiLama;
+    if (elemen.querySelector('span')) {
+        teksLama = elemen.querySelector('span').textContent;
+    }
+
+    const input = document.createElement("input");
+    input.type = "text"; 
+    input.value = teksLama; 
+    input.className = "editable-edit";
+    
+    input.onblur = function() {
+        if (input.value !== teksLama) { 
+            simpanEditSoal(baris, kolom, input.value, elemen, tipe); 
+        } 
+        else { 
+            elemen.style.display = "block"; 
+            if (elemen.parentNode.querySelector('.editable-edit')) {
+                elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+            }
+        }
+    };
+    
+    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+    elemen.style.display = "none"; 
+    elemen.parentNode.appendChild(input); 
+    input.focus();
+}
+
+async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
+    elemen.innerHTML = "⏳..."; 
+    elemen.style.display = "block";
+    
+    try {
+        await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "edit_soal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
+        });
+        
+        // Perbarui tampilan
+        if (kolom === 8) { // Jika kunci yang diedit
+            elemen.innerHTML = `<span class="badge badge-green">${nilaiBaru.toUpperCase()}</span>`;
+        } else {
+            elemen.innerHTML = nilaiBaru;
+        }
+        
+        // Hapus input box
+        if (elemen.parentNode.querySelector('.editable-edit')) {
+            elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+        }
+        
+        // Refresh data di background agar sinkron
+        muatBankSoal();
+
+    } catch (err) { 
+        alert("Gagal menyimpan perubahan."); 
+        elemen.innerHTML = "❌ Error"; 
+    }
+}
+
+async function konfirmasiHapus(baris) {
+    if (!confirm("Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak bisa dibatalkan.")) return;
+    
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ Soal berhasil dihapus!");
+            muatBankSoal(); // Refresh tabel
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
+}    
 
 function bukaModalTambahSoal() { bukaModal("modal-tambah-soal"); }
 
