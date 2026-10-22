@@ -190,7 +190,27 @@
                 </select>
                 <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
                 <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
+                <!-- TOMBOL HAPUS TERPILIH -->
+                <button class="btn" style="background: #e74c3c;" onclick="hapusSoalTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <!-- CHECKBOX PILIH SEMUA -->
+                            <th width="30"><input type="checkbox" id="pilih-semua" onchange="toggleSemuaSoal(this)"></th>
+                            <th width="40">No</th>
+                            <th width="120">Mapel</th>
+                            <th>Pertanyaan & Pilihan</th>
+                            <th width="60">Kunci</th>
+                            <th width="50">Skor</th>
+                            <th width="80">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-soal"><tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                </table>
             </div>
             
             <div class="table-responsive">
@@ -575,6 +595,9 @@ function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
 
+    // Uncheck "Pilih Semua" setiap kali render ulang
+    document.getElementById("pilih-semua").checked = false;
+
     const dataTampil = [];
     semuaDataSoal.forEach((d, indexAsli) => {
         if (fMapel === "" || d.mapel === fMapel) {
@@ -582,15 +605,17 @@ function renderTabelSoal() {
         }
     });
 
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
         const barisSheet = d.indexAsli + 2; 
         
-        // Menggunakan event listener alih-alih onclick inline agar aman dari tanda petik
         tbody.innerHTML += `
             <tr>
+                <td style="text-align:center;">
+                    <input type="checkbox" class="checkbox-soal" value="${barisSheet}">
+                </td>
                 <td>${indexTampil + 1}</td>
                 <td class="editable-cell" data-baris="${barisSheet}" data-kolom="1" data-tipe="text">${d.mapel}</td>
                 <td style="max-width: 500px; white-space: normal;">
@@ -617,28 +642,59 @@ function renderTabelSoal() {
             </tr>`;
     });
 
-    // Pasang event listener untuk semua elemen yang bisa diedit
+    // Pasang event listener untuk elemen edit
     document.querySelectorAll('.editable-cell').forEach(el => {
         el.style.cursor = "pointer";
         el.style.padding = "4px";
         el.style.borderRadius = "4px";
         el.style.display = "inline-block";
-        
-        // Efek hover
         el.onmouseover = () => el.style.background = "#e3f2fd";
         el.onmouseout = () => el.style.background = "transparent";
-
         el.onclick = function() {
             const baris = parseInt(this.getAttribute('data-baris'));
             const kolom = parseInt(this.getAttribute('data-kolom'));
             const tipe = this.getAttribute('data-tipe');
-            
-            // Jika yang diklik adalah badge kunci, ubah text-nya saja
             let nilaiLama = this.textContent.trim();
-            
             buatInputEdit(this, baris, kolom, nilaiLama, tipe);
         };
     });
+}
+
+    /* =========================================
+   FITUR HAPUS MASSAL
+   ========================================= */
+function toggleSemuaSoal(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-soal');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function hapusSoalTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-soal:checked');
+    if (checkboxes.length === 0) {
+        alert("⚠️ Pilih minimal satu soal untuk dihapus.");
+        return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} soal terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+
+    const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "hapus_soal_massal", daftarBaris: daftarBaris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ " + json.message);
+            muatBankSoal(); // Refresh tabel
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
 }
 
     function buatInputEdit(elemen, baris, kolom, nilaiLama, tipe) {
