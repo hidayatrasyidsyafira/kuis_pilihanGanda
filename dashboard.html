@@ -797,18 +797,23 @@ async function prosesUploadSoal() {
         
         // Asumsi: Baris 1 adalah header, mulai dari index 1
         for (let i = 1; i < baris.length; i++) {
-            if (baris[i].length >= 8) { // Minimal harus ada 8 kolom (Mapel s.d Kunci)
+            // Minimal ada 9 kolom (No, Mapel, Soal, A, B, C, D, E, Kunci)
+            // Index 0 = No (diabaikan)
+            // Index 1 = Mapel
+            // Index 2 = Soal
+            // dst...
+            if (baris[i].length >= 9) { 
                 daftarSoal.push({
-                    mapel: baris[i][0],
-                    soal: baris[i][1],
-                    pilihanA: baris[i][2],
-                    pilihanB: baris[i][3],
-                    pilihanC: baris[i][4],
-                    pilihanD: baris[i][5],
-                    pilihanE: baris[i][6],
-                    kunci: baris[i][7].toUpperCase(),
-                    skor: parseInt(baris[i][8]) || 1,
-                    penjelasan: baris[i][9] || ""
+                    mapel: baris[i][1],
+                    soal: baris[i][2],
+                    pilihanA: baris[i][3],
+                    pilihanB: baris[i][4],
+                    pilihanC: baris[i][5],
+                    pilihanD: baris[i][6],
+                    pilihanE: baris[i][7],
+                    kunci: baris[i][8].toUpperCase(),
+                    skor: parseInt(baris[i][9]) || 1,
+                    penjelasan: baris[i][10] || ""
                 });
             }
         }
@@ -875,6 +880,7 @@ function downloadTemplateSoal() {
         <table>
             <thead>
                 <tr>
+                    <th width="30">No</th> <!-- KOLOM BARU -->
                     <th>Mapel</th>
                     <th>Soal</th>
                     <th>Pilihan A</th>
@@ -890,6 +896,7 @@ function downloadTemplateSoal() {
             <tbody>
                 <!-- Baris Contoh 1 -->
                 <tr>
+                    <td style="text-align:center;">1</td>
                     <td>TIK UH 1</td>
                     <td>Apa singkatan dari CPU?</td>
                     <td>Central Processing Unit</td>
@@ -897,12 +904,13 @@ function downloadTemplateSoal() {
                     <td>Central Program Utility</td>
                     <td>Control Processing Unit</td>
                     <td>Central Personal Utility</td>
-                    <td>A</td>
-                    <td>5</td>
+                    <td style="text-align:center;">A</td>
+                    <td style="text-align:center;">5</td>
                     <td>CPU adalah otak dari komputer.</td>
                 </tr>
                 <!-- Baris Contoh 2 -->
                 <tr>
+                    <td style="text-align:center;">2</td>
                     <td>TIK UH 1</td>
                     <td>Fungsi utama RAM adalah...</td>
                     <td>Menyimpan data permanen</td>
@@ -910,8 +918,8 @@ function downloadTemplateSoal() {
                     <td>Memproses grafis</td>
                     <td>Menampilkan gambar</td>
                     <td>Mendinginkan prosesor</td>
-                    <td>B</td>
-                    <td>5</td>
+                    <td style="text-align:center;">B</td>
+                    <td style="text-align:center;">5</td>
                     <td>RAM bersifat sementara dan hilang saat komputer dimatikan.</td>
                 </tr>
             </tbody>
@@ -930,7 +938,7 @@ function downloadTemplateSoal() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}  
+}
     
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
