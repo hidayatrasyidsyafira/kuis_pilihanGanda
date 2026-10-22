@@ -89,6 +89,19 @@
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; font-family: inherit;
         }
         .form-group textarea { resize: vertical; min-height: 80px; }
+
+                /* Memperlebar tabel Bank Soal dan mengatur teks */
+        #tab-bank-soal .table-responsive {
+            max-height: 600px; /* Batasi tinggi agar bisa discroll */
+            overflow-y: auto;
+        }
+        #tab-bank-soal table th {
+            position: sticky; top: 0; z-index: 10;
+        }
+        .editable:hover {
+            background: #e3f2fd;
+            outline: 1px dashed #3498db;
+        }
     </style>
 </head>
 <body>
@@ -156,6 +169,7 @@
                 <select id="filter-mapel-soal" onchange="renderTabelSoal()">
                     <option value="">Semua Mapel</option>
                 </select>
+                <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
                 <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
                 <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
             </div>
@@ -164,18 +178,18 @@
                 <table>
                     <thead>
                         <tr>
-                            <th width="50">No</th>
-                            <th>Mapel</th>
-                            <th>Pertanyaan</th>
-                            <th width="80">Kunci</th>
-                            <th width="80">Skor</th>
+                            <th width="40">No</th>
+                            <th width="120">Mapel</th>
+                            <th>Pertanyaan & Pilihan</th>
+                            <th width="60">Kunci</th>
+                            <th width="50">Skor</th>
+                            <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-soal"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-soal"><tr><td colspan="6" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
         </div>
-    </div>
 
     <!-- MODAL UPLOAD SISWA -->
     <div class="modal-overlay" id="modal-upload">
@@ -306,10 +320,15 @@ async function muatDataNilai() {
             semuaDataNilai = json.data;
             isiFilterNilai();
             renderTabelNilai();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+    } catch (err) { 
+        console.error("Detail Error Nilai:", err); 
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
 }
-
+    
 function isiFilterNilai() {
     const setKelas = new Set(); const setMapel = new Set();
     semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
@@ -388,8 +407,13 @@ async function muatDataJadwal() {
         if (json.status === "success") {
             semuaDataJadwal = json.data;
             renderTabelJadwal();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+    } catch (err) { 
+        console.error("Detail Error Jadwal:", err); 
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
 }
 
 function renderTabelJadwal() {
@@ -479,8 +503,13 @@ async function muatBankSoal() {
             semuaDataSoal = json.data;
             isiFilterSoal();
             renderTabelSoal();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
-    } catch (err) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; }
+    } catch (err) { 
+        console.error("Detail Error Bank Soal:", err); 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
 }
 
 function isiFilterSoal() {
@@ -496,22 +525,181 @@ function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
 
-    const dataTampil = semuaDataSoal.filter(d => fMapel === "" || d.mapel === fMapel);
-    
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+    const dataTampil = [];
+    semuaDataSoal.forEach((d, indexAsli) => {
+        if (fMapel === "" || d.mapel === fMapel) {
+            dataTampil.push({ ...d, indexAsli: indexAsli });
+        }
+    });
+
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
 
     tbody.innerHTML = "";
-    dataTampil.forEach((d, index) => {
+    dataTampil.forEach((d, indexTampil) => {
+        const barisSheet = d.indexAsli + 2; 
+        
+        // Menggunakan event listener alih-alih onclick inline agar aman dari tanda petik
         tbody.innerHTML += `
             <tr>
-                <td>${index + 1}</td>
-                <td><strong>${d.mapel}</strong></td>
-                <td style="max-width: 400px; white-space: normal;">${d.soal}</td>
-                <td style="text-align:center;"><span class="badge badge-green">${d.kunci}</span></td>
-                <td style="text-align:center;">${d.skor}</td>
+                <td>${indexTampil + 1}</td>
+                <td class="editable-cell" data-baris="${barisSheet}" data-kolom="1" data-tipe="text">${d.mapel}</td>
+                <td style="max-width: 500px; white-space: normal;">
+                    <div class="editable-cell" style="margin-bottom: 8px; font-weight: bold;" data-baris="${barisSheet}" data-kolom="2" data-tipe="text">
+                        ${d.soal}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555; line-height: 1.6;">
+                        <div><span style="font-weight:bold; color:#3498db;">A.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="3" data-tipe="text">${d.pilihanA}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">B.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="4" data-tipe="text">${d.pilihanB}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">C.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="5" data-tipe="text">${d.pilihanC}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">D.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="6" data-tipe="text">${d.pilihanD}</span></div>
+                        ${d.pilihanE ? `<div><span style="font-weight:bold; color:#3498db;">E.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="7" data-tipe="text">${d.pilihanE}</span></div>` : ""}
+                    </div>
+                </td>
+                <td style="text-align:center;">
+                    <span class="badge badge-green editable-cell" data-baris="${barisSheet}" data-kolom="8" data-tipe="kunci">${d.kunci}</span>
+                </td>
+                <td style="text-align:center;">
+                    <span class="editable-cell" data-baris="${barisSheet}" data-kolom="9" data-tipe="angka">${d.skor}</span>
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
+                </td>
             </tr>`;
     });
+
+    // Pasang event listener untuk semua elemen yang bisa diedit
+    document.querySelectorAll('.editable-cell').forEach(el => {
+        el.style.cursor = "pointer";
+        el.style.padding = "4px";
+        el.style.borderRadius = "4px";
+        el.style.display = "inline-block";
+        
+        // Efek hover
+        el.onmouseover = () => el.style.background = "#e3f2fd";
+        el.onmouseout = () => el.style.background = "transparent";
+
+        el.onclick = function() {
+            const baris = parseInt(this.getAttribute('data-baris'));
+            const kolom = parseInt(this.getAttribute('data-kolom'));
+            const tipe = this.getAttribute('data-tipe');
+            
+            // Jika yang diklik adalah badge kunci, ubah text-nya saja
+            let nilaiLama = this.textContent.trim();
+            
+            buatInputEdit(this, baris, kolom, nilaiLama, tipe);
+        };
+    });
 }
+
+    function buatInputEdit(elemen, baris, kolom, nilaiLama, tipe) {
+    const input = document.createElement("input");
+    input.type = "text"; 
+    input.value = nilaiLama; 
+    input.className = "editable-edit";
+    input.style.width = "100%";
+    
+    input.onblur = function() {
+        if (input.value !== nilaiLama) { 
+            simpanEditSoal(baris, kolom, input.value, elemen, tipe); 
+        } else { 
+            elemen.style.display = "inline-block"; 
+            if (input.parentNode) input.parentNode.removeChild(input);
+        }
+    };
+    
+    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+    
+    // Sembunyikan teks lama, tampilkan input
+    elemen.style.display = "none"; 
+    elemen.parentNode.appendChild(input); 
+    input.focus();
+}
+    
+
+/* =========================================
+   FITUR EDIT & HAPUS SOAL
+   ========================================= */
+function editSel(elemen, baris, kolom, nilaiLama, tipe) {
+    // Jika yang diklik adalah kunci (ada tag span), ambil teks aslinya
+    let teksLama = nilaiLama;
+    if (elemen.querySelector('span')) {
+        teksLama = elemen.querySelector('span').textContent;
+    }
+
+    const input = document.createElement("input");
+    input.type = "text"; 
+    input.value = teksLama; 
+    input.className = "editable-edit";
+    
+    input.onblur = function() {
+        if (input.value !== teksLama) { 
+            simpanEditSoal(baris, kolom, input.value, elemen, tipe); 
+        } 
+        else { 
+            elemen.style.display = "block"; 
+            if (elemen.parentNode.querySelector('.editable-edit')) {
+                elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+            }
+        }
+    };
+    
+    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+    elemen.style.display = "none"; 
+    elemen.parentNode.appendChild(input); 
+    input.focus();
+}
+
+async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
+    elemen.textContent = "⏳..."; 
+    elemen.style.display = "inline-block";
+    
+    try {
+        await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "edit_soal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
+        });
+        
+        // Perbarui tampilan di layar
+        if (tipe === "kunci") {
+            elemen.textContent = nilaiBaru.toUpperCase();
+        } else {
+            elemen.textContent = nilaiBaru;
+        }
+        
+        // Hapus input box
+        if (elemen.parentNode.querySelector('.editable-edit')) {
+            elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+        }
+        
+        // Refresh data di background agar sinkron dengan sheet
+        muatBankSoal();
+
+    } catch (err) { 
+        alert("Gagal menyimpan perubahan."); 
+        elemen.textContent = "❌ Error"; 
+    }
+}
+
+async function konfirmasiHapus(baris) {
+    if (!confirm("Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak bisa dibatalkan.")) return;
+    
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ Soal berhasil dihapus!");
+            muatBankSoal(); // Refresh tabel
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
+}    
 
 function bukaModalTambahSoal() { bukaModal("modal-tambah-soal"); }
 
@@ -617,6 +805,83 @@ function parseCSV(teks) {
    ========================================= */
 function bukaModalUploadSiswa() { bukaModal("modal-upload"); }
 
+/* =========================================
+   FITUR DOWNLOAD TEMPLATE SOAL
+   ========================================= */
+function downloadTemplateSoal() {
+    // Membuat format XML khusus untuk Excel
+    let excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>
+                table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+                th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; }
+                td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+            </style>
+        </head>
+        <body>
+        <table>
+            <thead>
+                <tr>
+                    <th>Mapel</th>
+                    <th>Soal</th>
+                    <th>Pilihan A</th>
+                    <th>Pilihan B</th>
+                    <th>Pilihan C</th>
+                    <th>Pilihan D</th>
+                    <th>Pilihan E</th>
+                    <th>Kunci</th>
+                    <th>Skor</th>
+                    <th>Penjelasan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Baris Contoh 1 -->
+                <tr>
+                    <td>TIK UH 1</td>
+                    <td>Apa singkatan dari CPU?</td>
+                    <td>Central Processing Unit</td>
+                    <td>Computer Personal Unit</td>
+                    <td>Central Program Utility</td>
+                    <td>Control Processing Unit</td>
+                    <td>Central Personal Utility</td>
+                    <td>A</td>
+                    <td>5</td>
+                    <td>CPU adalah otak dari komputer.</td>
+                </tr>
+                <!-- Baris Contoh 2 -->
+                <tr>
+                    <td>TIK UH 1</td>
+                    <td>Fungsi utama RAM adalah...</td>
+                    <td>Menyimpan data permanen</td>
+                    <td>Menyimpan data sementara</td>
+                    <td>Memproses grafis</td>
+                    <td>Menampilkan gambar</td>
+                    <td>Mendinginkan prosesor</td>
+                    <td>B</td>
+                    <td>5</td>
+                    <td>RAM bersifat sementara dan hilang saat komputer dimatikan.</td>
+                </tr>
+            </tbody>
+        </table>
+        </body></html>
+    `;
+
+    // Proses download file sebagai .xls
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Template_Soal_Ujian.xls");
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}  
+    
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
     if (!file) { alert("⚠️ Pilih file CSV!"); return; }
