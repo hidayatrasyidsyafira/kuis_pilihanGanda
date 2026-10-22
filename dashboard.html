@@ -538,43 +538,83 @@ function renderTabelSoal() {
     dataTampil.forEach((d, indexTampil) => {
         const barisSheet = d.indexAsli + 2; 
         
-        // Format HTML untuk menampilkan pertanyaan & pilihan
-        const teksLengkap = `
-            <div style="margin-bottom: 8px; font-weight: bold; cursor: pointer;" onclick="editSel(this, ${barisSheet}, 2, '${d.soal.replace(/'/g, "\\'")}', 'soal')">
-                ${d.soal}
-            </div>
-            <div style="font-size: 0.9rem; color: #555; line-height: 1.6;">
-                <div><span style="font-weight:bold; color:#3498db;">A.</span> ${d.pilihanA}</div>
-                <div><span style="font-weight:bold; color:#3498db;">B.</span> ${d.pilihanB}</div>
-                <div><span style="font-weight:bold; color:#3498db;">C.</span> ${d.pilihanC}</div>
-                <div><span style="font-weight:bold; color:#3498db;">D.</span> ${d.pilihanD}</div>
-                ${d.pilihanE ? `<div><span style="font-weight:bold; color:#3498db;">E.</span> ${d.pilihanE}</div>` : ""}
-            </div>
-        `;
-
+        // Menggunakan event listener alih-alih onclick inline agar aman dari tanda petik
         tbody.innerHTML += `
             <tr>
                 <td>${indexTampil + 1}</td>
-                <td>
-                    <div class="editable" onclick="editSel(this, ${barisSheet}, 1, '${d.mapel.replace(/'/g, "\\'")}', 'soal')">${d.mapel}</div>
-                </td>
+                <td class="editable-cell" data-baris="${barisSheet}" data-kolom="1" data-tipe="text">${d.mapel}</td>
                 <td style="max-width: 500px; white-space: normal;">
-                    ${teksLengkap}
-                </td>
-                <td style="text-align:center;">
-                    <div class="editable" onclick="editSel(this, ${barisSheet}, 8, '${d.kunci}', 'soal')">
-                        <span class="badge badge-green">${d.kunci}</span>
+                    <div class="editable-cell" style="margin-bottom: 8px; font-weight: bold;" data-baris="${barisSheet}" data-kolom="2" data-tipe="text">
+                        ${d.soal}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555; line-height: 1.6;">
+                        <div><span style="font-weight:bold; color:#3498db;">A.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="3" data-tipe="text">${d.pilihanA}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">B.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="4" data-tipe="text">${d.pilihanB}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">C.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="5" data-tipe="text">${d.pilihanC}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">D.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="6" data-tipe="text">${d.pilihanD}</span></div>
+                        ${d.pilihanE ? `<div><span style="font-weight:bold; color:#3498db;">E.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="7" data-tipe="text">${d.pilihanE}</span></div>` : ""}
                     </div>
                 </td>
                 <td style="text-align:center;">
-                    <div class="editable" onclick="editSel(this, ${barisSheet}, 9, '${d.skor}', 'soal')">${d.skor}</div>
+                    <span class="badge badge-green editable-cell" data-baris="${barisSheet}" data-kolom="8" data-tipe="kunci">${d.kunci}</span>
+                </td>
+                <td style="text-align:center;">
+                    <span class="editable-cell" data-baris="${barisSheet}" data-kolom="9" data-tipe="angka">${d.skor}</span>
                 </td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
                 </td>
             </tr>`;
     });
+
+    // Pasang event listener untuk semua elemen yang bisa diedit
+    document.querySelectorAll('.editable-cell').forEach(el => {
+        el.style.cursor = "pointer";
+        el.style.padding = "4px";
+        el.style.borderRadius = "4px";
+        el.style.display = "inline-block";
+        
+        // Efek hover
+        el.onmouseover = () => el.style.background = "#e3f2fd";
+        el.onmouseout = () => el.style.background = "transparent";
+
+        el.onclick = function() {
+            const baris = parseInt(this.getAttribute('data-baris'));
+            const kolom = parseInt(this.getAttribute('data-kolom'));
+            const tipe = this.getAttribute('data-tipe');
+            
+            // Jika yang diklik adalah badge kunci, ubah text-nya saja
+            let nilaiLama = this.textContent.trim();
+            
+            buatInputEdit(this, baris, kolom, nilaiLama, tipe);
+        };
+    });
 }
+
+    function buatInputEdit(elemen, baris, kolom, nilaiLama, tipe) {
+    const input = document.createElement("input");
+    input.type = "text"; 
+    input.value = nilaiLama; 
+    input.className = "editable-edit";
+    input.style.width = "100%";
+    
+    input.onblur = function() {
+        if (input.value !== nilaiLama) { 
+            simpanEditSoal(baris, kolom, input.value, elemen, tipe); 
+        } else { 
+            elemen.style.display = "inline-block"; 
+            if (input.parentNode) input.parentNode.removeChild(input);
+        }
+    };
+    
+    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+    
+    // Sembunyikan teks lama, tampilkan input
+    elemen.style.display = "none"; 
+    elemen.parentNode.appendChild(input); 
+    input.focus();
+}
+    
 
 /* =========================================
    FITUR EDIT & HAPUS SOAL
@@ -610,8 +650,8 @@ function editSel(elemen, baris, kolom, nilaiLama, tipe) {
 }
 
 async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
-    elemen.innerHTML = "⏳..."; 
-    elemen.style.display = "block";
+    elemen.textContent = "⏳..."; 
+    elemen.style.display = "inline-block";
     
     try {
         await fetch(URL_GOOGLE_SHEETS, {
@@ -619,11 +659,11 @@ async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
             body: JSON.stringify({ aksi: "edit_soal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
         });
         
-        // Perbarui tampilan
-        if (kolom === 8) { // Jika kunci yang diedit
-            elemen.innerHTML = `<span class="badge badge-green">${nilaiBaru.toUpperCase()}</span>`;
+        // Perbarui tampilan di layar
+        if (tipe === "kunci") {
+            elemen.textContent = nilaiBaru.toUpperCase();
         } else {
-            elemen.innerHTML = nilaiBaru;
+            elemen.textContent = nilaiBaru;
         }
         
         // Hapus input box
@@ -631,12 +671,12 @@ async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
             elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
         }
         
-        // Refresh data di background agar sinkron
+        // Refresh data di background agar sinkron dengan sheet
         muatBankSoal();
 
     } catch (err) { 
         alert("Gagal menyimpan perubahan."); 
-        elemen.innerHTML = "❌ Error"; 
+        elemen.textContent = "❌ Error"; 
     }
 }
 
