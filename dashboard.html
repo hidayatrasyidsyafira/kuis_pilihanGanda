@@ -124,12 +124,10 @@
         <!-- TAB REKAP NILAI -->
         <div class="tab-content aktif" id="tab-nilai">
             <div class="filter-section">
-                <select id="filter-mapel-soal" onchange="renderTabelSoal()">
-                    <option value="">Semua Mapel</option>
-                </select>
-                <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
-                <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
-                <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
+                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabelNilai()">
+                <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
+                <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
+                <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
             </div>
             <div class="table-responsive">
                 <table>
@@ -171,6 +169,7 @@
                 <select id="filter-mapel-soal" onchange="renderTabelSoal()">
                     <option value="">Semua Mapel</option>
                 </select>
+                <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
                 <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
                 <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
             </div>
@@ -191,7 +190,6 @@
                 </table>
             </div>
         </div>
-    </div>
 
     <!-- MODAL UPLOAD SISWA -->
     <div class="modal-overlay" id="modal-upload">
