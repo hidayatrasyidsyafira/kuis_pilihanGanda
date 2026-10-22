@@ -89,6 +89,19 @@
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; font-family: inherit;
         }
         .form-group textarea { resize: vertical; min-height: 80px; }
+
+                /* Memperlebar tabel Bank Soal dan mengatur teks */
+        #tab-bank-soal .table-responsive {
+            max-height: 600px; /* Batasi tinggi agar bisa discroll */
+            overflow-y: auto;
+        }
+        #tab-bank-soal table th {
+            position: sticky; top: 0; z-index: 10;
+        }
+        .editable:hover {
+            background: #e3f2fd;
+            outline: 1px dashed #3498db;
+        }
     </style>
 </head>
 <body>
@@ -164,11 +177,11 @@
                 <table>
                     <thead>
                         <tr>
-                            <th width="50">No</th>
-                            <th>Mapel</th>
-                            <th>Pertanyaan</th>
-                            <th width="80">Kunci</th>
-                            <th width="80">Skor</th>
+                            <th width="40">No</th>
+                            <th width="120">Mapel</th>
+                            <th>Pertanyaan & Pilihan</th>
+                            <th width="60">Kunci</th>
+                            <th width="50">Skor</th>
                             <th width="80">Aksi</th>
                         </tr>
                     </thead>
@@ -512,8 +525,6 @@ function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
 
-    // Kita butuh index asli dari Sheet, jadi kita simpan di semuaDataSoal
-    // dan filter tanpa kehilangan index aslinya
     const dataTampil = [];
     semuaDataSoal.forEach((d, indexAsli) => {
         if (fMapel === "" || d.mapel === fMapel) {
@@ -525,17 +536,41 @@ function renderTabelSoal() {
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
-        const barisSheet = d.indexAsli + 2; // +2 karena baris 1 adalah header
+        const barisSheet = d.indexAsli + 2; 
         
+        // Format HTML untuk menampilkan pertanyaan & pilihan
+        const teksLengkap = `
+            <div style="margin-bottom: 8px; font-weight: bold; cursor: pointer;" onclick="editSel(this, ${barisSheet}, 2, '${d.soal.replace(/'/g, "\\'")}', 'soal')">
+                ${d.soal}
+            </div>
+            <div style="font-size: 0.9rem; color: #555; line-height: 1.6;">
+                <div><span style="font-weight:bold; color:#3498db;">A.</span> ${d.pilihanA}</div>
+                <div><span style="font-weight:bold; color:#3498db;">B.</span> ${d.pilihanB}</div>
+                <div><span style="font-weight:bold; color:#3498db;">C.</span> ${d.pilihanC}</div>
+                <div><span style="font-weight:bold; color:#3498db;">D.</span> ${d.pilihanD}</div>
+                ${d.pilihanE ? `<div><span style="font-weight:bold; color:#3498db;">E.</span> ${d.pilihanE}</div>` : ""}
+            </div>
+        `;
+
         tbody.innerHTML += `
             <tr>
                 <td>${indexTampil + 1}</td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 1, '${d.mapel}', 'soal')">${d.mapel}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 2, '${d.soal}', 'soal')">${d.soal}</div></td>
-                <td style="text-align:center;"><div class="editable" onclick="editSel(this, ${barisSheet}, 8, '${d.kunci}', 'soal')"><span class="badge badge-green">${d.kunci}</span></div></td>
-                <td style="text-align:center;"><div class="editable" onclick="editSel(this, ${barisSheet}, 9, '${d.skor}', 'soal')">${d.skor}</div></td>
+                <td>
+                    <div class="editable" onclick="editSel(this, ${barisSheet}, 1, '${d.mapel.replace(/'/g, "\\'")}', 'soal')">${d.mapel}</div>
+                </td>
+                <td style="max-width: 500px; white-space: normal;">
+                    ${teksLengkap}
+                </td>
                 <td style="text-align:center;">
-                    <button class="btn" style="background:#e74c3c; padding: 5px 10px; font-size: 0.85rem;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
+                    <div class="editable" onclick="editSel(this, ${barisSheet}, 8, '${d.kunci}', 'soal')">
+                        <span class="badge badge-green">${d.kunci}</span>
+                    </div>
+                </td>
+                <td style="text-align:center;">
+                    <div class="editable" onclick="editSel(this, ${barisSheet}, 9, '${d.skor}', 'soal')">${d.skor}</div>
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
                 </td>
             </tr>`;
     });
