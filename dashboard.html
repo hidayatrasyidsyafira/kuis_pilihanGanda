@@ -124,12 +124,12 @@
         <!-- TAB REKAP NILAI -->
         <div class="tab-content aktif" id="tab-nilai">
             <div class="filter-section">
-                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabelNilai()">
-                <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
-                <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
+                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="halamanNilaiAktif = 1; renderTabelNilai()">
+                <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
+                <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
                 <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
             </div>
-            <div class="table-responsive">
+                        <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
@@ -139,6 +139,25 @@
                     </thead>
                     <tbody id="tbody-nilai"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
+            </div>
+            
+            <!-- NAVIGASI PAGINATION -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div>
+                    Tampilkan: 
+                    <select id="limit-nilai" onchange="renderTabelNilai()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="9999">Semua</option>
+                    </select> data
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(-1)">← Sebelumnya</button>
+                    <span id="info-halaman-nilai" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(1)">Berikutnya →</button>
+                </div>
             </div>
         </div>
 
@@ -283,6 +302,7 @@ const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXM
 let semuaDataNilai = [];
 let semuaDataJadwal = [];
 let semuaDataSoal = [];
+let halamanNilaiAktif = 1;    
 
 /* =========================================
    NAVIGASI TAB & UTIL
@@ -342,21 +362,46 @@ function renderTabelNilai() {
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
     const fKelas = document.getElementById("filter-kelas").value;
     const fMapel = document.getElementById("filter-mapel").value;
+    const limit = parseInt(document.getElementById("limit-nilai").value) || 10;
 
-    const dataTampil = semuaDataNilai.filter(d => 
+    // 1. Filter data berdasarkan pencarian
+    const dataFiltered = semuaDataNilai.filter(d => 
         (d.nama || "").toLowerCase().includes(fNama) &&
         (fKelas === "" || d.kelas === fKelas) &&
         (fMapel === "" || d.mapel === fMapel)
     );
 
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada data.</td></tr>`; return; }
+    // 2. Hitung Total Halaman
+    const totalData = dataFiltered.length;
+    const totalHalaman = Math.ceil(totalData / limit) || 1;
+
+    // 3. Pastikan halaman tidak out of bounds (misal setelah ganti filter)
+    if (halamanNilaiAktif > totalHalaman) halamanNilaiAktif = totalHalaman;
+    if (halamanNilaiAktif < 1) halamanNilaiAktif = 1;
+
+    // 4. Ambil data untuk halaman saat ini
+    const startIndex = (halamanNilaiAktif - 1) * limit;
+    const endIndex = startIndex + limit;
+    const dataTampil = dataFiltered.slice(startIndex, endIndex);
+
+    // 5. Update Info Halaman
+    document.getElementById("info-halaman-nilai").textContent = `Halaman ${halamanNilaiAktif} / ${totalHalaman} (Total: ${totalData} data)`;
+
+    // 6. Render Tabel
+    if (dataTampil.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada data.</td></tr>`; 
+        return; 
+    }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, index) => {
         let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
+        // Nomor urut berdasarkan halaman aktif
+        const noUrut = startIndex + index + 1; 
+        
         tbody.innerHTML += `
             <tr>
-                <td>${index + 1}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
+                <td>${noUrut}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
                 <td>${d.kelas}</td><td>${d.mapel}</td>
                 <td><span class="badge ${bSkor}">${d.skor}</span></td>
                 <td>${d.jumlah_benar} / ${d.total_soal}</td>
@@ -364,6 +409,11 @@ function renderTabelNilai() {
                 <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
             </tr>`;
     });
+}
+
+function ubahHalamanNilai(arah) {
+    halamanNilaiAktif += arah;
+    renderTabelNilai();
 }
 
 function exportKeExcel() {
