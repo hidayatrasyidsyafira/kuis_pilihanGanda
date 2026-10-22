@@ -124,10 +124,12 @@
         <!-- TAB REKAP NILAI -->
         <div class="tab-content aktif" id="tab-nilai">
             <div class="filter-section">
-                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabelNilai()">
-                <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
-                <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
-                <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
+                <select id="filter-mapel-soal" onchange="renderTabelSoal()">
+                    <option value="">Semua Mapel</option>
+                </select>
+                <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
+                <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
+                <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
             </div>
             <div class="table-responsive">
                 <table>
@@ -805,6 +807,28 @@ function parseCSV(teks) {
    ========================================= */
 function bukaModalUploadSiswa() { bukaModal("modal-upload"); }
 
+/* =========================================
+   FITUR DOWNLOAD TEMPLATE SOAL
+   ========================================= */
+function downloadTemplateSoal() {
+    // Buat header dan 1 baris contoh
+    let csvContent = "Mapel,Soal,Pilihan A,Pilihan B,Pilihan C,Pilihan D,Pilihan E,Kunci,Skor,Penjelasan\n";
+    csvContent += '"TIK UH 1","Apa singkatan dari CPU?","Central Processing Unit","Computer Personal Unit","Central Program Utility","Control Processing Unit","Central Personal Utility","A",5,"CPU adalah otak dari komputer."\n';
+    csvContent += '"TIK UH 1","Fungsi utama RAM adalah...","Menyimpan data permanen","Menyimpan data sementara","Memproses grafis","Menampilkan gambar","Mendinginkan prosesor","B",5,"RAM bersifat sementara dan hilang saat komputer dimatikan."\n';
+
+    // Proses download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Template_Soal_Ujian.csv");
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}    
+    
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
     if (!file) { alert("⚠️ Pilih file CSV!"); return; }
