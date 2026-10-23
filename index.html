@@ -531,7 +531,7 @@ function bukaModalMapel(jenisUjian) {
             // TAMPILKAN NAMA GURU
             btn.innerHTML = `
                 <span class="nama-mapel">📘 ${j.mapel}</span>
-                <span class="info-waktu" style="font-size:0.9rem; color:#e67e22; margin-bottom:5px;">👨‍🏫 ${j.namaGuru || 'Guru Pengampu'}</span>
+                <span class="info-waktu" style="font-size:0.9rem; color:#e67e22; margin-bottom:5px;">👨‍🏫 Guru Bidang Studi: ${j.namaGuru || 'Guru Pengampu'}</span>
                 <span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Mnt)</span>
             `;
             btn.onclick = () => pilihMapel(j, false);
