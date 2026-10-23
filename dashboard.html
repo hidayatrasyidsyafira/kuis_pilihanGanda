@@ -125,20 +125,24 @@
                 <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
                 <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
                 <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
+                <button class="btn btn-red" onclick="hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
+                            <!-- CHECKBOX PILIH SEMUA -->
+                            <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
                             <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
                             <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
+                            <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-nilai"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-nilai"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
             
-            <!-- NAVIGASI PAGINATION -->
+            <!-- NAVIGASI PAGINATION (Tetap seperti sebelumnya) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
                 <div>
                     Tampilkan: 
@@ -334,20 +338,21 @@ function muatSemuaData() {
    ========================================= */
 async function muatDataNilai() {
     const tbody = document.getElementById("tbody-nilai");
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">⏳ Memuat data...</td></tr>`;
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=nilai&t=" + new Date().getTime());
         const json = await res.json();
         if (json.status === "success") {
-            semuaDataNilai = json.data;
+            // Simpan data beserta index aslinya (+2 karena ada header)
+            semuaDataNilai = json.data.map((d, i) => ({ ...d, indexAsli: i + 2 }));
             isiFilterNilai();
             renderTabelNilai();
         } else {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
     } catch (err) { 
         console.error("Detail Error Nilai:", err); 
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
     }
 }
 
@@ -365,6 +370,8 @@ function renderTabelNilai() {
     const fKelas = document.getElementById("filter-kelas").value;
     const fMapel = document.getElementById("filter-mapel").value;
     const limit = parseInt(document.getElementById("limit-nilai").value) || 10;
+
+    document.getElementById("pilih-semua-nilai").checked = false;
 
     const dataFiltered = semuaDataNilai.filter(d => 
         (d.nama || "").toLowerCase().includes(fNama) &&
@@ -385,7 +392,7 @@ function renderTabelNilai() {
     document.getElementById("info-halaman-nilai").textContent = `Halaman ${halamanNilaiAktif} / ${totalHalaman} (Total: ${totalData} data)`;
 
     if (dataTampil.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada data.</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Tidak ada data.</td></tr>`; 
         return; 
     }
 
@@ -396,12 +403,16 @@ function renderTabelNilai() {
         
         tbody.innerHTML += `
             <tr>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli}"></td>
                 <td>${noUrut}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
                 <td>${d.kelas}</td><td>${d.mapel}</td>
                 <td><span class="badge ${bSkor}">${d.skor}</span></td>
                 <td>${d.jumlah_benar} / ${d.total_soal}</td>
                 <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
                 <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusNilai(${d.indexAsli})">Hapus</button>
+                </td>
             </tr>`;
     });
 }
@@ -410,6 +421,85 @@ function ubahHalamanNilai(arah) {
     halamanNilaiAktif += arah;
     renderTabelNilai();
 }
+
+/* =========================================
+   FITUR HAPUS NILAI
+   ========================================= */
+function toggleSemuaNilai(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-nilai');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function konfirmasiHapusNilai(baris) {
+    const result = await Swal.fire({
+        title: 'Hapus Data Nilai?',
+        text: "Data nilai siswa ini akan dihapus permanen dari rekap.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_nilai", baris: baris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Data nilai berhasil dihapus.', 'success');
+                muatDataNilai();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+
+async function hapusNilaiTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-nilai:checked');
+    if (checkboxes.length === 0) {
+        Swal.fire('Oops...', 'Pilih minimal satu data nilai untuk dihapus.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Hapus Data Terpilih?',
+        text: `${checkboxes.length} data nilai akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_nilai_massal", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatDataNilai();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}    
 
 function exportKeExcel() {
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
