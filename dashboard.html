@@ -514,4 +514,366 @@ async function simpanJadwalBaru() {
         durasi: document.getElementById("j-durasi").value
     };
 
-    if(!data.w
+    if(!data.waktu || !data.tanggal || !data.mapel) { alert("⚠️ Lengkapi data terlebih dahulu!"); return; }
+    const btn = document.querySelector("#modal-jadwal .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_jadwal", jadwal: data }) });
+        const json = await res.json();
+        if (json.status === "success") {
+            alert("✅ Jadwal berhasil ditambahkan!");
+            tutupModal("modal-jadwal");
+            muatDataJadwal();
+        } else { alert("❌ Gagal: " + json.message); }
+    } catch (err) { alert("❌ Error koneksi server."); } 
+    finally { btn.textContent = "Simpan Jadwal"; btn.disabled = false; }
+}
+
+/* =========================================
+   TAB 3: BANK SOAL
+   ========================================= */
+async function muatBankSoal() {
+    const tbody = document.getElementById("tbody-soal");
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">⏳ Memuat data soal...</td></tr>`;
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&t=" + new Date().getTime());
+        const json = await res.json();
+        if (json.status === "success") {
+            semuaDataSoal = json.data;
+            isiFilterSoal();
+            renderTabelSoal();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+        }
+    } catch (err) { 
+        console.error("Detail Error Bank Soal:", err); 
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
+}
+
+function isiFilterSoal() {
+    const setMapel = new Set();
+    semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+    const sMapel = document.getElementById("filter-mapel-soal");
+    const val = sMapel.value;
+    sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+    sMapel.value = val;
+}
+
+function renderTabelSoal() {
+    const tbody = document.getElementById("tbody-soal");
+    const fMapel = document.getElementById("filter-mapel-soal").value;
+    
+    // Reset checkbox "Pilih Semua"
+    document.getElementById("pilih-semua").checked = false;
+
+    const dataTampil = [];
+    semuaDataSoal.forEach((d, indexAsli) => {
+        if (fMapel === "" || d.mapel === fMapel) {
+            dataTampil.push({ ...d, indexAsli: indexAsli });
+        }
+    });
+
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+
+    tbody.innerHTML = "";
+    dataTampil.forEach((d, indexTampil) => {
+        const barisSheet = d.indexAsli + 2; 
+        
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center;">
+                    <input type="checkbox" class="checkbox-soal" value="${barisSheet}">
+                </td>
+                <td>${indexTampil + 1}</td>
+                <td class="editable-cell" data-baris="${barisSheet}" data-kolom="1" data-tipe="text">${d.mapel}</td>
+                <td style="max-width: 500px; white-space: normal;">
+                    <div class="editable-cell" style="margin-bottom: 8px; font-weight: bold;" data-baris="${barisSheet}" data-kolom="2" data-tipe="text">
+                        ${d.soal}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555; line-height: 1.6;">
+                        <div><span style="font-weight:bold; color:#3498db;">A.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="3" data-tipe="text">${d.pilihanA}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">B.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="4" data-tipe="text">${d.pilihanB}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">C.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="5" data-tipe="text">${d.pilihanC}</span></div>
+                        <div><span style="font-weight:bold; color:#3498db;">D.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="6" data-tipe="text">${d.pilihanD}</span></div>
+                        ${d.pilihanE ? `<div><span style="font-weight:bold; color:#3498db;">E.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="7" data-tipe="text">${d.pilihanE}</span></div>` : ""}
+                    </div>
+                </td>
+                <td style="text-align:center;">
+                    <span class="badge badge-green editable-cell" data-baris="${barisSheet}" data-kolom="8" data-tipe="kunci">${d.kunci}</span>
+                </td>
+                <td style="text-align:center;">
+                    <span class="editable-cell" data-baris="${barisSheet}" data-kolom="9" data-tipe="angka">${d.skor}</span>
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
+                </td>
+            </tr>`;
+    });
+
+    document.querySelectorAll('.editable-cell').forEach(el => {
+        el.style.cursor = "pointer";
+        el.style.padding = "4px";
+        el.style.borderRadius = "4px";
+        el.style.display = "inline-block";
+        el.onmouseover = () => el.style.background = "#e3f2fd";
+        el.onmouseout = () => el.style.background = "transparent";
+        el.onclick = function() {
+            const baris = parseInt(this.getAttribute('data-baris'));
+            const kolom = parseInt(this.getAttribute('data-kolom'));
+            const tipe = this.getAttribute('data-tipe');
+            let nilaiLama = this.textContent.trim();
+            buatInputEdit(this, baris, kolom, nilaiLama, tipe);
+        };
+    });
+}
+
+function buatInputEdit(elemen, baris, kolom, nilaiLama, tipe) {
+    const input = document.createElement("input");
+    input.type = "text"; 
+    input.value = nilaiLama; 
+    input.className = "editable-edit";
+    input.style.width = "100%";
+    
+    input.onblur = function() {
+        if (input.value !== nilaiLama) { 
+            simpanEditSoal(baris, kolom, input.value, elemen, tipe); 
+        } else { 
+            elemen.style.display = "inline-block"; 
+            if (input.parentNode) input.parentNode.removeChild(input);
+        }
+    };
+    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+    elemen.style.display = "none"; 
+    elemen.parentNode.appendChild(input); 
+    input.focus();
+}
+
+async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
+    elemen.textContent = "⏳..."; 
+    elemen.style.display = "inline-block";
+    
+    try {
+        await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "edit_soal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
+        });
+        
+        if (tipe === "kunci") {
+            elemen.textContent = nilaiBaru.toUpperCase();
+        } else {
+            elemen.textContent = nilaiBaru;
+        }
+        
+        if (elemen.parentNode.querySelector('.editable-edit')) {
+            elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+        }
+        muatBankSoal();
+    } catch (err) { 
+        alert("Gagal menyimpan perubahan."); 
+        elemen.textContent = "❌ Error"; 
+    }
+}
+
+async function konfirmasiHapus(baris) {
+    if (!confirm("Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak bisa dibatalkan.")) return;
+    
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ Soal berhasil dihapus!");
+            muatBankSoal();
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
+}
+
+function toggleSemuaSoal(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-soal');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function hapusSoalTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-soal:checked');
+    if (checkboxes.length === 0) {
+        alert("⚠️ Pilih minimal satu soal untuk dihapus.");
+        return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} soal terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+
+    const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "hapus_soal_massal", daftarBaris: daftarBaris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ " + json.message);
+            muatBankSoal();
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
+}
+
+async function simpanSoalBaru() {
+    const data = {
+        mapel: document.getElementById("s-mapel").value,
+        soal: document.getElementById("s-soal").value,
+        pilihanA: document.getElementById("s-a").value,
+        pilihanB: document.getElementById("s-b").value,
+        pilihanC: document.getElementById("s-c").value,
+        pilihanD: document.getElementById("s-d").value,
+        pilihanE: document.getElementById("s-e").value || "",
+        kunci: document.getElementById("s-kunci").value,
+        skor: document.getElementById("s-skor").value,
+        penjelasan: document.getElementById("s-penjelasan").value
+    };
+
+    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { alert("⚠️ Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!"); return; }
+    
+    const btn = document.querySelector("#modal-tambah-soal .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_soal", soal: data }) });
+        const json = await res.json();
+        if (json.status === "success") {
+            alert("✅ Soal berhasil ditambahkan!");
+            tutupModal("modal-tambah-soal");
+            muatBankSoal();
+        } else { alert("❌ Gagal: " + json.message); }
+    } catch (err) { alert("❌ Error koneksi server."); } 
+    finally { btn.textContent = "Simpan Soal"; btn.disabled = false; }
+}
+
+async function prosesUploadSoal() {
+    const file = document.getElementById("file-csv-soal").files[0];
+    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const baris = parseCSV(e.target.result);
+        const daftarSoal = [];
+        
+        // Format CSV memiliki header, jadi mulai index 1
+        // Index 0 = No (diabaikan), 1 = Mapel, 2 = Soal, dst.
+        for (let i = 1; i < baris.length; i++) {
+            if (baris[i].length >= 9) { 
+                daftarSoal.push({
+                    mapel: baris[i][1],
+                    soal: baris[i][2],
+                    pilihanA: baris[i][3],
+                    pilihanB: baris[i][4],
+                    pilihanC: baris[i][5],
+                    pilihanD: baris[i][6],
+                    pilihanE: baris[i][7],
+                    kunci: baris[i][8].toUpperCase(),
+                    skor: parseInt(baris[i][9]) || 1,
+                    penjelasan: baris[i][10] || ""
+                });
+            }
+        }
+
+        if (daftarSoal.length === 0) { alert("⚠️ Format file tidak sesuai atau data kosong."); return; }
+        
+        if (!confirm(`Ditemukan ${daftarSoal.length} soal valid. Lanjutkan upload?`)) return;
+
+        const btn = document.querySelector("#modal-upload-soal .btn-green");
+        btn.textContent = "⏳ Memproses..."; btn.disabled = true;
+
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "upload_soal", daftarSoal: daftarSoal })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                alert("✅ " + json.message);
+                tutupModal("modal-upload-soal");
+                muatBankSoal();
+            } else { alert("❌ " + json.message); }
+        } catch (err) { alert("❌ Koneksi Error."); }
+        finally { btn.textContent = "Upload Soal"; btn.disabled = false; }
+    };
+    reader.readAsText(file);
+}
+
+function downloadTemplateSoal() {
+    let excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; } td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }</style>
+        </head><body><table><thead><tr><th width="30">No</th><th>Mapel</th><th>Soal</th><th>Pilihan A</th><th>Pilihan B</th><th>Pilihan C</th><th>Pilihan D</th><th>Pilihan E</th><th>Kunci</th><th>Skor</th><th>Penjelasan</th></tr></thead><tbody>
+            <tr><td style="text-align:center;">1</td><td>TIK UH 1</td><td>Apa singkatan dari CPU?</td><td>Central Processing Unit</td><td>Computer Personal Unit</td><td>Central Program Utility</td><td>Control Processing Unit</td><td>Central Personal Utility</td><td style="text-align:center;">A</td><td style="text-align:center;">5</td><td>CPU adalah otak dari komputer.</td></tr>
+            <tr><td style="text-align:center;">2</td><td>TIK UH 1</td><td>Fungsi utama RAM adalah...</td><td>Menyimpan data permanen</td><td>Menyimpan data sementara</td><td>Memproses grafis</td><td>Menampilkan gambar</td><td>Mendinginkan prosesor</td><td style="text-align:center;">B</td><td style="text-align:center;">5</td><td>RAM bersifat sementara dan hilang saat komputer dimatikan.</td></tr>
+        </tbody></table></body></html>`;
+
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Template_Soal_Ujian.xls";
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+function parseCSV(teks) {
+    return teks.split("\n").map(r => {
+        const hasil = []; let bagian = "", dalamKutip = false;
+        for (let c of r) {
+            if (c === '"') dalamKutip = !dalamKutip;
+            else if ((c === "," || c === ";") && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
+            else bagian += c;
+        }
+        hasil.push(bagian.trim()); return hasil.map(s => s.replace(/^"|"$/g, ""));
+    });
+}
+
+async function prosesUploadSiswa() {
+    const file = document.getElementById("file-csv").files[0];
+    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const baris = parseCSV(e.target.result);
+        const dataSiswa = [];
+        for (let i = 1; i < baris.length; i++) {
+            if (baris[i].length >= 3) dataSiswa.push({ nisn: baris[i][0], nama: baris[i][1], kelas: baris[i][2] });
+        }
+        if (dataSiswa.length === 0) { alert("⚠️ Format file salah."); return; }
+        
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "upload_siswa", siswa: dataSiswa })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert("✅ " + json.message);
+                tutupModal("modal-upload");
+            } else { alert("❌ " + json.message); }
+        } catch (err) { alert("❌ Koneksi Error."); }
+    };
+    reader.readAsText(file);
+}
+
+/* --- INIT --- */
+muatDataNilai();
+</script>
+</body>
+</html>
