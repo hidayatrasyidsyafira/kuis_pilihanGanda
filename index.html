@@ -525,9 +525,15 @@ function bukaModalMapel(jenisUjian) {
         container.innerHTML = `<div class="pesan-kosong">❌ Tidak ada jadwal ujian ${jenisUjian} yang aktif.</div>`;
     } else {
         const grid = document.createElement("div"); grid.className = "grid-mapel";
-        jadwalHariIni.forEach((j) => {
-            const btn = document.createElement("button"); btn.className = "tombol-mapel";
-            btn.innerHTML = `<span class="nama-mapel">📘 ${j.mapel}</span><span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Mnt)</span>`;
+        jadwalHariIni.forEach((j, index) => {
+            const btn = document.createElement("button");
+            btn.className = "tombol-mapel";
+            // TAMPILKAN NAMA GURU
+            btn.innerHTML = `
+                <span class="nama-mapel">📘 ${j.mapel}</span>
+                <span class="info-waktu" style="font-size:0.9rem; color:#e67e22; margin-bottom:5px;">👨‍🏫 ${j.namaGuru || 'Guru Pengampu'}</span>
+                <span class="info-waktu">⏱️ ${j.waktu} (${j.durasi} Mnt)</span>
+            `;
             btn.onclick = () => pilihMapel(j, false);
             grid.appendChild(btn);
         });
