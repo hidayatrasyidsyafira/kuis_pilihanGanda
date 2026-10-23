@@ -170,7 +170,7 @@
                         <tr>
                             <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
                             <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
-                            <th>Matapelajaran</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                            <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
                             <th width="80">Aksi</th>
                         </tr>
                     </thead>
@@ -240,6 +240,7 @@
                 </div>
                 <div class="form-group"><label>Tanggal (Cth: 21/10/2026)</label><input type="text" id="j-tanggal" placeholder="DD/MM/YYYY"></div>
                 <div class="form-group"><label>Matapelajaran</label><input type="text" id="j-mapel" placeholder="TIK UH 1"></div>
+                <div class="form-group"><label>Nama Guru</label><input type="text" id="j-guru" placeholder="Budi, S.Kom"></div>
                 <div class="form-group"><label>Kelas (Pisahkan koma)</label><input type="text" id="j-kelas" placeholder="X-1, X-2"></div>
                 <div class="form-group"><label>Token</label><input type="text" id="j-token" placeholder="TIK123"></div>
                 <div class="form-group"><label>Jenis Ujian</label>
@@ -481,6 +482,7 @@ function renderTabelJadwal() {
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 4, '${j.tanggal}')">${j.tanggal}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 5, '${j.mapel}')">${j.mapel}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 10, '${j.namaGuru}')">${j.namaGuru}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 6, '${j.kelas}')">${j.kelas}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
@@ -522,6 +524,7 @@ async function simpanJadwalBaru() {
         hari: document.getElementById("j-hari").value,
         tanggal: document.getElementById("j-tanggal").value,
         mapel: document.getElementById("j-mapel").value,
+        namaGuru: document.getElementById("j-guru").value,
         kelas: document.getElementById("j-kelas").value,
         token: document.getElementById("j-token").value,
         jenis: document.getElementById("j-jenis").value,
