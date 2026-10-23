@@ -99,6 +99,33 @@
         #tab-bank-soal table th, #tab-siswa table th {
             position: sticky; top: 0; z-index: 10;
         }
+
+                /* Perbaikan Tabel Siswa */
+        #tab-siswa table {
+            table-layout: fixed; /* Memaksa lebar kolom tetap */
+            width: 100%;
+        }
+        #tab-siswa th, #tab-siswa td {
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        #tab-siswa th:nth-child(1) { width: 40px; text-align: center; } /* Checkbox */
+        #tab-siswa th:nth-child(2) { width: 50px; text-align: center; } /* No */
+        #tab-siswa th:nth-child(3) { width: 25%; }                     /* NISN */
+        #tab-siswa th:nth-child(4) { width: 45%; }                     /* Nama */
+        #tab-siswa th:nth-child(5) { width: 20%; }                     /* Kelas */
+        
+        .editable-cell-siswa {
+            display: block;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .editable-cell-siswa:hover {
+            background: #e3f2fd;
+            outline: 1px dashed #3498db;
+        }
     </style>
 </head>
 <body>
@@ -1128,58 +1155,57 @@ function renderTabelSiswa() {
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="checkbox-siswa" value="${barisSheet}"></td>
-                <td>${indexTampil + 1}</td>
-                <td class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="2">${d.nisn}</td>
-                <td class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="3">${d.nama}</td>
-                <td class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="4">${d.kelas}</td>
+                <td style="text-align:center;">${indexTampil + 1}</td>
+                <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="2">${d.nisn}</div></td>
+                <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="3">${d.nama}</div></td>
+                <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="4">${d.kelas}</div></td>
             </tr>`;
     });
 
+    // Pasang event listener untuk edit inline
     document.querySelectorAll('.editable-cell-siswa').forEach(el => {
-        el.style.cursor = "pointer";
-        el.style.padding = "4px";
-        el.style.borderRadius = "4px";
-        el.style.display = "inline-block";
-        el.onmouseover = () => el.style.background = "#e3f2fd";
-        el.onmouseout = () => el.style.background = "transparent";
-        
         el.onclick = function() {
             const baris = parseInt(this.getAttribute('data-baris'));
             const kolom = parseInt(this.getAttribute('data-kolom'));
             const nilaiLama = this.textContent.trim();
             
+            // Simpan HTML asli
+            const htmlAsli = this.innerHTML;
+            
+            // Buat input
             const input = document.createElement("input");
             input.type = "text"; 
             input.value = nilaiLama; 
             input.className = "editable-edit";
             input.style.width = "100%";
+            input.style.boxSizing = "border-box";
             
+            this.innerHTML = ""; // Kosongkan teks
+            this.appendChild(input); // Masukkan input ke dalam div
+            input.focus();
+
             input.onblur = async function() {
-                if (input.value !== nilaiLama) { 
+                if (input.value !== nilaiLama && input.value.trim() !== "") { 
                     el.textContent = "⏳...";
-                    el.style.display = "inline-block";
                     try {
                         await fetch(URL_GOOGLE_SHEETS, {
                             method: "POST", 
                             body: JSON.stringify({ aksi: "edit_siswa", baris: baris, kolom: kolom, nilaiBaru: input.value })
                         });
                         el.textContent = input.value;
-                        if (input.parentNode) input.parentNode.removeChild(input);
                         muatDataSiswa(); // Refresh
                     } catch (err) { 
                         Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error');
-                        el.textContent = nilaiLama; 
+                        el.innerHTML = htmlAsli; 
                     }
                 } else { 
-                    el.style.display = "inline-block"; 
-                    if (input.parentNode) input.parentNode.removeChild(input);
+                    el.innerHTML = htmlAsli; // Kembalikan teks asli jika batal
                 }
             };
             
-            input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
-            el.style.display = "none"; 
-            el.parentNode.appendChild(input); 
-            input.focus();
+            input.onkeydown = function(e) { 
+                if (e.key === "Enter") input.blur(); 
+            };
         };
     });
 }
