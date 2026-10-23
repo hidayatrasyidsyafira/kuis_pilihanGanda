@@ -116,6 +116,7 @@
             <button class="tab-btn aktif" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
             <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
             <button class="tab-btn" onclick="bukaTab('bank-soal')" id="tab-btn-bank-soal">📚 Bank Soal</button>
+            <button class="tab-btn" onclick="bukaTab('siswa')" id="tab-btn-siswa">👥 Data Siswa</button>
         </div>
 
         <!-- ================= TAB 1: REKAP NILAI ================= -->
@@ -217,6 +218,30 @@
         </div>
     </div>
 
+            <!-- ================= TAB 4: DATA SISWA ================= -->
+        <div class="tab-content" id="tab-siswa">
+            <div class="filter-section">
+                <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
+                <button class="btn btn-red" onclick="hapusSiswaTerpilih()">🗑️ Hapus Terpilih</button>
+                <button class="btn btn-green" onclick="bukaModal('modal-upload')" style="margin-left: auto;">📤 Upload Data Siswa (CSV)</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="30"><input type="checkbox" id="pilih-semua-siswa" onchange="toggleSemuaSiswa(this)"></th>
+                            <th width="50">No</th>
+                            <th>NISN</th>
+                            <th>Nama Siswa</th>
+                            <th>Kelas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-siswa"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
     <!-- ================= MODAL UPLOAD SISWA ================= -->
     <div class="modal-overlay" id="modal-upload">
         <div class="modal-content">
@@ -309,6 +334,7 @@ const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXM
 let semuaDataNilai = [];
 let semuaDataJadwal = [];
 let semuaDataSoal = [];
+let semuaDataSiswa = [];    
 let halamanNilaiAktif = 1;
 
 /* =========================================
@@ -322,6 +348,7 @@ function bukaTab(tab) {
     
     if (tab === 'jadwal') muatDataJadwal();
     if (tab === 'bank-soal') muatBankSoal();
+    if (tab === 'siswa') muatDataSiswa();
 }
 
 function bukaModal(id) { document.getElementById(id).classList.add("aktif"); }
@@ -1076,6 +1103,150 @@ function parseCSV(teks) {
     });
 }
 
+/* =========================================
+   TAB 4: DATA SISWA (CRUD)
+   ========================================= */
+async function muatDataSiswa() {
+    const tbody = document.getElementById("tbody-siswa");
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">⏳ Memuat data siswa...</td></tr>`;
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=siswa&t=" + new Date().getTime());
+        const json = await res.json();
+        if (json.status === "success") {
+            semuaDataSiswa = json.data;
+            renderTabelSiswa();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+        }
+    } catch (err) { 
+        console.error("Detail Error Siswa:", err); 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
+}
+
+function renderTabelSiswa() {
+    const tbody = document.getElementById("tbody-siswa");
+    const fCari = document.getElementById("filter-cari-siswa").value.toLowerCase();
+    document.getElementById("pilih-semua-siswa").checked = false;
+
+    const dataTampil = [];
+    semuaDataSiswa.forEach((d, indexAsli) => {
+        if ((d.nisn || "").toLowerCase().includes(fCari) || (d.nama || "").toLowerCase().includes(fCari)) {
+            dataTampil.push({ ...d, indexAsli: indexAsli });
+        }
+    });
+
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa ditemukan.</td></tr>`; return; }
+
+    tbody.innerHTML = "";
+    dataTampil.forEach((d, indexTampil) => {
+        // indexAsli + 2 karena baris 1 adalah header
+        const barisSheet = d.indexAsli + 2; 
+        
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-siswa" value="${barisSheet}"></td>
+                <td>${indexTampil + 1}</td>
+                <td class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="2">${d.nisn}</td>
+                <td class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="3">${d.nama}</td>
+                <td class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="4">${d.kelas}</td>
+            </tr>`;
+    });
+
+    // Pasang event listener untuk edit inline
+    document.querySelectorAll('.editable-cell-siswa').forEach(el => {
+        el.style.cursor = "pointer";
+        el.style.padding = "4px";
+        el.style.borderRadius = "4px";
+        el.style.display = "inline-block";
+        el.onmouseover = () => el.style.background = "#e3f2fd";
+        el.onmouseout = () => el.style.background = "transparent";
+        
+        el.onclick = function() {
+            const baris = parseInt(this.getAttribute('data-baris'));
+            const kolom = parseInt(this.getAttribute('data-kolom'));
+            const nilaiLama = this.textContent.trim();
+            
+            const input = document.createElement("input");
+            input.type = "text"; 
+            input.value = nilaiLama; 
+            input.className = "editable-edit";
+            input.style.width = "100%";
+            
+            input.onblur = async function() {
+                if (input.value !== nilaiLama) { 
+                    el.textContent = "⏳...";
+                    el.style.display = "inline-block";
+                    try {
+                        await fetch(URL_GOOGLE_SHEETS, {
+                            method: "POST", 
+                            body: JSON.stringify({ aksi: "edit_siswa", baris: baris, kolom: kolom, nilaiBaru: input.value })
+                        });
+                        el.textContent = input.value;
+                        if (input.parentNode) input.parentNode.removeChild(input);
+                        muatDataSiswa(); // Refresh
+                    } catch (err) { 
+                        Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error');
+                        el.textContent = nilaiLama; 
+                    }
+                } else { 
+                    el.style.display = "inline-block"; 
+                    if (input.parentNode) input.parentNode.removeChild(input);
+                }
+            };
+            
+            input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
+            el.style.display = "none"; 
+            el.parentNode.appendChild(input); 
+            input.focus();
+        };
+    });
+}
+
+function toggleSemuaSiswa(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-siswa');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function hapusSiswaTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-siswa:checked');
+    if (checkboxes.length === 0) {
+        Swal.fire('Oops...', 'Pilih minimal satu siswa untuk dihapus.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Hapus Data Siswa?',
+        text: `${checkboxes.length} data siswa akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_siswa", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatDataSiswa();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+    
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
     if (!file) { 
