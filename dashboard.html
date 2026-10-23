@@ -1193,24 +1193,23 @@ function renderTabelSiswa() {
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
-        // d.indexAsli + 2 karena baris 1 adalah header
-        const barisSheet = d.indexAsli + 2; 
         const noUrut = startIndex + indexTampil + 1;
-        
+        const nisnBersih = d.nisn.replace(/^'/, ''); // Hapus tanda kutip di tampilan
+
         tbody.innerHTML += `
             <tr>
-                <td style="text-align:center;"><input type="checkbox" class="checkbox-siswa" value="${barisSheet}"></td>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-siswa" value="${d.indexAsli}"></td>
                 <td style="text-align:center;">${noUrut}</td>
-                <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="2">${d.nisn}</div></td>
-                <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="3">${d.nama}</div></td>
-                <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="4">${d.kelas}</div></td>
+                <td><div class="editable-cell-siswa" data-nisn="${nisnBersih}" data-kolom="2">${nisnBersih}</div></td>
+                <td><div class="editable-cell-siswa" data-nisn="${nisnBersih}" data-kolom="3">${d.nama}</div></td>
+                <td><div class="editable-cell-siswa" data-nisn="${nisnBersih}" data-kolom="4">${d.kelas}</div></td>
             </tr>`;
     });
 
     // Pasang event listener untuk edit inline
     document.querySelectorAll('.editable-cell-siswa').forEach(el => {
         el.onclick = function() {
-            const baris = parseInt(this.getAttribute('data-baris'));
+            const nisnLama = this.getAttribute('data-nisn');
             const kolom = parseInt(this.getAttribute('data-kolom'));
             const nilaiLama = this.textContent.trim();
             const htmlAsli = this.innerHTML;
@@ -1230,12 +1229,29 @@ function renderTabelSiswa() {
                 if (input.value !== nilaiLama && input.value.trim() !== "") { 
                     el.textContent = "⏳...";
                     try {
-                        await fetch(URL_GOOGLE_SHEETS, {
+                        // Kirim NISN Lama (bukan nomor baris) ke server
+                        const res = await fetch(URL_GOOGLE_SHEETS, {
                             method: "POST", 
-                            body: JSON.stringify({ aksi: "edit_siswa", baris: baris, kolom: kolom, nilaiBaru: input.value })
+                            body: JSON.stringify({ 
+                                aksi: "edit_siswa", 
+                                nisnLama: nisnLama, 
+                                kolom: kolom, 
+                                nilaiBaru: input.value 
+                            })
                         });
-                        el.textContent = input.value;
-                        muatDataSiswa(); 
+                        const json = await res.json();
+                        
+                        if (json.status === "success") {
+                            el.textContent = input.value;
+                            // Jika yang diedit NISN, perbarui atribut data-nisn agar bisa edit nama setelahnya
+                            if (kolom === 2) {
+                                document.querySelectorAll(`.editable-cell-siswa[data-nisn="${nisnLama}"]`).forEach(sibling => {
+                                    sibling.setAttribute('data-nisn', input.value);
+                                });
+                            }
+                        } else {
+                            throw new Error(json.message);
+                        }
                     } catch (err) { 
                         Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error');
                         el.innerHTML = htmlAsli; 
