@@ -159,18 +159,21 @@
 
         <!-- ================= TAB 2: JADWAL UJIAN ================= -->
         <div class="tab-content" id="tab-jadwal">
-            <div style="margin-bottom: 15px; text-align: right;">
+            <div class="filter-section" style="justify-content: flex-end;">
+                <button class="btn btn-red" onclick="hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModal('modal-jadwal')">+ Tambah Jadwal Baru</button>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
+                            <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
                             <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
                             <th>Matapelajaran</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                            <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-jadwal"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-jadwal"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
             <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
@@ -458,13 +461,20 @@ async function muatDataJadwal() {
 
 function renderTabelJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
+    
+    // Reset checkbox "Pilih Semua"
+    document.getElementById("pilih-semua-jadwal").checked = false;
+    
     tbody.innerHTML = "";
-    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
+    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
 
     semuaDataJadwal.forEach((j, index) => {
         const barisSheet = index + 2; 
         tbody.innerHTML += `
             <tr>
+                <td style="text-align:center;">
+                    <input type="checkbox" class="checkbox-jadwal" value="${barisSheet}">
+                </td>
                 <td>${j.no}</td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 2, '${j.waktu}')">${j.waktu}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
@@ -474,6 +484,9 @@ function renderTabelJadwal() {
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusJadwal(${barisSheet})">Hapus</button>
+                </td>
             </tr>`;
     });
 }
@@ -529,6 +542,64 @@ async function simpanJadwalBaru() {
     } catch (err) { alert("❌ Error koneksi server."); } 
     finally { btn.textContent = "Simpan Jadwal"; btn.disabled = false; }
 }
+
+/* =========================================
+   FITUR HAPUS JADWAL
+   ========================================= */
+function toggleSemuaJadwal(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-jadwal');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function konfirmasiHapusJadwal(baris) {
+    if (!confirm("Apakah Anda yakin ingin menghapus jadwal ini? Tindakan ini tidak bisa dibatalkan.")) return;
+    
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST", 
+            body: JSON.stringify({ aksi: "hapus_jadwal", baris: baris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ Jadwal berhasil dihapus!");
+            muatDataJadwal();
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
+}
+
+async function hapusJadwalTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-jadwal:checked');
+    if (checkboxes.length === 0) {
+        alert("⚠️ Pilih minimal satu jadwal untuk dihapus.");
+        return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} jadwal terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+
+    const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "hapus_jadwal_massal", daftarBaris: daftarBaris })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            alert("✅ " + json.message);
+            muatDataJadwal(); // Refresh tabel
+        } else {
+            alert("❌ Gagal menghapus: " + json.message);
+        }
+    } catch (err) {
+        alert("❌ Error koneksi server.");
+    }
+}    
 
 /* =========================================
    TAB 3: BANK SOAL
