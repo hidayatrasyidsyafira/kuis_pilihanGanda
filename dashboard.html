@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Guru</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #e9ecef; min-height: 100vh; padding: 30px; }
@@ -535,11 +536,11 @@ async function simpanJadwalBaru() {
         const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_jadwal", jadwal: data }) });
         const json = await res.json();
         if (json.status === "success") {
-            alert("✅ Jadwal berhasil ditambahkan!");
+            Swal.fire('Berhasil!', 'Jadwal baru telah ditambahkan.', 'success');
             tutupModal("modal-jadwal");
             muatDataJadwal();
-        } else { alert("❌ Gagal: " + json.message); }
-    } catch (err) { alert("❌ Error koneksi server."); } 
+        } else { Swal.fire('Gagal!', json.message, 'error'); }
+    } catch (err) { Swal.fire('Error!', 'Koneksi server terputus.', 'error'); } 
     finally { btn.textContent = "Simpan Jadwal"; btn.disabled = false; }
 }
 
@@ -552,54 +553,75 @@ function toggleSemuaJadwal(source) {
 }
 
 async function konfirmasiHapusJadwal(baris) {
-    if (!confirm("Apakah Anda yakin ingin menghapus jadwal ini? Tindakan ini tidak bisa dibatalkan.")) return;
-    
-    try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST", 
-            body: JSON.stringify({ aksi: "hapus_jadwal", baris: baris })
-        });
-        const json = await res.json();
-        
-        if (json.status === "success") {
-            alert("✅ Jadwal berhasil dihapus!");
-            muatDataJadwal();
-        } else {
-            alert("❌ Gagal menghapus: " + json.message);
+    const result = await Swal.fire({
+        title: 'Hapus Jadwal?',
+        text: "Jadwal ini akan dihapus permanen.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_jadwal", baris: baris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Jadwal berhasil dihapus.', 'success');
+                muatDataJadwal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
         }
-    } catch (err) {
-        alert("❌ Error koneksi server.");
     }
 }
 
 async function hapusJadwalTerpilih() {
     const checkboxes = document.querySelectorAll('.checkbox-jadwal:checked');
     if (checkboxes.length === 0) {
-        alert("⚠️ Pilih minimal satu jadwal untuk dihapus.");
+        Swal.fire('Oops...', 'Pilih minimal satu jadwal untuk dihapus.', 'info');
         return;
     }
 
-    if (!confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} jadwal terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+    const result = await Swal.fire({
+        title: 'Hapus Jadwal Terpilih?',
+        text: `${checkboxes.length} jadwal akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    });
 
-    const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
-
-    try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST",
-            body: JSON.stringify({ aksi: "hapus_jadwal_massal", daftarBaris: daftarBaris })
-        });
-        const json = await res.json();
-        
-        if (json.status === "success") {
-            alert("✅ " + json.message);
-            muatDataJadwal(); // Refresh tabel
-        } else {
-            alert("❌ Gagal menghapus: " + json.message);
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_jadwal_massal", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatDataJadwal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
         }
-    } catch (err) {
-        alert("❌ Error koneksi server.");
     }
-}    
+}   
 
 /* =========================================
    TAB 3: BANK SOAL
@@ -748,26 +770,36 @@ async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
 }
 
 async function konfirmasiHapus(baris) {
-    if (!confirm("Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak bisa dibatalkan.")) return;
-    
-    try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST", 
-            body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
-        });
-        const json = await res.json();
-        
-        if (json.status === "success") {
-            alert("✅ Soal berhasil dihapus!");
-            muatBankSoal();
-        } else {
-            alert("❌ Gagal menghapus: " + json.message);
+    const result = await Swal.fire({
+        title: 'Hapus Soal?',
+        text: "Soal ini akan dihapus permanen dari Bank Soal.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Soal berhasil dihapus.', 'success');
+                muatBankSoal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
         }
-    } catch (err) {
-        alert("❌ Error koneksi server.");
     }
 }
-
 function toggleSemuaSoal(source) {
     const checkboxes = document.querySelectorAll('.checkbox-soal');
     checkboxes.forEach(cb => cb.checked = source.checked);
@@ -776,29 +808,39 @@ function toggleSemuaSoal(source) {
 async function hapusSoalTerpilih() {
     const checkboxes = document.querySelectorAll('.checkbox-soal:checked');
     if (checkboxes.length === 0) {
-        alert("⚠️ Pilih minimal satu soal untuk dihapus.");
+        Swal.fire('Oops...', 'Pilih minimal satu soal untuk dihapus.', 'info');
         return;
     }
 
-    if (!confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} soal terpilih? Tindakan ini tidak bisa dibatalkan.`)) return;
+    const result = await Swal.fire({
+        title: 'Hapus Soal Terpilih?',
+        text: `${checkboxes.length} soal akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    });
 
-    const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
-
-    try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST",
-            body: JSON.stringify({ aksi: "hapus_soal_massal", daftarBaris: daftarBaris })
-        });
-        const json = await res.json();
-        
-        if (json.status === "success") {
-            alert("✅ " + json.message);
-            muatBankSoal();
-        } else {
-            alert("❌ Gagal menghapus: " + json.message);
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_soal_massal", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatBankSoal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
         }
-    } catch (err) {
-        alert("❌ Error koneksi server.");
     }
 }
 
@@ -825,17 +867,20 @@ async function simpanSoalBaru() {
         const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_soal", soal: data }) });
         const json = await res.json();
         if (json.status === "success") {
-            alert("✅ Soal berhasil ditambahkan!");
+            Swal.fire('Berhasil!', 'Soal baru telah ditambahkan.', 'success');
             tutupModal("modal-tambah-soal");
             muatBankSoal();
-        } else { alert("❌ Gagal: " + json.message); }
-    } catch (err) { alert("❌ Error koneksi server."); } 
+        } else { Swal.fire('Gagal!', json.message, 'error'); }
+    } catch (err) { Swal.fire('Error!', 'Koneksi server terputus.', 'error'); } 
     finally { btn.textContent = "Simpan Soal"; btn.disabled = false; }
 }
 
 async function prosesUploadSoal() {
     const file = document.getElementById("file-csv-soal").files[0];
-    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+    if (!file) { 
+        Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); 
+        return; 
+    }
 
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -861,12 +906,32 @@ async function prosesUploadSoal() {
             }
         }
 
-        if (daftarSoal.length === 0) { alert("⚠️ Format file tidak sesuai atau data kosong."); return; }
+        if (daftarSoal.length === 0) { 
+            Swal.fire('Format Salah!', 'Format file tidak sesuai atau data kosong. Pastikan menggunakan template terbaru.', 'error'); 
+            return; 
+        }
         
-        if (!confirm(`Ditemukan ${daftarSoal.length} soal valid. Lanjutkan upload?`)) return;
+        // Konfirmasi dengan SweetAlert
+        const konfirmasi = await Swal.fire({
+            title: 'Upload Soal?',
+            text: `Ditemukan ${daftarSoal.length} soal valid. Soal yang sudah ada sebelumnya tidak akan diduplikasi.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f39c12',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Ya, Upload!',
+            cancelButtonText: 'Batal'
+        });
 
-        const btn = document.querySelector("#modal-upload-soal .btn-green");
-        btn.textContent = "⏳ Memproses..."; btn.disabled = true;
+        if (!konfirmasi.isConfirmed) return;
+
+        // Tampilkan loading
+        Swal.fire({
+            title: 'Memproses...',
+            text: 'Sedang mengunggah soal ke Bank Soal',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
 
         try {
             const res = await fetch(URL_GOOGLE_SHEETS, {
@@ -876,12 +941,15 @@ async function prosesUploadSoal() {
             const json = await res.json();
             
             if (json.status === "success") {
-                alert("✅ " + json.message);
+                Swal.fire('Berhasil!', json.message, 'success');
                 tutupModal("modal-upload-soal");
                 muatBankSoal();
-            } else { alert("❌ " + json.message); }
-        } catch (err) { alert("❌ Koneksi Error."); }
-        finally { btn.textContent = "Upload Soal"; btn.disabled = false; }
+            } else { 
+                Swal.fire('Gagal!', json.message, 'error'); 
+            }
+        } catch (err) { 
+            Swal.fire('Error!', 'Terjadi kesalahan koneksi ke server.', 'error'); 
+        }
     };
     reader.readAsText(file);
 }
@@ -917,7 +985,10 @@ function parseCSV(teks) {
 
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
-    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+    if (!file) { 
+        Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); 
+        return; 
+    }
 
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -926,19 +997,50 @@ async function prosesUploadSiswa() {
         for (let i = 1; i < baris.length; i++) {
             if (baris[i].length >= 3) dataSiswa.push({ nisn: baris[i][0], nama: baris[i][1], kelas: baris[i][2] });
         }
-        if (dataSiswa.length === 0) { alert("⚠️ Format file salah."); return; }
         
+        if (dataSiswa.length === 0) { 
+            Swal.fire('Format Salah!', 'Tidak ada data siswa yang valid dalam file CSV.', 'error'); 
+            return; 
+        }
+
+        // Konfirmasi dengan SweetAlert
+        const konfirmasi = await Swal.fire({
+            title: 'Upload Data Siswa?',
+            text: `Ditemukan ${dataSiswa.length} data siswa. Data lama dengan NISN yang sama akan diperbarui.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2ecc71',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Ya, Upload!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (!konfirmasi.isConfirmed) return;
+
+        // Tampilkan loading
+        Swal.fire({
+            title: 'Mengupload...',
+            text: 'Mohon tunggu sebentar',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
         try {
             const res = await fetch(URL_GOOGLE_SHEETS, {
                 method: "POST",
                 body: JSON.stringify({ aksi: "upload_siswa", siswa: dataSiswa })
             });
             const json = await res.json();
+            
             if (json.status === "success") {
-                alert("✅ " + json.message);
+                Swal.fire('Berhasil!', json.message, 'success');
                 tutupModal("modal-upload");
-            } else { alert("❌ " + json.message); }
-        } catch (err) { alert("❌ Koneksi Error."); }
+            } else { 
+                Swal.fire('Gagal!', json.message, 'error'); 
+            }
+        } catch (err) { 
+            Swal.fire('Error!', 'Terjadi kesalahan koneksi ke server.', 'error'); 
+        }
     };
     reader.readAsText(file);
 }
