@@ -261,6 +261,27 @@
                     <tbody id="tbody-siswa"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
+            
+            <!-- NAVIGASI PAGINATION SISWA -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div>
+                    Tampilkan: 
+                    <select id="limit-siswa" onchange="halamanSiswaAktif = 1; renderTabelSiswa()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="9999">Semua</option>
+                    </select> data
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(-1)">← Sebelumnya</button>
+                    <span id="info-halaman-siswa" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(1)">Berikutnya →</button>
+                </div>
+            </div>
+        </div>
         </div>
     </div> <!-- END CONTAINER -->
 
@@ -358,6 +379,7 @@ let semuaDataJadwal = [];
 let semuaDataSoal = [];
 let semuaDataSiswa = [];    
 let halamanNilaiAktif = 1;
+let halamanSiswaAktif = 1;
 
 /* =========================================
    NAVIGASI TAB & UTIL
@@ -1123,7 +1145,8 @@ async function muatDataSiswa() {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=siswa&t=" + new Date().getTime());
         const json = await res.json();
         if (json.status === "success") {
-            semuaDataSiswa = json.data;
+            // TAMBAHKAN .map DI SINI UNTUK MENYIMPAN INDEX ASLI
+            semuaDataSiswa = json.data.map((d, i) => ({ ...d, indexAsli: i + 2 }));
             renderTabelSiswa();
         } else {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
@@ -1137,25 +1160,47 @@ async function muatDataSiswa() {
 function renderTabelSiswa() {
     const tbody = document.getElementById("tbody-siswa");
     const fCari = document.getElementById("filter-cari-siswa").value.toLowerCase();
+    const limit = parseInt(document.getElementById("limit-siswa").value) || 10;
+
     document.getElementById("pilih-semua-siswa").checked = false;
 
-    const dataTampil = [];
-    semuaDataSiswa.forEach((d, indexAsli) => {
-        if ((d.nisn || "").toLowerCase().includes(fCari) || (d.nama || "").toLowerCase().includes(fCari)) {
-            dataTampil.push({ ...d, indexAsli: indexAsli });
-        }
-    });
+    // 1. Filter Data
+    const dataFiltered = semuaDataSiswa.filter(d => 
+        (d.nisn || "").toLowerCase().includes(fCari) || (d.nama || "").toLowerCase().includes(fCari)
+    );
 
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa ditemukan.</td></tr>`; return; }
+    // 2. Hitung Total Halaman
+    const totalData = dataFiltered.length;
+    const totalHalaman = Math.ceil(totalData / limit) || 1;
+
+    // 3. Cegah out of bounds
+    if (halamanSiswaAktif > totalHalaman) halamanSiswaAktif = totalHalaman;
+    if (halamanSiswaAktif < 1) halamanSiswaAktif = 1;
+
+    // 4. Ambil data untuk halaman saat ini
+    const startIndex = (halamanSiswaAktif - 1) * limit;
+    const endIndex = startIndex + limit;
+    const dataTampil = dataFiltered.slice(startIndex, endIndex);
+
+    // 5. Update Info Halaman
+    document.getElementById("info-halaman-siswa").textContent = `Halaman ${halamanSiswaAktif} / ${totalHalaman} (Total: ${totalData} data)`;
+
+    // 6. Render Tabel
+    if (dataTampil.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa ditemukan.</td></tr>`; 
+        return; 
+    }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
+        // d.indexAsli + 2 karena baris 1 adalah header
         const barisSheet = d.indexAsli + 2; 
+        const noUrut = startIndex + indexTampil + 1;
         
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="checkbox-siswa" value="${barisSheet}"></td>
-                <td style="text-align:center;">${indexTampil + 1}</td>
+                <td style="text-align:center;">${noUrut}</td>
                 <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="2">${d.nisn}</div></td>
                 <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="3">${d.nama}</div></td>
                 <td><div class="editable-cell-siswa" data-baris="${barisSheet}" data-kolom="4">${d.kelas}</div></td>
@@ -1168,11 +1213,8 @@ function renderTabelSiswa() {
             const baris = parseInt(this.getAttribute('data-baris'));
             const kolom = parseInt(this.getAttribute('data-kolom'));
             const nilaiLama = this.textContent.trim();
-            
-            // Simpan HTML asli
             const htmlAsli = this.innerHTML;
             
-            // Buat input
             const input = document.createElement("input");
             input.type = "text"; 
             input.value = nilaiLama; 
@@ -1180,8 +1222,8 @@ function renderTabelSiswa() {
             input.style.width = "100%";
             input.style.boxSizing = "border-box";
             
-            this.innerHTML = ""; // Kosongkan teks
-            this.appendChild(input); // Masukkan input ke dalam div
+            this.innerHTML = ""; 
+            this.appendChild(input); 
             input.focus();
 
             input.onblur = async function() {
@@ -1193,13 +1235,13 @@ function renderTabelSiswa() {
                             body: JSON.stringify({ aksi: "edit_siswa", baris: baris, kolom: kolom, nilaiBaru: input.value })
                         });
                         el.textContent = input.value;
-                        muatDataSiswa(); // Refresh
+                        muatDataSiswa(); 
                     } catch (err) { 
                         Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error');
                         el.innerHTML = htmlAsli; 
                     }
                 } else { 
-                    el.innerHTML = htmlAsli; // Kembalikan teks asli jika batal
+                    el.innerHTML = htmlAsli; 
                 }
             };
             
@@ -1208,6 +1250,11 @@ function renderTabelSiswa() {
             };
         };
     });
+}
+
+function ubahHalamanSiswa(arah) {
+    halamanSiswaAktif += arah;
+    renderTabelSiswa();
 }
 
 function toggleSemuaSiswa(source) {
