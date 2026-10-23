@@ -92,11 +92,11 @@
         }
         .form-group textarea { resize: vertical; min-height: 80px; }
 
-        /* CSS Tambahan Bank Soal */
-        #tab-bank-soal .table-responsive {
+        /* CSS Tambahan Bank Soal & Siswa */
+        #tab-bank-soal .table-responsive, #tab-siswa .table-responsive {
             max-height: 600px; overflow-y: auto;
         }
-        #tab-bank-soal table th {
+        #tab-bank-soal table th, #tab-siswa table th {
             position: sticky; top: 0; z-index: 10;
         }
     </style>
@@ -132,7 +132,6 @@
                 <table>
                     <thead>
                         <tr>
-                            <!-- CHECKBOX PILIH SEMUA -->
                             <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
                             <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
                             <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
@@ -143,16 +142,12 @@
                 </table>
             </div>
             
-            <!-- NAVIGASI PAGINATION (Tetap seperti sebelumnya) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
                 <div>
                     Tampilkan: 
                     <select id="limit-nilai" onchange="halamanNilaiAktif = 1; renderTabelNilai()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                        <option value="9999">Semua</option>
+                        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                        <option value="100">100</option><option value="9999">Semua</option>
                     </select> data
                 </div>
                 <div style="display: flex; gap: 5px; align-items: center;">
@@ -179,7 +174,7 @@
                             <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-jadwal"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-jadwal"><tr><td colspan="12" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
             <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
@@ -216,9 +211,8 @@
                 </table>
             </div>
         </div>
-    </div>
 
-            <!-- ================= TAB 4: DATA SISWA ================= -->
+        <!-- ================= TAB 4: DATA SISWA ================= -->
         <div class="tab-content" id="tab-siswa">
             <div class="filter-section">
                 <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
@@ -241,6 +235,7 @@
                 </table>
             </div>
         </div>
+    </div> <!-- END CONTAINER -->
 
     <!-- ================= MODAL UPLOAD SISWA ================= -->
     <div class="modal-overlay" id="modal-upload">
@@ -358,6 +353,7 @@ function muatSemuaData() {
     muatDataNilai();
     if(document.getElementById('tab-jadwal').classList.contains('aktif')) muatDataJadwal();
     if(document.getElementById('tab-bank-soal').classList.contains('aktif')) muatBankSoal();
+    if(document.getElementById('tab-siswa').classList.contains('aktif')) muatDataSiswa();
 }
 
 /* =========================================
@@ -370,7 +366,6 @@ async function muatDataNilai() {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=nilai&t=" + new Date().getTime());
         const json = await res.json();
         if (json.status === "success") {
-            // Simpan data beserta index aslinya (+2 karena ada header)
             semuaDataNilai = json.data.map((d, i) => ({ ...d, indexAsli: i + 2 }));
             isiFilterNilai();
             renderTabelNilai();
@@ -537,7 +532,7 @@ function exportKeExcel() {
         (d.nama || "").toLowerCase().includes(fNama) && (fKelas === "" || d.kelas === fKelas) && (fMapel === "" || d.mapel === fMapel)
     );
 
-    if (dataTampil.length === 0) { alert("⚠️ Tidak ada data untuk diexport."); return; }
+    if (dataTampil.length === 0) { Swal.fire('Kosong!', 'Tidak ada data untuk diexport.', 'info'); return; }
 
     let tableHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -558,11 +553,11 @@ function exportKeExcel() {
 }
 
 /* =========================================
-   TAB 2: JADWAL (Baca, Tambah, Edit)
+   TAB 2: JADWAL (Baca, Tambah, Edit, Hapus)
    ========================================= */
 async function muatDataJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">⏳ Memuat data...</td></tr>`;
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal&t=" + new Date().getTime());
         const json = await res.json();
@@ -570,30 +565,25 @@ async function muatDataJadwal() {
             semuaDataJadwal = json.data;
             renderTabelJadwal();
         } else {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
     } catch (err) { 
         console.error("Detail Error Jadwal:", err); 
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
     }
 }
 
 function renderTabelJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
-    
-    // Reset checkbox "Pilih Semua"
     document.getElementById("pilih-semua-jadwal").checked = false;
-    
     tbody.innerHTML = "";
-    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
+    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
 
     semuaDataJadwal.forEach((j, index) => {
         const barisSheet = index + 2; 
         tbody.innerHTML += `
             <tr>
-                <td style="text-align:center;">
-                    <input type="checkbox" class="checkbox-jadwal" value="${barisSheet}">
-                </td>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-jadwal" value="${barisSheet}"></td>
                 <td>${j.no}</td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 2, '${j.waktu}')">${j.waktu}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
@@ -632,7 +622,7 @@ async function simpanEditJadwal(baris, kolom, nilaiBaru, elemen) {
         if (elemen.parentNode.querySelector('.editable-edit')) {
             elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
         }
-    } catch (err) { alert("Gagal menyimpan perubahan."); elemen.innerHTML = "❌ Error"; }
+    } catch (err) { Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error'); elemen.innerHTML = "❌ Error"; }
 }
 
 async function simpanJadwalBaru() {
@@ -648,7 +638,7 @@ async function simpanJadwalBaru() {
         durasi: document.getElementById("j-durasi").value
     };
 
-    if(!data.waktu || !data.tanggal || !data.mapel) { alert("⚠️ Lengkapi data terlebih dahulu!"); return; }
+    if(!data.waktu || !data.tanggal || !data.mapel) { Swal.fire('Oops...', 'Lengkapi data terlebih dahulu!', 'warning'); return; }
     const btn = document.querySelector("#modal-jadwal .btn-green");
     btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
 
@@ -778,7 +768,6 @@ function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
     
-    // Reset checkbox "Pilih Semua"
     document.getElementById("pilih-semua").checked = false;
 
     const dataTampil = [];
@@ -884,7 +873,7 @@ async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
         }
         muatBankSoal();
     } catch (err) { 
-        alert("Gagal menyimpan perubahan."); 
+        Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error'); 
         elemen.textContent = "❌ Error"; 
     }
 }
@@ -920,6 +909,7 @@ async function konfirmasiHapus(baris) {
         }
     }
 }
+
 function toggleSemuaSoal(source) {
     const checkboxes = document.querySelectorAll('.checkbox-soal');
     checkboxes.forEach(cb => cb.checked = source.checked);
@@ -978,7 +968,7 @@ async function simpanSoalBaru() {
         penjelasan: document.getElementById("s-penjelasan").value
     };
 
-    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { alert("⚠️ Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!"); return; }
+    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); return; }
     
     const btn = document.querySelector("#modal-tambah-soal .btn-green");
     btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
@@ -997,18 +987,13 @@ async function simpanSoalBaru() {
 
 async function prosesUploadSoal() {
     const file = document.getElementById("file-csv-soal").files[0];
-    if (!file) { 
-        Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); 
-        return; 
-    }
+    if (!file) { Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); return; }
 
     const reader = new FileReader();
     reader.onload = async function(e) {
         const baris = parseCSV(e.target.result);
         const daftarSoal = [];
         
-        // Format CSV memiliki header, jadi mulai index 1
-        // Index 0 = No (diabaikan), 1 = Mapel, 2 = Soal, dst.
         for (let i = 1; i < baris.length; i++) {
             if (baris[i].length >= 9) { 
                 daftarSoal.push({
@@ -1031,7 +1016,6 @@ async function prosesUploadSoal() {
             return; 
         }
         
-        // Konfirmasi dengan SweetAlert
         const konfirmasi = await Swal.fire({
             title: 'Upload Soal?',
             text: `Ditemukan ${daftarSoal.length} soal valid. Soal yang sudah ada sebelumnya tidak akan diduplikasi.`,
@@ -1045,7 +1029,6 @@ async function prosesUploadSoal() {
 
         if (!konfirmasi.isConfirmed) return;
 
-        // Tampilkan loading
         Swal.fire({
             title: 'Memproses...',
             text: 'Sedang mengunggah soal ke Bank Soal',
@@ -1140,7 +1123,6 @@ function renderTabelSiswa() {
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
-        // indexAsli + 2 karena baris 1 adalah header
         const barisSheet = d.indexAsli + 2; 
         
         tbody.innerHTML += `
@@ -1153,7 +1135,6 @@ function renderTabelSiswa() {
             </tr>`;
     });
 
-    // Pasang event listener untuk edit inline
     document.querySelectorAll('.editable-cell-siswa').forEach(el => {
         el.style.cursor = "pointer";
         el.style.padding = "4px";
@@ -1267,7 +1248,6 @@ async function prosesUploadSiswa() {
             return; 
         }
 
-        // Konfirmasi dengan SweetAlert
         const konfirmasi = await Swal.fire({
             title: 'Upload Data Siswa?',
             text: `Ditemukan ${dataSiswa.length} data siswa. Data lama dengan NISN yang sama akan diperbarui.`,
@@ -1281,7 +1261,6 @@ async function prosesUploadSiswa() {
 
         if (!konfirmasi.isConfirmed) return;
 
-        // Tampilkan loading
         Swal.fire({
             title: 'Mengupload...',
             text: 'Mohon tunggu sebentar',
