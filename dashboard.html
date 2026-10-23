@@ -140,14 +140,14 @@
 
         <!-- TAB MENU -->
         <div class="tabs">
-            <button class="tab-btn aktif" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
+            <button class="tab-btn" onclick="bukaTab('siswa')" id="tab-btn-siswa">👥 Data Siswa</button>
             <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
             <button class="tab-btn" onclick="bukaTab('bank-soal')" id="tab-btn-bank-soal">📚 Bank Soal</button>
-            <button class="tab-btn" onclick="bukaTab('siswa')" id="tab-btn-siswa">👥 Data Siswa</button>
+            <button class="tab-btn aktif" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
         </div>
-
+        
         <!-- ================= TAB 1: REKAP NILAI ================= -->
-        <div class="tab-content aktif" id="tab-nilai">
+        <div class="tab-content" id="tab-nilai">
             <div class="filter-section">
                 <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="halamanNilaiAktif = 1; renderTabelNilai()">
                 <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
@@ -240,7 +240,7 @@
         </div>
 
         <!-- ================= TAB 4: DATA SISWA ================= -->
-        <div class="tab-content" id="tab-siswa">
+        <div class="tab-content aktif" id="tab-siswa">
             <div class="filter-section">
                 <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
                 <button class="btn btn-red" onclick="hapusSiswaTerpilih()">🗑️ Hapus Terpilih</button>
@@ -1438,7 +1438,7 @@ async function prosesUploadSiswa() {
 }
 
 /* --- INIT --- */
-muatDataNilai();
+muatDataSiswa();
 </script>
 </body>
 </html>
