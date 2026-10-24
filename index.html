@@ -618,19 +618,76 @@ function cekStatusWaktu(jadwal) {
     if (new Date().getTime() < dateMulai) jadwalInterval = setInterval(updateTampilan, 1000);
 }
 
-function cekToken() {
+// function cekToken() {
+//     const inputToken = document.getElementById("input-token").value.toUpperCase().trim();
+//     const btnMulai = document.getElementById("tombol-mulai");
+//     if (!mapelDipilih) return;
+//     const tokenAsli = String(mapelDipilih.token || "").toUpperCase().trim();
+//     if (inputToken === tokenAsli && tokenAsli !== "") {
+//         btnMulai.disabled = false; btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)"; btnMulai.style.cursor = "pointer";
+//         document.getElementById("input-token").style.borderColor = "#2ecc71"; document.getElementById("input-token").style.background = "#d4edda";
+//     } else {
+//         btnMulai.disabled = true; btnMulai.style.background = "#95a5a6"; btnMulai.style.cursor = "not-allowed";
+//         document.getElementById("input-token").style.borderColor = "#ffc107"; document.getElementById("input-token").style.background = "#fff";
+//     }
+// }
+async function cekToken() {
     const inputToken = document.getElementById("input-token").value.toUpperCase().trim();
     const btnMulai = document.getElementById("tombol-mulai");
+    
     if (!mapelDipilih) return;
-    const tokenAsli = String(mapelDipilih.token || "").toUpperCase().trim();
-    if (inputToken === tokenAsli && tokenAsli !== "") {
-        btnMulai.disabled = false; btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)"; btnMulai.style.cursor = "pointer";
-        document.getElementById("input-token").style.borderColor = "#2ecc71"; document.getElementById("input-token").style.background = "#d4edda";
-    } else {
-        btnMulai.disabled = true; btnMulai.style.background = "#95a5a6"; btnMulai.style.cursor = "not-allowed";
-        document.getElementById("input-token").style.borderColor = "#ffc107"; document.getElementById("input-token").style.background = "#fff";
+
+    // Jika token kosong, nonaktifkan tombol
+    if (inputToken === "") {
+        btnMulai.disabled = true;
+        btnMulai.style.background = "#95a5a6";
+        btnMulai.style.cursor = "not-allowed";
+        document.getElementById("input-token").style.borderColor = "#ffc107";
+        document.getElementById("input-token").style.background = "#fff";
+        return;
     }
-}
+
+    // Tampilkan status loading sementara
+    document.getElementById("input-token").style.borderColor = "#3498db";
+    document.getElementById("input-token").style.background = "#e3f2fd";
+
+    try {
+        // Kirim ke Apps Script untuk validasi
+        const params = new URLSearchParams({
+            aksi: "validasi_token",
+            nisn: nisnSiswa,
+            mapel: mapelDipilih.mapel,
+            token: inputToken
+        });
+
+        const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
+        const json = await res.json();
+
+        if (json.status === "success" && json.valid === true) {
+            // TOKEN VALID (Benar)
+            btnMulai.disabled = false;
+            btnMulai.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+            btnMulai.style.cursor = "pointer";
+            document.getElementById("input-token").style.borderColor = "#2ecc71";
+            document.getElementById("input-token").style.background = "#d4edda";
+        } else {
+            // TOKEN INVALID (Salah)
+            btnMulai.disabled = true;
+            btnMulai.style.background = "#95a5a6";
+            btnMulai.style.cursor = "not-allowed";
+            document.getElementById("input-token").style.borderColor = "#e74c3c";
+            document.getElementById("input-token").style.background = "#f8d7da";
+        }
+    } catch (err) {
+        // Jika ada error koneksi, nonaktifkan tombol
+        console.error("Gagal validasi token:", err);
+        btnMulai.disabled = true;
+        btnMulai.style.background = "#95a5a6";
+        btnMulai.style.cursor = "not-allowed";
+        document.getElementById("input-token").style.borderColor = "#e74c3c";
+        document.getElementById("input-token").style.background = "#f8d7da";
+    }
+}    
 
 /* =========================================================
    🎥 KAMERA & ANTI-CHEAT
