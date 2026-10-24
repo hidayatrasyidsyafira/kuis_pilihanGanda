@@ -188,6 +188,7 @@
         <!-- ================= TAB 2: JADWAL UJIAN ================= -->
         <div class="tab-content" id="tab-jadwal">
             <div class="filter-section" style="justify-content: flex-end;">
+                <button class="btn btn-orange" onclick="bukaModalKirimToken()">📲 Kirim Token Massal</button>
                 <button class="btn btn-red" onclick="hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModal('modal-jadwal')">+ Tambah Jadwal Baru</button>
             </div>
@@ -308,7 +309,7 @@
         </div>
     </div>
 
-        <!-- ================= MODAL TAMBAH SISWA MANUAL ================= -->
+    <!-- ================= MODAL TAMBAH SISWA MANUAL ================= -->
     <div class="modal-overlay" id="modal-tambah-siswa">
         <div class="modal-content" style="max-width: 500px;">
             <h3>👤 Tambah Siswa Baru</h3>
@@ -324,6 +325,10 @@
                 <div class="form-group">
                     <label>Kelas</label>
                     <input type="text" id="siswa-kelas" placeholder="Contoh: X-1">
+                </div>
+                <div class="form-group">
+                    <label>Nomor WA (Gunakan 62...)</label>
+                    <input type="text" id="siswa-wa" placeholder="Contoh: 628123456789">
                 </div>
             </div>
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanSiswaBaru()">Simpan Siswa</button>
@@ -355,6 +360,24 @@
             </div>
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL KIRIM TOKEN -->
+    <div class="modal-overlay" id="modal-kirim-token">
+        <div class="modal-content">
+            <h3>📲 Kirim Token Massal via WA</h3>
+            <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+                Token akan di-generate otomatis (TokenUtama + Nama + NISN) dan dikirim ke nomor WA siswa.
+            </p>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label>Pilih Ujian (Mapel - Kelas)</label>
+                    <select id="pilih-token-jadwal"></select>
+                </div>
+            </div>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimToken()">🚀 Kirim Token Sekarang</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-kirim-token')">Batal</button>
         </div>
     </div>
 
@@ -813,7 +836,82 @@ async function hapusJadwalTerpilih() {
             Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
         }
     }
-}   
+}
+
+function bukaModalKirimToken() {
+    const select = document.getElementById("pilih-token-jadwal");
+    select.innerHTML = "";
+    
+    if (semuaDataJadwal.length === 0) {
+        Swal.fire('Oops...', 'Belum ada jadwal ujian.', 'warning');
+        return;
+    }
+
+    semuaDataJadwal.forEach((j, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = `${j.mapel} - ${j.kelas} (Token: ${j.token})`;
+        select.appendChild(opt);
+    });
+
+    bukaModal("modal-kirim-token");
+}
+
+async function prosesKirimToken() {
+    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
+    if (indexTerpilih === "") return;
+    
+    const jadwal = semuaDataJadwal[indexTerpilih];
+    const kelasTarget = jadwal.kelas.split(",").map(k => k.trim().toUpperCase());
+
+    // Filter siswa yang kelasnya sesuai dengan jadwal
+    const siswaTerkait = semuaDataSiswa.filter(s => kelasTarget.includes(s.kelas.toUpperCase()));
+
+    if (siswaTerkait.length === 0) {
+        Swal.fire('Kosong!', `Tidak ada siswa dari kelas ${jadwal.kelas} di database.`, 'info');
+        return;
+    }
+
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim Token?',
+        text: `Token akan dikirim ke ${siswaTerkait.length} siswa kelas ${jadwal.kelas}. Pastikan nomor WA siswa sudah benar.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#f39c12',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Mengirim...',
+        text: 'Sedang mengirim token via WhatsApp',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "kirim_token_massal",
+                tokenUtama: jadwal.token,
+                mapel: jadwal.mapel,
+                siswa: siswaTerkait
+            })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            Swal.fire('Selesai!', json.message, 'success');
+            tutupModal("modal-kirim-token");
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    }
+}    
 
 /* =========================================
    TAB 3: BANK SOAL
@@ -1405,7 +1503,8 @@ async function simpanSiswaBaru() {
     const data = {
         nisn: document.getElementById("siswa-nisn").value.trim(),
         nama: document.getElementById("siswa-nama").value.trim(),
-        kelas: document.getElementById("siswa-kelas").value.trim()
+        kelas: document.getElementById("siswa-kelas").value.trim(),
+        wa: document.getElementById("siswa-wa").value.trim() // <-- BARU
     };
 
     if (!data.nisn || !data.nama || !data.kelas) {
