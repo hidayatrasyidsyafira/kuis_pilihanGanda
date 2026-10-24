@@ -245,6 +245,7 @@
                 <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
                 <button class="btn btn-red" onclick="hapusSiswaTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModal('modal-upload')" style="margin-left: auto;">📤 Upload Data Siswa (CSV)</button>
+                <button class="btn btn-orange" onclick="bukaModal('modal-tambah-siswa')">+ Tambah Siswa Manual</button>
             </div>
             
             <div class="table-responsive">
@@ -304,6 +305,29 @@
             
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSiswa()">Upload & Simpan</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload')">Batal</button>
+        </div>
+    </div>
+
+        <!-- ================= MODAL TAMBAH SISWA MANUAL ================= -->
+    <div class="modal-overlay" id="modal-tambah-siswa">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>👤 Tambah Siswa Baru</h3>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label>NISN</label>
+                    <input type="text" id="siswa-nisn" placeholder="Contoh: 0099068975">
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="siswa-nama" placeholder="Contoh: Budi Santoso">
+                </div>
+                <div class="form-group">
+                    <label>Kelas</label>
+                    <input type="text" id="siswa-kelas" placeholder="Contoh: X-1">
+                </div>
+            </div>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanSiswaBaru()">Simpan Siswa</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-tambah-siswa')">Batal</button>
         </div>
     </div>
 
@@ -1376,6 +1400,47 @@ async function hapusSiswaTerpilih() {
         }
     }
 }
+
+async function simpanSiswaBaru() {
+    const data = {
+        nisn: document.getElementById("siswa-nisn").value.trim(),
+        nama: document.getElementById("siswa-nama").value.trim(),
+        kelas: document.getElementById("siswa-kelas").value.trim()
+    };
+
+    if (!data.nisn || !data.nama || !data.kelas) {
+        Swal.fire('Oops...', 'Semua kolom (NISN, Nama, Kelas) harus diisi!', 'warning');
+        return;
+    }
+
+    const btn = document.querySelector("#modal-tambah-siswa .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "tambah_siswa_manual", siswa: data })
+        });
+        const json = await res.json();
+
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message, 'success');
+            tutupModal("modal-tambah-siswa");
+            // Bersihkan form
+            document.getElementById("siswa-nisn").value = "";
+            document.getElementById("siswa-nama").value = "";
+            document.getElementById("siswa-kelas").value = "";
+            muatDataSiswa(); // Refresh tabel
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi server terputus.', 'error');
+    } finally {
+        btn.textContent = "Simpan Siswa";
+        btn.disabled = false;
+    }
+}    
     
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
