@@ -721,20 +721,55 @@ function parseCSV(teks) {
 }
 
 async function ambilSoal(namaMapel, fileKhusus = null) {
-    let fileCSV = fileKhusus ? (fileKhusus.endsWith('.csv') ? fileKhusus : `${fileKhusus}.csv`) : `soal_${namaMapel.toLowerCase().replace(/\s+/g, '_')}.csv`;
     try {
-        const res = await fetch(fileCSV); if (!res.ok) throw new Error("File tidak ada");
-        const baris = parseCSV(await res.text()); daftarSoal = [];
-        for (let i = 1; i < baris.length; i++) {
-            const k = baris[i]; if (!k || k.length < 8) continue;
-            const soal = k[0]; const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || "" };
-            const kunci = k[6].toUpperCase().trim(); const skor = parseInt(k[7]) || 1; const penjelasan = k[8] || "";
-            if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) daftarSoal.push({ soal, pilihanAsli: pilihan, kunciAsli: kunci, skor, penjelasan });
+        // Panggil API Apps Script untuk mengambil soal berdasarkan nama mapel
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&mapel=" + encodeURIComponent(namaMapel));
+        const json = await res.json();
+        
+        if (json.status === "success" && json.data.length > 0) {
+            // Map data dari Google Sheet ke format yang dibutuhkan aplikasi
+            daftarSoal = json.data.map(s => ({
+                soal: s.soal,
+                pilihanAsli: { 
+                    A: s.pilihanA, 
+                    B: s.pilihanB, 
+                    C: s.pilihanC, 
+                    D: s.pilihanD, 
+                    E: s.pilihanE 
+                },
+                kunciAsli: s.kunci,
+                skor: s.skor,
+                penjelasan: s.penjelasan
+            }));
+        } else {
+            throw new Error("Soal tidak ditemukan di Bank Soal.");
         }
     } catch (err) {
-        daftarSoal = [{ soal: `Soal belum tersedia.`, pilihanAsli: { A: "A", B: "B", C: "C", D: "D", E: "E" }, kunciAsli: "A", skor: 1, penjelasan: "" }];
+        console.error("Gagal ambil soal:", err);
+        // Jika soal tidak ditemukan atau error koneksi, tampilkan soal default ini agar aplikasi tidak crash
+        daftarSoal = [{ 
+            soal: `Soal untuk ${namaMapel} belum tersedia. Pastikan guru sudah mengunggah soal di Dashboard.`, 
+            pilihanAsli: { A: "A", B: "B", C: "C", D: "D", E: "E" }, 
+            kunciAsli: "A", skor: 1, penjelasan: "" 
+        }];
     }
-}
+}    
+
+// async function ambilSoal(namaMapel, fileKhusus = null) {
+//     let fileCSV = fileKhusus ? (fileKhusus.endsWith('.csv') ? fileKhusus : `${fileKhusus}.csv`) : `soal_${namaMapel.toLowerCase().replace(/\s+/g, '_')}.csv`;
+//     try {
+//         const res = await fetch(fileCSV); if (!res.ok) throw new Error("File tidak ada");
+//         const baris = parseCSV(await res.text()); daftarSoal = [];
+//         for (let i = 1; i < baris.length; i++) {
+//             const k = baris[i]; if (!k || k.length < 8) continue;
+//             const soal = k[0]; const pilihan = { A: k[1], B: k[2], C: k[3], D: k[4], E: k[5] || "" };
+//             const kunci = k[6].toUpperCase().trim(); const skor = parseInt(k[7]) || 1; const penjelasan = k[8] || "";
+//             if (soal && pilihan.A && pilihan.B && ["A","B","C","D","E"].includes(kunci)) daftarSoal.push({ soal, pilihanAsli: pilihan, kunciAsli: kunci, skor, penjelasan });
+//         }
+//     } catch (err) {
+//         daftarSoal = [{ soal: `Soal belum tersedia.`, pilihanAsli: { A: "A", B: "B", C: "C", D: "D", E: "E" }, kunciAsli: "A", skor: 1, penjelasan: "" }];
+//     }
+// }
 
 function acak(array) {
     const arr = [...array]; for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr;
