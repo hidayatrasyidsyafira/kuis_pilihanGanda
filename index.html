@@ -872,7 +872,7 @@ async function mulaiKuis() {
     jawabanSiswa = {}; // Reset jawaban
     riwayatJawaban = [];
     kuisAktif = true;
-    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0;
+    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
     
     buatGridNavigasi();
     updateTimerTotal();
@@ -1233,11 +1233,15 @@ function mulaiUlang() {
     
     namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = ""; mapelDipilih = null;
     nomor = 0; jawabanSiswa = {}; riwayatJawaban = []; kuisAktif = false; sisaWaktuTotal = 0; 
-    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0;
+    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
 }
 
 /* --- INIT --- */
-aktifkanDeteksiPindahTab(); aktifkanAntiScreenshot(); ambilJadwal(); ambilDataSiswa();
+aktifkanDeteksiPindahTab(); 
+aktifkanAntiScreenshot(); 
+aktifkanDeteksiKeluarFullscreen(); // <-- TAMBAHKAN INI
+ambilJadwal(); 
+ambilDataSiswa();
 </script>
 </body>
 </html>
