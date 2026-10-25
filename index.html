@@ -441,6 +441,7 @@ let riwayatJawaban = [];
 let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
 let jumlahPindahTab = 0;
+let jumlahPelanggaranFullscreen = 0;    
 let jumlahPelanggaranKamera = 0;
 let toastTimer = null;
 let jadwalData = [];
@@ -877,10 +878,40 @@ async function mulaiKuis() {
     updateTimerTotal();
     mulaiTimerTotal();
     mulaiDeteksiAI();
+    masukFullscreen();
     
     tampilSoalCBT();
 }
 
+/* =========================================================
+   🖥️ MODE FULLSCREEN (ANTI KELUAR APLIKASI)
+   ========================================================= */
+function masukFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => console.log("Gagal masuk fullscreen:", err));
+    } else if (elem.webkitRequestFullscreen) { /* Safari/Chrome lama */
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE11 */
+        elem.msRequestFullscreen();
+    }
+}
+
+function aktifkanDeteksiKeluarFullscreen() {
+    document.addEventListener("fullscreenchange", () => {
+        // Jika sedang dalam ujian TAPI tidak dalam mode fullscreen
+        if (kuisAktif && !document.fullscreenElement) {
+            jumlahPelanggaranFullscreen++; // Catat pelanggaran
+            blokirLayarSementara("Keluar dari Mode Layar Penuh!");
+            
+            // Paksa masuk fullscreen lagi setelah 1 detik
+            setTimeout(() => {
+                if (kuisAktif) masukFullscreen();
+            }, 1000);
+        }
+    });
+}
+    
 /* --- LOGIKA TAMPILAN CBT --- */
 function buatGridNavigasi() {
     const grid = document.getElementById("grid-nav");
@@ -1019,6 +1050,10 @@ async function selesaikanUjian() {
         clearInterval(timerInterval);
         kuisAktif = false;
         matikanKamera();
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        }
         
         // Hitung skor
         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
