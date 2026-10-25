@@ -394,6 +394,10 @@
                     <label>Pertanyaan</label>
                     <textarea id="s-soal" placeholder="Tulis pertanyaan di sini..."></textarea>
                 </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Link Gambar (Opsional - Kosongkan jika tidak ada)</label>
+                    <input type="text" id="s-gambar" placeholder="https://drive.google.com/...">
+                </div>
                 <div class="form-group"><label>Pilihan A</label><input type="text" id="s-a"></div>
                 <div class="form-group"><label>Pilihan B</label><input type="text" id="s-b"></div>
                 <div class="form-group"><label>Pilihan C</label><input type="text" id="s-c"></div>
@@ -991,6 +995,9 @@ function renderTabelSoal() {
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
                 </td>
+                <td>
+                    ${d.gambar ? `<span style="color:#2ecc71; font-size:0.85rem; display:block; margin-top:5px;">🖼️ Ada Gambar</span>` : ""}
+                </td>
             </tr>`;
     });
 
@@ -1135,7 +1142,7 @@ async function hapusSoalTerpilih() {
 }
 
 async function simpanSoalBaru() {
-    const data = {
+        const data = {
         mapel: document.getElementById("s-mapel").value,
         soal: document.getElementById("s-soal").value,
         pilihanA: document.getElementById("s-a").value,
@@ -1145,7 +1152,8 @@ async function simpanSoalBaru() {
         pilihanE: document.getElementById("s-e").value || "",
         kunci: document.getElementById("s-kunci").value,
         skor: document.getElementById("s-skor").value,
-        penjelasan: document.getElementById("s-penjelasan").value
+        penjelasan: document.getElementById("s-penjelasan").value,
+        gambar: document.getElementById("s-gambar").value.trim() // <-- BARU
     };
 
     if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); return; }
@@ -1186,11 +1194,11 @@ async function prosesUploadSoal() {
                     pilihanE: baris[i][7],
                     kunci: baris[i][8].toUpperCase(),
                     skor: parseInt(baris[i][9]) || 1,
-                    penjelasan: baris[i][10] || ""
+                    penjelasan: baris[i][10] || "",
+                    gambar: baris[i][11] || "" // <-- BARU
                 });
             }
         }
-
         if (daftarSoal.length === 0) { 
             Swal.fire('Format Salah!', 'Format file tidak sesuai atau data kosong. Pastikan menggunakan template terbaru.', 'error'); 
             return; 
@@ -1238,13 +1246,13 @@ async function prosesUploadSoal() {
 }
 
 function downloadTemplateSoal() {
-    let excelContent = `
+        let excelContent = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
             <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; } td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }</style>
-        </head><body><table><thead><tr><th width="30">No</th><th>Mapel</th><th>Soal</th><th>Pilihan A</th><th>Pilihan B</th><th>Pilihan C</th><th>Pilihan D</th><th>Pilihan E</th><th>Kunci</th><th>Skor</th><th>Penjelasan</th></tr></thead><tbody>
-            <tr><td style="text-align:center;">1</td><td>TIK UH 1</td><td>Apa singkatan dari CPU?</td><td>Central Processing Unit</td><td>Computer Personal Unit</td><td>Central Program Utility</td><td>Control Processing Unit</td><td>Central Personal Utility</td><td style="text-align:center;">A</td><td style="text-align:center;">5</td><td>CPU adalah otak dari komputer.</td></tr>
-            <tr><td style="text-align:center;">2</td><td>TIK UH 1</td><td>Fungsi utama RAM adalah...</td><td>Menyimpan data permanen</td><td>Menyimpan data sementara</td><td>Memproses grafis</td><td>Menampilkan gambar</td><td>Mendinginkan prosesor</td><td style="text-align:center;">B</td><td style="text-align:center;">5</td><td>RAM bersifat sementara dan hilang saat komputer dimatikan.</td></tr>
+        </head><body><table><thead><tr><th width="30">No</th><th>Mapel</th><th>Soal</th><th>Pilihan A</th><th>Pilihan B</th><th>Pilihan C</th><th>Pilihan D</th><th>Pilihan E</th><th>Kunci</th><th>Skor</th><th>Penjelasan</th><th>Link Gambar</th></tr></thead><tbody>
+            <tr><td style="text-align:center;">1</td><td>TIK UH 1</td><td>Apa singkatan dari CPU?</td><td>Central Processing Unit</td><td>Computer Personal Unit</td><td>Central Program Utility</td><td>Control Processing Unit</td><td>Central Personal Utility</td><td style="text-align:center;">A</td><td style="text-align:center;">5</td><td>CPU adalah otak dari komputer.</td><td></td></tr>
+            <tr><td style="text-align:center;">2</td><td>TIK UH 1</td><td>Fungsi utama RAM adalah...</td><td>Menyimpan data permanen</td><td>Menyimpan data sementara</td><td>Memproses grafis</td><td>Menampilkan gambar</td><td>Mendinginkan prosesor</td><td style="text-align:center;">B</td><td style="text-align:center;">5</td><td>RAM bersifat sementara.</td><td>https://contoh.com/gambar.png</td></tr>
         </tbody></table></body></html>`;
 
     const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
