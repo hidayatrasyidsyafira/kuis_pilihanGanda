@@ -800,7 +800,8 @@ async function ambilSoal(namaMapel, fileKhusus = null) {
                 },
                 kunciAsli: s.kunci,
                 skor: s.skor,
-                penjelasan: s.penjelasan
+                penjelasan: s.penjelasan,
+                gambar: s.gambar || ""
             }));
         } else {
             throw new Error("Soal tidak ditemukan di Bank Soal.");
@@ -923,8 +924,14 @@ function tampilSoalCBT() {
     const imgElement = document.getElementById("gambar-soal");
     
     if (dataSoal.gambar && dataSoal.gambar.trim() !== "") {
+        imgElement.onerror = function() {
+            console.warn("Gagal memuat gambar:", dataSoal.gambar);
+            areaGambar.style.display = "none";
+        };
+        imgElement.onload = function() {
+            areaGambar.style.display = "block";
+        };
         imgElement.src = dataSoal.gambar;
-        areaGambar.style.display = "block";
     } else {
         imgElement.src = "";
         areaGambar.style.display = "none";
