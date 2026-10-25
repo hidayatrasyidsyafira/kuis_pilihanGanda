@@ -848,6 +848,7 @@ function acakPilihanSoal(soal) {
 
 async function mulaiKuis() {
     if (!namaSiswa || !mapelDipilih) return;
+        masukFullscreen(); 
     try {
         document.getElementById("tombol-mulai").textContent = "⏳ Menyiapkan...";
         await nyalakanKamera(); if (!modelAI) await muatModelAI();
@@ -878,8 +879,7 @@ async function mulaiKuis() {
     updateTimerTotal();
     mulaiTimerTotal();
     mulaiDeteksiAI();
-    masukFullscreen();
-    
+
     tampilSoalCBT();
 }
 
