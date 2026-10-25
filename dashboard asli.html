@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Guru</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #e9ecef; min-height: 100vh; padding: 30px; }
@@ -69,6 +70,7 @@
         .btn-green { background: #2ecc71; } .btn-green:hover { background: #27ae60; }
         .btn-blue { background: #3498db; } .btn-blue:hover { background: #2980b9; }
         .btn-orange { background: #f39c12; } .btn-orange:hover { background: #e67e22; }
+        .btn-red { background: #e74c3c; } .btn-red:hover { background: #c0392b; }
         
         /* === MODAL === */
         .modal-overlay {
@@ -90,15 +92,37 @@
         }
         .form-group textarea { resize: vertical; min-height: 80px; }
 
-                /* Memperlebar tabel Bank Soal dan mengatur teks */
-        #tab-bank-soal .table-responsive {
-            max-height: 600px; /* Batasi tinggi agar bisa discroll */
-            overflow-y: auto;
+        /* CSS Tambahan Bank Soal & Siswa */
+        #tab-bank-soal .table-responsive, #tab-siswa .table-responsive {
+            max-height: 600px; overflow-y: auto;
         }
-        #tab-bank-soal table th {
+        #tab-bank-soal table th, #tab-siswa table th {
             position: sticky; top: 0; z-index: 10;
         }
-        .editable:hover {
+
+                /* Perbaikan Tabel Siswa */
+        #tab-siswa table {
+            table-layout: fixed; /* Memaksa lebar kolom tetap */
+            width: 100%;
+        }
+        #tab-siswa th, #tab-siswa td {
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        #tab-siswa th:nth-child(1) { width: 40px; text-align: center; } /* Checkbox */
+        #tab-siswa th:nth-child(2) { width: 50px; text-align: center; } /* No */
+        #tab-siswa th:nth-child(3) { width: 25%; }                     /* NISN */
+        #tab-siswa th:nth-child(4) { width: 45%; }                     /* Nama */
+        #tab-siswa th:nth-child(5) { width: 20%; }                     /* Kelas */
+        
+        .editable-cell-siswa {
+            display: block;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .editable-cell-siswa:hover {
             background: #e3f2fd;
             outline: 1px dashed #3498db;
         }
@@ -109,53 +133,77 @@
         <div class="header">
             <h1>⚙️ Dashboard Admin Ujian</h1>
             <div>
-                <button class="btn btn-green" onclick="bukaModalUploadSiswa()">📤 Upload Data Siswa</button>
+                <!-- <button class="btn btn-green" onclick="bukaModal('modal-upload')">📤 Upload Data Siswa</button> -->
                 <button class="btn btn-blue" onclick="muatSemuaData()">🔄 Refresh Data</button>
             </div>
         </div>
 
         <!-- TAB MENU -->
         <div class="tabs">
-            <button class="tab-btn aktif" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
+            <button class="tab-btn aktif" onclick="bukaTab('siswa')" id="tab-btn-siswa">👥 Data Siswa</button>
             <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
             <button class="tab-btn" onclick="bukaTab('bank-soal')" id="tab-btn-bank-soal">📚 Bank Soal</button>
+            <button class="tab-btn" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
         </div>
-
-        <!-- TAB REKAP NILAI -->
-        <div class="tab-content aktif" id="tab-nilai">
+        
+        <!-- ================= TAB 1: REKAP NILAI ================= -->
+        <div class="tab-content" id="tab-nilai">
             <div class="filter-section">
-                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="renderTabelNilai()">
-                <select id="filter-kelas" onchange="renderTabelNilai()"><option value="">Semua Kelas</option></select>
-                <select id="filter-mapel" onchange="renderTabelNilai()"><option value="">Semua Mapel</option></select>
+                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="halamanNilaiAktif = 1; renderTabelNilai()">
+                <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
+                <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
                 <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
+                <button class="btn btn-red" onclick="hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
+                            <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
                             <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
                             <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
+                            <th width="80">Aksi</th>
+                            <th width="100">Gambar</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-nilai"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-nilai"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div>
+                    Tampilkan: 
+                    <select id="limit-nilai" onchange="halamanNilaiAktif = 1; renderTabelNilai()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
+                        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                        <option value="100">100</option><option value="9999">Semua</option>
+                    </select> data
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(-1)">← Sebelumnya</button>
+                    <span id="info-halaman-nilai" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(1)">Berikutnya →</button>
+                </div>
             </div>
         </div>
 
-        <!-- TAB JADWAL UJIAN -->
+        <!-- ================= TAB 2: JADWAL UJIAN ================= -->
         <div class="tab-content" id="tab-jadwal">
-            <div style="margin-bottom: 15px; text-align: right;">
-                <button class="btn btn-green" onclick="bukaModalJadwal()">+ Tambah Jadwal Baru</button>
+            <div class="filter-section" style="justify-content: flex-end;">
+                <button class="btn btn-orange" onclick="bukaModalKirimToken()">📲 Kirim Token Massal</button>
+                <button class="btn btn-red" onclick="hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button>
+                <button class="btn btn-green" onclick="bukaModal('modal-jadwal')">+ Tambah Jadwal Baru</button>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
+                            <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
                             <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
-                            <th>Matapelajaran</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                            <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                            <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-jadwal"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-jadwal"><tr><td colspan="12" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
             <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
@@ -163,21 +211,23 @@
             </p>
         </div>
 
-        <!-- TAB BANK SOAL -->
+        <!-- ================= TAB 3: BANK SOAL ================= -->
         <div class="tab-content" id="tab-bank-soal">
             <div class="filter-section">
                 <select id="filter-mapel-soal" onchange="renderTabelSoal()">
                     <option value="">Semua Mapel</option>
                 </select>
                 <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
-                <button class="btn btn-orange" onclick="bukaModalUploadSoal()">📤 Upload Soal (CSV)</button>
-                <button class="btn btn-green" onclick="bukaModalTambahSoal()" style="margin-left: auto;">+ Tambah Soal Manual</button>
+                <button class="btn btn-orange" onclick="bukaModal('modal-upload-soal')">📤 Upload Soal (CSV)</button>
+                <button class="btn btn-red" onclick="hapusSoalTerpilih()">🗑️ Hapus Terpilih</button>
+                <button class="btn btn-green" onclick="bukaModal('modal-tambah-soal')" style="margin-left: auto;">+ Tambah Soal Manual</button>
             </div>
             
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
+                            <th width="30"><input type="checkbox" id="pilih-semua" onchange="toggleSemuaSoal(this)"></th>
                             <th width="40">No</th>
                             <th width="120">Mapel</th>
                             <th>Pertanyaan & Pilihan</th>
@@ -186,25 +236,108 @@
                             <th width="80">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-soal"><tr><td colspan="6" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                    <tbody id="tbody-soal"><tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
                 </table>
             </div>
         </div>
 
-    <!-- MODAL UPLOAD SISWA -->
+        <!-- ================= TAB 4: DATA SISWA ================= -->
+        <div class="tab-content aktif" id="tab-siswa">
+            <div class="filter-section">
+                <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
+                <button class="btn btn-red" onclick="hapusSiswaTerpilih()">🗑️ Hapus Terpilih</button>
+                <button class="btn btn-green" onclick="bukaModal('modal-upload')" style="margin-left: auto;">📤 Upload Data Siswa (CSV)</button>
+                <button class="btn btn-orange" onclick="bukaModal('modal-tambah-siswa')">+ Tambah Siswa Manual</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="30"><input type="checkbox" id="pilih-semua-siswa" onchange="toggleSemuaSiswa(this)"></th>
+                            <th width="50">No</th>
+                            <th>NISN</th>
+                            <th>Nama Siswa</th>
+                            <th>Kelas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-siswa"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                </table>
+            </div>
+            
+            <!-- NAVIGASI PAGINATION SISWA -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div>
+                    Tampilkan: 
+                    <select id="limit-siswa" onchange="halamanSiswaAktif = 1; renderTabelSiswa()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="9999">Semua</option>
+                    </select> data
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(-1)">← Sebelumnya</button>
+                    <span id="info-halaman-siswa" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
+                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(1)">Berikutnya →</button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- END CONTAINER -->
+
+    <!-- ================= MODAL UPLOAD SISWA ================= -->
     <div class="modal-overlay" id="modal-upload">
         <div class="modal-content">
             <h3>📤 Upload Data Siswa</h3>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace;">
-                Format CSV: NISN, Nama, Kelas<br>0099068975, Budi, X-1
+            <p style="margin-bottom: 15px; color: #666; font-size: 0.95rem;">
+                Gunakan template di bawah ini agar format file sesuai dengan sistem.
+            </p>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-blue" style="width: 100%;" onclick="downloadTemplateSiswa()">📥 Download Template Siswa</button>
             </div>
-            <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 20px;">
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace; border: 1px dashed #ccc;">
+                Format Kolom: <strong>NISN, Nama, Kelas</strong><br>
+                Pastikan NISN diawali dengan tanda kutip (') di Excel agar angka 0 tidak hilang.
+            </div>
+            
+            <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 20px; display: block; width: 100%;">
+            
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSiswa()">Upload & Simpan</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload')">Batal</button>
         </div>
     </div>
 
-    <!-- MODAL TAMBAH JADWAL -->
+    <!-- ================= MODAL TAMBAH SISWA MANUAL ================= -->
+    <div class="modal-overlay" id="modal-tambah-siswa">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>👤 Tambah Siswa Baru</h3>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label>NISN</label>
+                    <input type="text" id="siswa-nisn" placeholder="Contoh: 0099068975">
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="siswa-nama" placeholder="Contoh: Budi Santoso">
+                </div>
+                <div class="form-group">
+                    <label>Kelas</label>
+                    <input type="text" id="siswa-kelas" placeholder="Contoh: X-1">
+                </div>
+                <div class="form-group">
+                    <label>Nomor WA (Gunakan 62...)</label>
+                    <input type="text" id="siswa-wa" placeholder="Contoh: 628123456789">
+                </div>
+            </div>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanSiswaBaru()">Simpan Siswa</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-tambah-siswa')">Batal</button>
+        </div>
+    </div>
+
+    <!-- ================= MODAL TAMBAH JADWAL ================= -->
     <div class="modal-overlay" id="modal-jadwal">
         <div class="modal-content">
             <h3>📅 Tambah Jadwal Baru</h3>
@@ -218,6 +351,7 @@
                 </div>
                 <div class="form-group"><label>Tanggal (Cth: 21/10/2026)</label><input type="text" id="j-tanggal" placeholder="DD/MM/YYYY"></div>
                 <div class="form-group"><label>Matapelajaran</label><input type="text" id="j-mapel" placeholder="TIK UH 1"></div>
+                <div class="form-group"><label>Nama Guru</label><input type="text" id="j-guru" placeholder="Budi, S.Kom"></div>
                 <div class="form-group"><label>Kelas (Pisahkan koma)</label><input type="text" id="j-kelas" placeholder="X-1, X-2"></div>
                 <div class="form-group"><label>Token</label><input type="text" id="j-token" placeholder="TIK123"></div>
                 <div class="form-group"><label>Jenis Ujian</label>
@@ -230,7 +364,25 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH SOAL -->
+    <!-- MODAL KIRIM TOKEN -->
+    <div class="modal-overlay" id="modal-kirim-token">
+        <div class="modal-content">
+            <h3>📲 Kirim Token Massal via WA</h3>
+            <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+                Token akan di-generate otomatis (TokenUtama + Nama + NISN) dan dikirim ke nomor WA siswa.
+            </p>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label>Pilih Ujian (Mapel - Kelas)</label>
+                    <select id="pilih-token-jadwal"></select>
+                </div>
+            </div>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimToken()">🚀 Kirim Token Sekarang</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-kirim-token')">Batal</button>
+        </div>
+    </div>
+
+    <!-- ================= MODAL TAMBAH SOAL ================= -->
     <div class="modal-overlay" id="modal-tambah-soal">
         <div class="modal-content">
             <h3>📝 Tambah Soal Baru</h3>
@@ -242,6 +394,20 @@
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Pertanyaan</label>
                     <textarea id="s-soal" placeholder="Tulis pertanyaan di sini..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Gambar Soal (Opsional - Max 2MB)</label>
+                    <input type="file" id="s-gambar-file" accept="image/*" onchange="uploadGambarSoal(this)" style="padding: 8px; border: 2px dashed #4facfe; border-radius: 8px; width: 100%; cursor: pointer;">
+                    <div id="s-gambar-preview" style="display: none; margin-top: 10px; text-align: center;">
+                        <img id="s-gambar-img" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #dee2e6;">
+                        <div style="font-size: 0.85rem; color: #27ae60; margin-top: 5px;">✅ Gambar siap disimpan</div>
+                        <button type="button" onclick="hapusGambarSoal()" style="margin-top: 5px; background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">🗑️ Hapus Gambar</button>
+                    </div>
+                    <div id="s-gambar-loading" style="display: none; text-align: center; margin-top: 10px; color: #3498db;">
+                        ⏳ Mengupload gambar...
+                    </div>
+                    <!-- Hidden input: menyimpan URL hasil upload (kompatibel dengan simpanSoalBaru) -->
+                    <input type="hidden" id="s-gambar" value="">
                 </div>
                 <div class="form-group"><label>Pilihan A</label><input type="text" id="s-a"></div>
                 <div class="form-group"><label>Pilihan B</label><input type="text" id="s-b"></div>
@@ -262,16 +428,15 @@
         </div>
     </div>
 
-    <!-- MODAL UPLOAD SOAL -->
+    <!-- ================= MODAL UPLOAD SOAL ================= -->
     <div class="modal-overlay" id="modal-upload-soal">
         <div class="modal-content">
             <h3>📤 Upload Soal (CSV)</h3>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace; overflow-x: auto; white-space: nowrap;">
-                Format CSV (Gunakan Koma):<br>
-                Mapel,Soal,PilA,PilB,PilC,PilD,PilE,Kunci,Skor,Penjelasan<br>
-                TIK UH 1,Apa itu CPU?,Prosessor,RAM,Hardisk,VGA,PSU,A,5,CPU adalah...
+                Format CSV:<br>
+                No,Mapel,Soal,PilA,PilB,PilC,PilD,PilE,Kunci,Skor,Penjelasan
             </div>
-            <input type="file" id="file-csv-soal" accept=".csv" style="margin-bottom: 20px;">
+            <input type="file" id="file-csv-soal" accept=".csv, .txt" style="margin-bottom: 20px;">
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSoal()">Upload Soal</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload-soal')">Batal</button>
         </div>
@@ -279,10 +444,14 @@
 
 <script>
 const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
+//const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbwhxrsc6i3qreR8MZcG5rtATsezWI-auI0UI0CPTTpP5FLEfzY9Q7NSAIXWwfKQuEsnUQ/exec";
 
 let semuaDataNilai = [];
 let semuaDataJadwal = [];
 let semuaDataSoal = [];
+let semuaDataSiswa = [];    
+let halamanNilaiAktif = 1;
+let halamanSiswaAktif = 1;
 
 /* =========================================
    NAVIGASI TAB & UTIL
@@ -290,12 +459,12 @@ let semuaDataSoal = [];
 function bukaTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('aktif'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('aktif'));
-    
     document.getElementById(`tab-${tab}`).classList.add('aktif');
     document.getElementById(`tab-btn-${tab}`).classList.add('aktif');
     
     if (tab === 'jadwal') muatDataJadwal();
     if (tab === 'bank-soal') muatBankSoal();
+    if (tab === 'siswa') muatDataSiswa();
 }
 
 function bukaModal(id) { document.getElementById(id).classList.add("aktif"); }
@@ -305,30 +474,31 @@ function muatSemuaData() {
     muatDataNilai();
     if(document.getElementById('tab-jadwal').classList.contains('aktif')) muatDataJadwal();
     if(document.getElementById('tab-bank-soal').classList.contains('aktif')) muatBankSoal();
+    if(document.getElementById('tab-siswa').classList.contains('aktif')) muatDataSiswa();
 }
 
 /* =========================================
-   TAB 1: NILAI
+   TAB 1: NILAI (Pagination & Export)
    ========================================= */
 async function muatDataNilai() {
     const tbody = document.getElementById("tbody-nilai");
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">⏳ Memuat data...</td></tr>`;
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=nilai&t=" + new Date().getTime());
         const json = await res.json();
         if (json.status === "success") {
-            semuaDataNilai = json.data;
+            semuaDataNilai = json.data.map((d, i) => ({ ...d, indexAsli: i + 2 }));
             isiFilterNilai();
             renderTabelNilai();
         } else {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
     } catch (err) { 
         console.error("Detail Error Nilai:", err); 
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
     }
 }
-    
+
 function isiFilterNilai() {
     const setKelas = new Set(); const setMapel = new Set();
     semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
@@ -342,29 +512,137 @@ function renderTabelNilai() {
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
     const fKelas = document.getElementById("filter-kelas").value;
     const fMapel = document.getElementById("filter-mapel").value;
+    const limit = parseInt(document.getElementById("limit-nilai").value) || 10;
 
-    const dataTampil = semuaDataNilai.filter(d => 
+    document.getElementById("pilih-semua-nilai").checked = false;
+
+    const dataFiltered = semuaDataNilai.filter(d => 
         (d.nama || "").toLowerCase().includes(fNama) &&
         (fKelas === "" || d.kelas === fKelas) &&
         (fMapel === "" || d.mapel === fMapel)
     );
 
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada data.</td></tr>`; return; }
+    const totalData = dataFiltered.length;
+    const totalHalaman = Math.ceil(totalData / limit) || 1;
+
+    if (halamanNilaiAktif > totalHalaman) halamanNilaiAktif = totalHalaman;
+    if (halamanNilaiAktif < 1) halamanNilaiAktif = 1;
+
+    const startIndex = (halamanNilaiAktif - 1) * limit;
+    const endIndex = startIndex + limit;
+    const dataTampil = dataFiltered.slice(startIndex, endIndex);
+
+    document.getElementById("info-halaman-nilai").textContent = `Halaman ${halamanNilaiAktif} / ${totalHalaman} (Total: ${totalData} data)`;
+
+    if (dataTampil.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Tidak ada data.</td></tr>`; 
+        return; 
+    }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, index) => {
         let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
+        const noUrut = startIndex + index + 1; 
+        
         tbody.innerHTML += `
             <tr>
-                <td>${index + 1}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli}"></td>
+                <td>${noUrut}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
                 <td>${d.kelas}</td><td>${d.mapel}</td>
                 <td><span class="badge ${bSkor}">${d.skor}</span></td>
                 <td>${d.jumlah_benar} / ${d.total_soal}</td>
                 <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
                 <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusNilai(${d.indexAsli})">Hapus</button>
+                </td>
             </tr>`;
     });
 }
+
+function ubahHalamanNilai(arah) {
+    halamanNilaiAktif += arah;
+    renderTabelNilai();
+}
+
+/* =========================================
+   FITUR HAPUS NILAI
+   ========================================= */
+function toggleSemuaNilai(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-nilai');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function konfirmasiHapusNilai(baris) {
+    const result = await Swal.fire({
+        title: 'Hapus Data Nilai?',
+        text: "Data nilai siswa ini akan dihapus permanen dari rekap.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_nilai", baris: baris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Data nilai berhasil dihapus.', 'success');
+                muatDataNilai();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+
+async function hapusNilaiTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-nilai:checked');
+    if (checkboxes.length === 0) {
+        Swal.fire('Oops...', 'Pilih minimal satu data nilai untuk dihapus.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Hapus Data Terpilih?',
+        text: `${checkboxes.length} data nilai akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_nilai_massal", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatDataNilai();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}    
 
 function exportKeExcel() {
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
@@ -375,7 +653,7 @@ function exportKeExcel() {
         (d.nama || "").toLowerCase().includes(fNama) && (fKelas === "" || d.kelas === fKelas) && (fMapel === "" || d.mapel === fMapel)
     );
 
-    if (dataTampil.length === 0) { alert("⚠️ Tidak ada data untuk diexport."); return; }
+    if (dataTampil.length === 0) { Swal.fire('Kosong!', 'Tidak ada data untuk diexport.', 'info'); return; }
 
     let tableHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -396,11 +674,11 @@ function exportKeExcel() {
 }
 
 /* =========================================
-   TAB 2: JADWAL (Baca, Tambah, Edit)
+   TAB 2: JADWAL (Baca, Tambah, Edit, Hapus)
    ========================================= */
 async function muatDataJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">⏳ Memuat data...</td></tr>`;
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal&t=" + new Date().getTime());
         const json = await res.json();
@@ -408,59 +686,65 @@ async function muatDataJadwal() {
             semuaDataJadwal = json.data;
             renderTabelJadwal();
         } else {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
     } catch (err) { 
         console.error("Detail Error Jadwal:", err); 
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
     }
 }
 
 function renderTabelJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
+    document.getElementById("pilih-semua-jadwal").checked = false;
     tbody.innerHTML = "";
-    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
+    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
 
     semuaDataJadwal.forEach((j, index) => {
         const barisSheet = index + 2; 
         tbody.innerHTML += `
             <tr>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-jadwal" value="${barisSheet}"></td>
                 <td>${j.no}</td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 2, '${j.waktu}')">${j.waktu}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 4, '${j.tanggal}')">${j.tanggal}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 5, '${j.mapel}')">${j.mapel}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 6, '${j.kelas}')">${j.kelas}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
-                <td><div class="editable" onclick="editSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 2, '${j.waktu}')">${j.waktu}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 4, '${j.tanggal}')">${j.tanggal}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 5, '${j.mapel}')">${j.mapel}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 10, '${j.namaGuru}')">${j.namaGuru}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 6, '${j.kelas}')">${j.kelas}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
+                <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusJadwal(${barisSheet})">Hapus</button>
+                </td>
             </tr>`;
     });
 }
 
-function editSel(elemen, baris, kolom, nilaiLama) {
+function editJadwalSel(elemen, baris, kolom, nilaiLama) {
     const input = document.createElement("input");
     input.type = "text"; input.value = nilaiLama; input.className = "editable-edit";
     input.onblur = function() {
-        if (input.value !== nilaiLama) { simpanEdit(baris, kolom, input.value, elemen); } 
+        if (input.value !== nilaiLama) { simpanEditJadwal(baris, kolom, input.value, elemen); } 
         else { elemen.innerHTML = nilaiLama; elemen.style.display = "block"; }
     };
     input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
     elemen.style.display = "none"; elemen.parentNode.appendChild(input); input.focus();
 }
 
-async function simpanEdit(baris, kolom, nilaiBaru, elemen) {
+async function simpanEditJadwal(baris, kolom, nilaiBaru, elemen) {
     elemen.innerHTML = "⏳..."; elemen.style.display = "block";
     try {
         await fetch(URL_GOOGLE_SHEETS, {
             method: "POST", body: JSON.stringify({ aksi: "edit_jadwal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
         });
         elemen.innerHTML = nilaiBaru; 
-        elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
-    } catch (err) { alert("Gagal menyimpan perubahan."); elemen.innerHTML = "❌ Error"; }
+        if (elemen.parentNode.querySelector('.editable-edit')) {
+            elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
+        }
+    } catch (err) { Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error'); elemen.innerHTML = "❌ Error"; }
 }
-
-function bukaModalJadwal() { bukaModal("modal-jadwal"); }
 
 async function simpanJadwalBaru() {
     const data = {
@@ -468,13 +752,14 @@ async function simpanJadwalBaru() {
         hari: document.getElementById("j-hari").value,
         tanggal: document.getElementById("j-tanggal").value,
         mapel: document.getElementById("j-mapel").value,
+        namaGuru: document.getElementById("j-guru").value,
         kelas: document.getElementById("j-kelas").value,
         token: document.getElementById("j-token").value,
         jenis: document.getElementById("j-jenis").value,
         durasi: document.getElementById("j-durasi").value
     };
 
-    if(!data.waktu || !data.tanggal || !data.mapel) { alert("⚠️ Lengkapi data terlebih dahulu!"); return; }
+    if(!data.waktu || !data.tanggal || !data.mapel) { Swal.fire('Oops...', 'Lengkapi data terlebih dahulu!', 'warning'); return; }
     const btn = document.querySelector("#modal-jadwal .btn-green");
     btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
 
@@ -482,20 +767,174 @@ async function simpanJadwalBaru() {
         const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_jadwal", jadwal: data }) });
         const json = await res.json();
         if (json.status === "success") {
-            alert("✅ Jadwal berhasil ditambahkan!");
+            Swal.fire('Berhasil!', 'Jadwal baru telah ditambahkan.', 'success');
             tutupModal("modal-jadwal");
             muatDataJadwal();
-        } else { alert("❌ Gagal: " + json.message); }
-    } catch (err) { alert("❌ Error koneksi server."); } 
+        } else { Swal.fire('Gagal!', json.message, 'error'); }
+    } catch (err) { Swal.fire('Error!', 'Koneksi server terputus.', 'error'); } 
     finally { btn.textContent = "Simpan Jadwal"; btn.disabled = false; }
 }
 
 /* =========================================
-   TAB 3: BANK SOAL (Baca, Tambah, Upload)
+   FITUR HAPUS JADWAL
+   ========================================= */
+function toggleSemuaJadwal(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-jadwal');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function konfirmasiHapusJadwal(baris) {
+    const result = await Swal.fire({
+        title: 'Hapus Jadwal?',
+        text: "Jadwal ini akan dihapus permanen.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_jadwal", baris: baris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Jadwal berhasil dihapus.', 'success');
+                muatDataJadwal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+
+async function hapusJadwalTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-jadwal:checked');
+    if (checkboxes.length === 0) {
+        Swal.fire('Oops...', 'Pilih minimal satu jadwal untuk dihapus.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Hapus Jadwal Terpilih?',
+        text: `${checkboxes.length} jadwal akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_jadwal_massal", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatDataJadwal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+
+function bukaModalKirimToken() {
+    const select = document.getElementById("pilih-token-jadwal");
+    select.innerHTML = "";
+    
+    if (semuaDataJadwal.length === 0) {
+        Swal.fire('Oops...', 'Belum ada jadwal ujian.', 'warning');
+        return;
+    }
+
+    semuaDataJadwal.forEach((j, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = `${j.mapel} - ${j.kelas} (Token: ${j.token})`;
+        select.appendChild(opt);
+    });
+
+    bukaModal("modal-kirim-token");
+}
+
+async function prosesKirimToken() {
+    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
+    if (indexTerpilih === "") return;
+    
+    const jadwal = semuaDataJadwal[indexTerpilih];
+    const kelasTarget = jadwal.kelas.split(",").map(k => k.trim().toUpperCase());
+
+    // Filter siswa yang kelasnya sesuai dengan jadwal
+    const siswaTerkait = semuaDataSiswa.filter(s => kelasTarget.includes(s.kelas.toUpperCase()));
+
+    if (siswaTerkait.length === 0) {
+        Swal.fire('Kosong!', `Tidak ada siswa dari kelas ${jadwal.kelas} di database.`, 'info');
+        return;
+    }
+
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim Token?',
+        text: `Token akan dikirim ke ${siswaTerkait.length} siswa kelas ${jadwal.kelas}. Pastikan nomor WA siswa sudah benar.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#f39c12',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Mengirim...',
+        text: 'Sedang mengirim token via WhatsApp',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "kirim_token_massal",
+                tokenUtama: jadwal.token,
+                mapel: jadwal.mapel,
+                siswa: siswaTerkait
+            })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            Swal.fire('Selesai!', json.message, 'success');
+            tutupModal("modal-kirim-token");
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    }
+}    
+
+/* =========================================
+   TAB 3: BANK SOAL
    ========================================= */
 async function muatBankSoal() {
     const tbody = document.getElementById("tbody-soal");
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">⏳ Memuat data soal...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">⏳ Memuat data soal...</td></tr>`;
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&t=" + new Date().getTime());
         const json = await res.json();
@@ -504,11 +943,11 @@ async function muatBankSoal() {
             isiFilterSoal();
             renderTabelSoal();
         } else {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
         }
     } catch (err) { 
         console.error("Detail Error Bank Soal:", err); 
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
     }
 }
 
@@ -524,6 +963,8 @@ function isiFilterSoal() {
 function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
+    
+    document.getElementById("pilih-semua").checked = false;
 
     const dataTampil = [];
     semuaDataSoal.forEach((d, indexAsli) => {
@@ -532,15 +973,17 @@ function renderTabelSoal() {
         }
     });
 
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
         const barisSheet = d.indexAsli + 2; 
         
-        // Menggunakan event listener alih-alih onclick inline agar aman dari tanda petik
         tbody.innerHTML += `
             <tr>
+                <td style="text-align:center;">
+                    <input type="checkbox" class="checkbox-soal" value="${barisSheet}">
+                </td>
                 <td>${indexTampil + 1}</td>
                 <td class="editable-cell" data-baris="${barisSheet}" data-kolom="1" data-tipe="text">${d.mapel}</td>
                 <td style="max-width: 500px; white-space: normal;">
@@ -564,34 +1007,30 @@ function renderTabelSoal() {
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
                 </td>
+                <td>
+                    ${d.gambar ? `<span style="color:#2ecc71; font-size:0.85rem; display:block; margin-top:5px;">🖼️ Ada Gambar</span>` : ""}
+                </td>
             </tr>`;
     });
 
-    // Pasang event listener untuk semua elemen yang bisa diedit
     document.querySelectorAll('.editable-cell').forEach(el => {
         el.style.cursor = "pointer";
         el.style.padding = "4px";
         el.style.borderRadius = "4px";
         el.style.display = "inline-block";
-        
-        // Efek hover
         el.onmouseover = () => el.style.background = "#e3f2fd";
         el.onmouseout = () => el.style.background = "transparent";
-
         el.onclick = function() {
             const baris = parseInt(this.getAttribute('data-baris'));
             const kolom = parseInt(this.getAttribute('data-kolom'));
             const tipe = this.getAttribute('data-tipe');
-            
-            // Jika yang diklik adalah badge kunci, ubah text-nya saja
             let nilaiLama = this.textContent.trim();
-            
             buatInputEdit(this, baris, kolom, nilaiLama, tipe);
         };
     });
 }
 
-    function buatInputEdit(elemen, baris, kolom, nilaiLama, tipe) {
+function buatInputEdit(elemen, baris, kolom, nilaiLama, tipe) {
     const input = document.createElement("input");
     input.type = "text"; 
     input.value = nilaiLama; 
@@ -606,43 +1045,6 @@ function renderTabelSoal() {
             if (input.parentNode) input.parentNode.removeChild(input);
         }
     };
-    
-    input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
-    
-    // Sembunyikan teks lama, tampilkan input
-    elemen.style.display = "none"; 
-    elemen.parentNode.appendChild(input); 
-    input.focus();
-}
-    
-
-/* =========================================
-   FITUR EDIT & HAPUS SOAL
-   ========================================= */
-function editSel(elemen, baris, kolom, nilaiLama, tipe) {
-    // Jika yang diklik adalah kunci (ada tag span), ambil teks aslinya
-    let teksLama = nilaiLama;
-    if (elemen.querySelector('span')) {
-        teksLama = elemen.querySelector('span').textContent;
-    }
-
-    const input = document.createElement("input");
-    input.type = "text"; 
-    input.value = teksLama; 
-    input.className = "editable-edit";
-    
-    input.onblur = function() {
-        if (input.value !== teksLama) { 
-            simpanEditSoal(baris, kolom, input.value, elemen, tipe); 
-        } 
-        else { 
-            elemen.style.display = "block"; 
-            if (elemen.parentNode.querySelector('.editable-edit')) {
-                elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
-            }
-        }
-    };
-    
     input.onkeydown = function(e) { if (e.key === "Enter") input.blur(); };
     elemen.style.display = "none"; 
     elemen.parentNode.appendChild(input); 
@@ -659,52 +1061,100 @@ async function simpanEditSoal(baris, kolom, nilaiBaru, elemen, tipe) {
             body: JSON.stringify({ aksi: "edit_soal", baris: baris, kolom: kolom, nilaiBaru: nilaiBaru })
         });
         
-        // Perbarui tampilan di layar
         if (tipe === "kunci") {
             elemen.textContent = nilaiBaru.toUpperCase();
         } else {
             elemen.textContent = nilaiBaru;
         }
         
-        // Hapus input box
         if (elemen.parentNode.querySelector('.editable-edit')) {
             elemen.parentNode.removeChild(elemen.parentNode.querySelector('.editable-edit'));
         }
-        
-        // Refresh data di background agar sinkron dengan sheet
         muatBankSoal();
-
     } catch (err) { 
-        alert("Gagal menyimpan perubahan."); 
+        Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error'); 
         elemen.textContent = "❌ Error"; 
     }
 }
 
 async function konfirmasiHapus(baris) {
-    if (!confirm("Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak bisa dibatalkan.")) return;
-    
-    try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
-            method: "POST", 
-            body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
-        });
-        const json = await res.json();
-        
-        if (json.status === "success") {
-            alert("✅ Soal berhasil dihapus!");
-            muatBankSoal(); // Refresh tabel
-        } else {
-            alert("❌ Gagal menghapus: " + json.message);
-        }
-    } catch (err) {
-        alert("❌ Error koneksi server.");
-    }
-}    
+    const result = await Swal.fire({
+        title: 'Hapus Soal?',
+        text: "Soal ini akan dihapus permanen dari Bank Soal.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
 
-function bukaModalTambahSoal() { bukaModal("modal-tambah-soal"); }
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_soal", baris: baris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Soal berhasil dihapus.', 'success');
+                muatBankSoal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+
+function toggleSemuaSoal(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-soal');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function hapusSoalTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-soal:checked');
+    if (checkboxes.length === 0) {
+        Swal.fire('Oops...', 'Pilih minimal satu soal untuk dihapus.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Hapus Soal Terpilih?',
+        text: `${checkboxes.length} soal akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_soal_massal", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatBankSoal();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
 
 async function simpanSoalBaru() {
-    const data = {
+        const data = {
         mapel: document.getElementById("s-mapel").value,
         soal: document.getElementById("s-soal").value,
         pilihanA: document.getElementById("s-a").value,
@@ -714,10 +1164,11 @@ async function simpanSoalBaru() {
         pilihanE: document.getElementById("s-e").value || "",
         kunci: document.getElementById("s-kunci").value,
         skor: document.getElementById("s-skor").value,
-        penjelasan: document.getElementById("s-penjelasan").value
+        penjelasan: document.getElementById("s-penjelasan").value,
+        gambar: document.getElementById("s-gambar").value.trim() // <-- BARU
     };
 
-    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { alert("⚠️ Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!"); return; }
+    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); return; }
     
     const btn = document.querySelector("#modal-tambah-soal .btn-green");
     btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
@@ -725,50 +1176,77 @@ async function simpanSoalBaru() {
     try {
         const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_soal", soal: data }) });
         const json = await res.json();
-        if (json.status === "success") {
-            alert("✅ Soal berhasil ditambahkan!");
-            tutupModal("modal-tambah-soal");
-            muatBankSoal();
-        } else { alert("❌ Gagal: " + json.message); }
-    } catch (err) { alert("❌ Error koneksi server."); } 
+if (json.status === "success") {
+    Swal.fire('Berhasil!', 'Soal baru telah ditambahkan.', 'success');
+    tutupModal("modal-tambah-soal");
+    // Reset form soal & gambar
+    hapusGambarSoal();
+    document.getElementById("s-mapel").value = "";
+    document.getElementById("s-soal").value = "";
+    document.getElementById("s-a").value = "";
+    document.getElementById("s-b").value = "";
+    document.getElementById("s-c").value = "";
+    document.getElementById("s-d").value = "";
+    document.getElementById("s-e").value = "";
+    document.getElementById("s-penjelasan").value = "";
+    document.getElementById("s-skor").value = "1";
+    document.getElementById("s-kunci").value = "A";
+    muatBankSoal();
+} else { Swal.fire('Gagal!', json.message, 'error'); }
+    } catch (err) { Swal.fire('Error!', 'Koneksi server terputus.', 'error'); } 
     finally { btn.textContent = "Simpan Soal"; btn.disabled = false; }
 }
 
-function bukaModalUploadSoal() { bukaModal("modal-upload-soal"); }
-
 async function prosesUploadSoal() {
     const file = document.getElementById("file-csv-soal").files[0];
-    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+    if (!file) { Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); return; }
 
     const reader = new FileReader();
     reader.onload = async function(e) {
         const baris = parseCSV(e.target.result);
         const daftarSoal = [];
         
-        // Asumsi: Baris 1 adalah header, mulai dari index 1
         for (let i = 1; i < baris.length; i++) {
-            if (baris[i].length >= 8) { // Minimal harus ada 8 kolom (Mapel s.d Kunci)
+            if (baris[i].length >= 9) { 
                 daftarSoal.push({
-                    mapel: baris[i][0],
-                    soal: baris[i][1],
-                    pilihanA: baris[i][2],
-                    pilihanB: baris[i][3],
-                    pilihanC: baris[i][4],
-                    pilihanD: baris[i][5],
-                    pilihanE: baris[i][6],
-                    kunci: baris[i][7].toUpperCase(),
-                    skor: parseInt(baris[i][8]) || 1,
-                    penjelasan: baris[i][9] || ""
+                    mapel: baris[i][1],
+                    soal: baris[i][2],
+                    pilihanA: baris[i][3],
+                    pilihanB: baris[i][4],
+                    pilihanC: baris[i][5],
+                    pilihanD: baris[i][6],
+                    pilihanE: baris[i][7],
+                    kunci: baris[i][8].toUpperCase(),
+                    skor: parseInt(baris[i][9]) || 1,
+                    penjelasan: baris[i][10] || "",
+                    gambar: baris[i][11] || "" // <-- BARU
                 });
             }
         }
-
-        if (daftarSoal.length === 0) { alert("⚠️ Format file tidak sesuai atau data kosong."); return; }
+        if (daftarSoal.length === 0) { 
+            Swal.fire('Format Salah!', 'Format file tidak sesuai atau data kosong. Pastikan menggunakan template terbaru.', 'error'); 
+            return; 
+        }
         
-        if (!confirm(`Ditemukan ${daftarSoal.length} soal valid. Lanjutkan upload?`)) return;
+        const konfirmasi = await Swal.fire({
+            title: 'Upload Soal?',
+            text: `Ditemukan ${daftarSoal.length} soal valid. Soal yang sudah ada sebelumnya tidak akan diduplikasi.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f39c12',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Ya, Upload!',
+            cancelButtonText: 'Batal'
+        });
 
-        const btn = document.querySelector("#modal-upload-soal .btn-green");
-        btn.textContent = "⏳ Memproses..."; btn.disabled = true;
+        if (!konfirmasi.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Memproses...',
+            text: 'Sedang mengunggah soal ke Bank Soal',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
 
         try {
             const res = await fetch(URL_GOOGLE_SHEETS, {
@@ -778,15 +1256,86 @@ async function prosesUploadSoal() {
             const json = await res.json();
             
             if (json.status === "success") {
-                alert("✅ " + json.message);
+                Swal.fire('Berhasil!', json.message, 'success');
                 tutupModal("modal-upload-soal");
                 muatBankSoal();
-            } else { alert("❌ " + json.message); }
-        } catch (err) { alert("❌ Koneksi Error."); }
-        finally { btn.textContent = "Upload Soal"; btn.disabled = false; }
+            } else { 
+                Swal.fire('Gagal!', json.message, 'error'); 
+            }
+        } catch (err) { 
+            Swal.fire('Error!', 'Terjadi kesalahan koneksi ke server.', 'error'); 
+        }
     };
     reader.readAsText(file);
 }
+
+function downloadTemplateSoal() {
+        let excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; } td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }</style>
+        </head><body><table><thead><tr><th width="30">No</th><th>Mapel</th><th>Soal</th><th>Pilihan A</th><th>Pilihan B</th><th>Pilihan C</th><th>Pilihan D</th><th>Pilihan E</th><th>Kunci</th><th>Skor</th><th>Penjelasan</th><th>Link Gambar</th></tr></thead><tbody>
+            <tr><td style="text-align:center;">1</td><td>TIK UH 1</td><td>Apa singkatan dari CPU?</td><td>Central Processing Unit</td><td>Computer Personal Unit</td><td>Central Program Utility</td><td>Control Processing Unit</td><td>Central Personal Utility</td><td style="text-align:center;">A</td><td style="text-align:center;">5</td><td>CPU adalah otak dari komputer.</td><td></td></tr>
+            <tr><td style="text-align:center;">2</td><td>TIK UH 1</td><td>Fungsi utama RAM adalah...</td><td>Menyimpan data permanen</td><td>Menyimpan data sementara</td><td>Memproses grafis</td><td>Menampilkan gambar</td><td>Mendinginkan prosesor</td><td style="text-align:center;">B</td><td style="text-align:center;">5</td><td>RAM bersifat sementara.</td><td>https://contoh.com/gambar.png</td></tr>
+        </tbody></table></body></html>`;
+
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Template_Soal_Ujian.xls";
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+/* =========================================
+   FITUR DOWNLOAD TEMPLATE SISWA
+   ========================================= */
+function downloadTemplateSiswa() {
+    let excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Siswa</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>
+                table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+                th { background-color: #2ecc71; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; }
+                td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+            </style>
+        </head>
+        <body>
+        <table>
+            <thead>
+                <tr>
+                    <th width="150">NISN</th>
+                    <th width="300">Nama</th>
+                    <th width="150">Kelas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Baris Contoh 1 -->
+                <tr>
+                    <td style="text-align:center;">'0099068975</td>
+                    <td>Budi Santoso</td>
+                    <td style="text-align:center;">X-1</td>
+                </tr>
+                <!-- Baris Contoh 2 -->
+                <tr>
+                    <td style="text-align:center;">'0099068976</td>
+                    <td>Siti Aminah</td>
+                    <td style="text-align:center;">X-2</td>
+                </tr>
+            </tbody>
+        </table>
+        </body></html>
+    `;
+
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Template_Data_Siswa.xls";
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link);
+}    
 
 function parseCSV(teks) {
     return teks.split("\n").map(r => {
@@ -801,90 +1350,235 @@ function parseCSV(teks) {
 }
 
 /* =========================================
-   UPLOAD SISWA (Dari kode sebelumnya)
+   TAB 4: DATA SISWA (CRUD)
    ========================================= */
-function bukaModalUploadSiswa() { bukaModal("modal-upload"); }
+async function muatDataSiswa() {
+    const tbody = document.getElementById("tbody-siswa");
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">⏳ Memuat data siswa...</td></tr>`;
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=siswa&t=" + new Date().getTime());
+        const json = await res.json();
+        if (json.status === "success") {
+            // TAMBAHKAN .map DI SINI UNTUK MENYIMPAN INDEX ASLI
+            semuaDataSiswa = json.data.map((d, i) => ({ ...d, indexAsli: i + 2 }));
+            renderTabelSiswa();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
+        }
+    } catch (err) { 
+        console.error("Detail Error Siswa:", err); 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
+    }
+}
 
-/* =========================================
-   FITUR DOWNLOAD TEMPLATE SOAL
-   ========================================= */
-function downloadTemplateSoal() {
-    // Membuat format XML khusus untuk Excel
-    let excelContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="UTF-8">
-            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-            <style>
-                table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
-                th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; }
-                td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
-            </style>
-        </head>
-        <body>
-        <table>
-            <thead>
-                <tr>
-                    <th>Mapel</th>
-                    <th>Soal</th>
-                    <th>Pilihan A</th>
-                    <th>Pilihan B</th>
-                    <th>Pilihan C</th>
-                    <th>Pilihan D</th>
-                    <th>Pilihan E</th>
-                    <th>Kunci</th>
-                    <th>Skor</th>
-                    <th>Penjelasan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Baris Contoh 1 -->
-                <tr>
-                    <td>TIK UH 1</td>
-                    <td>Apa singkatan dari CPU?</td>
-                    <td>Central Processing Unit</td>
-                    <td>Computer Personal Unit</td>
-                    <td>Central Program Utility</td>
-                    <td>Control Processing Unit</td>
-                    <td>Central Personal Utility</td>
-                    <td>A</td>
-                    <td>5</td>
-                    <td>CPU adalah otak dari komputer.</td>
-                </tr>
-                <!-- Baris Contoh 2 -->
-                <tr>
-                    <td>TIK UH 1</td>
-                    <td>Fungsi utama RAM adalah...</td>
-                    <td>Menyimpan data permanen</td>
-                    <td>Menyimpan data sementara</td>
-                    <td>Memproses grafis</td>
-                    <td>Menampilkan gambar</td>
-                    <td>Mendinginkan prosesor</td>
-                    <td>B</td>
-                    <td>5</td>
-                    <td>RAM bersifat sementara dan hilang saat komputer dimatikan.</td>
-                </tr>
-            </tbody>
-        </table>
-        </body></html>
-    `;
+function renderTabelSiswa() {
+    const tbody = document.getElementById("tbody-siswa");
+    const fCari = document.getElementById("filter-cari-siswa").value.toLowerCase();
+    const limit = parseInt(document.getElementById("limit-siswa").value) || 10;
 
-    // Proses download file sebagai .xls
-    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute("href", url);
-    link.setAttribute("download", "Template_Soal_Ujian.xls");
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}  
+    document.getElementById("pilih-semua-siswa").checked = false;
+
+    // 1. Filter Data
+    const dataFiltered = semuaDataSiswa.filter(d => 
+        (d.nisn || "").toLowerCase().includes(fCari) || (d.nama || "").toLowerCase().includes(fCari)
+    );
+
+    // 2. Hitung Total Halaman
+    const totalData = dataFiltered.length;
+    const totalHalaman = Math.ceil(totalData / limit) || 1;
+
+    // 3. Cegah out of bounds
+    if (halamanSiswaAktif > totalHalaman) halamanSiswaAktif = totalHalaman;
+    if (halamanSiswaAktif < 1) halamanSiswaAktif = 1;
+
+    // 4. Ambil data untuk halaman saat ini
+    const startIndex = (halamanSiswaAktif - 1) * limit;
+    const endIndex = startIndex + limit;
+    const dataTampil = dataFiltered.slice(startIndex, endIndex);
+
+    // 5. Update Info Halaman
+    document.getElementById("info-halaman-siswa").textContent = `Halaman ${halamanSiswaAktif} / ${totalHalaman} (Total: ${totalData} data)`;
+
+    // 6. Render Tabel
+    if (dataTampil.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa ditemukan.</td></tr>`; 
+        return; 
+    }
+
+    tbody.innerHTML = "";
+    dataTampil.forEach((d, indexTampil) => {
+        const noUrut = startIndex + indexTampil + 1;
+        const nisnBersih = d.nisn.replace(/^'/, ''); // Hapus tanda kutip di tampilan
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-siswa" value="${d.indexAsli}"></td>
+                <td style="text-align:center;">${noUrut}</td>
+                <td><div class="editable-cell-siswa" data-nisn="${nisnBersih}" data-kolom="2">${nisnBersih}</div></td>
+                <td><div class="editable-cell-siswa" data-nisn="${nisnBersih}" data-kolom="3">${d.nama}</div></td>
+                <td><div class="editable-cell-siswa" data-nisn="${nisnBersih}" data-kolom="4">${d.kelas}</div></td>
+            </tr>`;
+    });
+
+    // Pasang event listener untuk edit inline
+    document.querySelectorAll('.editable-cell-siswa').forEach(el => {
+        el.onclick = function() {
+            const nisnLama = this.getAttribute('data-nisn');
+            const kolom = parseInt(this.getAttribute('data-kolom'));
+            const nilaiLama = this.textContent.trim();
+            const htmlAsli = this.innerHTML;
+            
+            const input = document.createElement("input");
+            input.type = "text"; 
+            input.value = nilaiLama; 
+            input.className = "editable-edit";
+            input.style.width = "100%";
+            input.style.boxSizing = "border-box";
+            
+            this.innerHTML = ""; 
+            this.appendChild(input); 
+            input.focus();
+
+            input.onblur = async function() {
+                if (input.value !== nilaiLama && input.value.trim() !== "") { 
+                    el.textContent = "⏳...";
+                    try {
+                        // Kirim NISN Lama (bukan nomor baris) ke server
+                        const res = await fetch(URL_GOOGLE_SHEETS, {
+                            method: "POST", 
+                            body: JSON.stringify({ 
+                                aksi: "edit_siswa", 
+                                nisnLama: nisnLama, 
+                                kolom: kolom, 
+                                nilaiBaru: input.value 
+                            })
+                        });
+                        const json = await res.json();
+                        
+                        if (json.status === "success") {
+                            el.textContent = input.value;
+                            // Jika yang diedit NISN, perbarui atribut data-nisn agar bisa edit nama setelahnya
+                            if (kolom === 2) {
+                                document.querySelectorAll(`.editable-cell-siswa[data-nisn="${nisnLama}"]`).forEach(sibling => {
+                                    sibling.setAttribute('data-nisn', input.value);
+                                });
+                            }
+                        } else {
+                            throw new Error(json.message);
+                        }
+                    } catch (err) { 
+                        Swal.fire('Error!', 'Gagal menyimpan perubahan.', 'error');
+                        el.innerHTML = htmlAsli; 
+                    }
+                } else { 
+                    el.innerHTML = htmlAsli; 
+                }
+            };
+            
+            input.onkeydown = function(e) { 
+                if (e.key === "Enter") input.blur(); 
+            };
+        };
+    });
+}
+
+function ubahHalamanSiswa(arah) {
+    halamanSiswaAktif += arah;
+    renderTabelSiswa();
+}
+
+function toggleSemuaSiswa(source) {
+    const checkboxes = document.querySelectorAll('.checkbox-siswa');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+async function hapusSiswaTerpilih() {
+    const checkboxes = document.querySelectorAll('.checkbox-siswa:checked');
+    if (checkboxes.length === 0) {
+        Swal.fire('Oops...', 'Pilih minimal satu siswa untuk dihapus.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Hapus Data Siswa?',
+        text: `${checkboxes.length} data siswa akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "hapus_siswa", daftarBaris: daftarBaris })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', json.message, 'success');
+                muatDataSiswa();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        }
+    }
+}
+
+async function simpanSiswaBaru() {
+    const data = {
+        nisn: document.getElementById("siswa-nisn").value.trim(),
+        nama: document.getElementById("siswa-nama").value.trim(),
+        kelas: document.getElementById("siswa-kelas").value.trim(),
+        wa: document.getElementById("siswa-wa").value.trim() // <-- BARU
+    };
+
+    if (!data.nisn || !data.nama || !data.kelas) {
+        Swal.fire('Oops...', 'Semua kolom (NISN, Nama, Kelas) harus diisi!', 'warning');
+        return;
+    }
+
+    const btn = document.querySelector("#modal-tambah-siswa .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "tambah_siswa_manual", siswa: data })
+        });
+        const json = await res.json();
+
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message, 'success');
+            tutupModal("modal-tambah-siswa");
+            // Bersihkan form
+            document.getElementById("siswa-nisn").value = "";
+            document.getElementById("siswa-nama").value = "";
+            document.getElementById("siswa-kelas").value = "";
+            muatDataSiswa(); // Refresh tabel
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi server terputus.', 'error');
+    } finally {
+        btn.textContent = "Simpan Siswa";
+        btn.disabled = false;
+    }
+}    
     
 async function prosesUploadSiswa() {
     const file = document.getElementById("file-csv").files[0];
-    if (!file) { alert("⚠️ Pilih file CSV!"); return; }
+    if (!file) { 
+        Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); 
+        return; 
+    }
 
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -893,25 +1587,138 @@ async function prosesUploadSiswa() {
         for (let i = 1; i < baris.length; i++) {
             if (baris[i].length >= 3) dataSiswa.push({ nisn: baris[i][0], nama: baris[i][1], kelas: baris[i][2] });
         }
-        if (dataSiswa.length === 0) { alert("⚠️ Format file salah."); return; }
         
+        if (dataSiswa.length === 0) { 
+            Swal.fire('Format Salah!', 'Tidak ada data siswa yang valid dalam file CSV.', 'error'); 
+            return; 
+        }
+
+        const konfirmasi = await Swal.fire({
+            title: 'Upload Data Siswa?',
+            text: `Ditemukan ${dataSiswa.length} data siswa. Data lama dengan NISN yang sama akan diperbarui.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2ecc71',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Ya, Upload!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (!konfirmasi.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Mengupload...',
+            text: 'Mohon tunggu sebentar',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
         try {
             const res = await fetch(URL_GOOGLE_SHEETS, {
                 method: "POST",
                 body: JSON.stringify({ aksi: "upload_siswa", siswa: dataSiswa })
             });
             const json = await res.json();
+            
             if (json.status === "success") {
-                alert("✅ " + json.message);
+                Swal.fire('Berhasil!', json.message, 'success');
                 tutupModal("modal-upload");
-            } else { alert("❌ " + json.message); }
-        } catch (err) { alert("❌ Koneksi Error."); }
+            } else { 
+                Swal.fire('Gagal!', json.message, 'error'); 
+            }
+        } catch (err) { 
+            Swal.fire('Error!', 'Terjadi kesalahan koneksi ke server.', 'error'); 
+        }
     };
     reader.readAsText(file);
 }
+/* =========================================
+   FITUR UPLOAD GAMBAR SOAL KE DRIVE
+   ========================================= */
+function kompresGambar(file, maxWidth = 1000, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL("image/jpeg", quality));
+            };
+            img.onerror = () => reject(new Error("Gagal membaca file gambar"));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error("Gagal membaca file"));
+        reader.readAsDataURL(file);
+    });
+}
 
+async function uploadGambarSoal(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Validasi tipe
+    if (!file.type.startsWith("image/")) {
+        Swal.fire("Oops...", "File harus berupa gambar!", "warning");
+        input.value = "";
+        return;
+    }
+    
+    // Validasi ukuran (max 2MB SEBELUM kompresi)
+    if (file.size > 2 * 1024 * 1024) {
+        Swal.fire("Terlalu Besar", "Ukuran gambar max 2MB.", "warning");
+        input.value = "";
+        return;
+    }
+
+    const loading = document.getElementById("s-gambar-loading");
+    const preview = document.getElementById("s-gambar-preview");
+    loading.style.display = "block";
+    preview.style.display = "none";
+
+    try {
+        // Kompres dulu
+        const base64 = await kompresGambar(file);
+        
+        // Upload ke GS
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "upload_gambar", data: base64 })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            document.getElementById("s-gambar").value = json.url;
+            document.getElementById("s-gambar-img").src = json.url;
+            preview.style.display = "block";
+        } else {
+            throw new Error(json.message || "Upload gagal");
+        }
+    } catch (err) {
+        Swal.fire("Gagal Upload", err.message, "error");
+        input.value = "";
+    } finally {
+        loading.style.display = "none";
+    }
+}
+
+function hapusGambarSoal() {
+    document.getElementById("s-gambar").value = "";
+    document.getElementById("s-gambar-img").src = "";
+    document.getElementById("s-gambar-preview").style.display = "none";
+    document.getElementById("s-gambar-file").value = "";
+}
+    
 /* --- INIT --- */
-muatDataNilai();
+muatDataSiswa();
 </script>
 </body>
 </html>
