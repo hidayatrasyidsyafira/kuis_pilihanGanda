@@ -347,6 +347,10 @@
                     
                     <div id="area-soal-ujian">
                         <div class="soal-box" id="teks-soal">Memuat soal...</div>
+                        <div id="area-gambar-soal" style="display: none; margin-bottom: 20px; text-align: center;">
+                            <img id="gambar-soal" src="" alt="Gambar Soal" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #dee2e6;">
+                        </div>
+                        <div class="soal-box" id="teks-soal"></div>
                         
                         <div class="loader-jawaban" id="loader-jawaban">
                             <div class="spinner"></div>
@@ -913,6 +917,19 @@ function tampilSoalCBT() {
     const dataSoal = daftarSoal[nomor];
     
     document.getElementById("progress").textContent = `Soal ${nomor + 1} dari ${daftarSoal.length}`;
+
+    // --- LOGIKA TAMPIL GAMBAR ---
+    const areaGambar = document.getElementById("area-gambar-soal");
+    const imgElement = document.getElementById("gambar-soal");
+    
+    if (dataSoal.gambar && dataSoal.gambar.trim() !== "") {
+        imgElement.src = dataSoal.gambar;
+        areaGambar.style.display = "block";
+    } else {
+        imgElement.src = "";
+        areaGambar.style.display = "none";
+    }
+    
     document.getElementById("teks-soal").textContent = dataSoal.soal;
     
     // Logika Tombol Navigasi
