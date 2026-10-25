@@ -7,7 +7,7 @@
     <!-- Library AI Deteksi Objek -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -1001,9 +1001,21 @@ function soalSebelumnya() {
     if (nomor > 0) { nomor--; tampilSoalCBT(); }
 }
 
-function selesaikanUjian() {
-    // Konfirmasi sebelum selesai
-    if (confirm("Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.")) {
+async function selesaikanUjian() {
+    // Menggunakan SweetAlert2 untuk konfirmasi
+    const result = await Swal.fire({
+        title: 'Selesaikan Ujian?',
+        text: "Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2ecc71', // Warna hijau untuk "Ya"
+        cancelButtonColor: '#95a5a6',  // Warna abu-abu untuk "Batal"
+        confirmButtonText: 'Ya, Selesaikan!',
+        cancelButtonText: 'Batal',
+        allowOutsideClick: false // Mencegah klik di luar kotak
+    });
+
+    if (result.isConfirmed) {
         clearInterval(timerInterval);
         kuisAktif = false;
         matikanKamera();
@@ -1029,8 +1041,6 @@ function selesaikanUjian() {
 
         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
         
-        // --- SIMPAN DATA PELANGGARAN KE VARIABEL SEMENTARA SEBELUM DIKIRIM ---
-        // Ini mencegah variabel ter-reset jika ada fungsi lain yang berjalan
         const finalPindahTab = jumlahPindahTab;
         const finalPelanggaranKamera = jumlahPelanggaranKamera;
         
@@ -1040,10 +1050,54 @@ function selesaikanUjian() {
         document.getElementById("skor-angka").textContent = skorAkhir;
         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
         
-        // Kirim data menggunakan variabel sementara
+        // Kirim data
         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera);
     }
 }
+    
+// function selesaikanUjian() {
+//     // Konfirmasi sebelum selesai
+//     if (confirm("Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.")) {
+//         clearInterval(timerInterval);
+//         kuisAktif = false;
+//         matikanKamera();
+        
+//         // Hitung skor
+//         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
+//         daftarSoal.forEach((soal, idx) => {
+//             const jwb = jawabanSiswa[idx];
+//             const benar = jwb === soal.kunci;
+            
+//             skorMaksimal += soal.skor;
+//             if (benar) { skorDidapat += soal.skor; jumlahBenar++; }
+            
+//             // Rekap untuk pembahasan
+//             riwayatJawaban.push({
+//                 nomor: idx, jawabanSiswa: jwb || null, kunci: soal.kunci, benar: benar,
+//                 skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
+//                 teksPilihanSiswa: jwb ? soal.pilihan[jwb] : "-",
+//                 teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+//                 penjelasan: soal.penjelasan
+//             });
+//         });
+
+//         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+        
+//         // --- SIMPAN DATA PELANGGARAN KE VARIABEL SEMENTARA SEBELUM DIKIRIM ---
+//         // Ini mencegah variabel ter-reset jika ada fungsi lain yang berjalan
+//         const finalPindahTab = jumlahPindahTab;
+//         const finalPelanggaranKamera = jumlahPelanggaranKamera;
+        
+//         // Tampilkan hasil
+//         document.getElementById("layar-cbt").style.display = "none";
+//         document.getElementById("layar-akhir").style.display = "block";
+//         document.getElementById("skor-angka").textContent = skorAkhir;
+//         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+        
+//         // Kirim data menggunakan variabel sementara
+//         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera);
+//     }
+// }
 
 function mulaiTimerTotal() {
     clearInterval(timerInterval);
