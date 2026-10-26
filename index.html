@@ -1268,23 +1268,34 @@ function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggar
 }
 
 function kirimHasilKeWA(skor, benar, total, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
-    // Jangan kirim WA jika hanya ujian latihan
     if (mapelDipilih && mapelDipilih.isLatihan) return;
+
+    // Susun data pembahasan dari riwayatJawaban (yang sudah ada di memori)
+    const dataPembahasan = riwayatJawaban.map(r => ({
+        soal: r.teksSoal,
+        jwbSiswa: r.jawabanSiswa || "-",
+        teksJwbSiswa: r.teksPilihanSiswa || "-",
+        kunci: r.kunci,
+        teksKunci: r.teksPilihanKunci || "-",
+        benar: r.benar,
+        penjelasan: r.penjelasan
+    }));
 
     const params = new URLSearchParams({
         aksi: "kirim_hasil_wa",
         nama: namaSiswa,
         nisn: nisnSiswa,
         mapel: mapelSiswa,
+        namaGuru: mapelDipilih.namaGuru || "-", // <-- Nama Guru dari Jadwal
         skor: skor,
         benar: benar,
         total: total,
         pindah_tab: pindahTab,
         pelanggaran_kamera: pelanggaranKamera,
-        pelanggaran_fullscreen: pelanggaranFullscreen
+        pelanggaran_fullscreen: pelanggaranFullscreen,
+        data_soal: JSON.stringify(dataPembahasan) // <-- Data pembahasan diubah jadi teks JSON
     });
 
-    // Tembak API tanpa menunggu balasan (mode no-cors)
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
     .then(() => console.log("✅ Perintah kirim WA terkirim ke server."))
     .catch(err => console.error("❌ Gagal kirim WA:", err));
