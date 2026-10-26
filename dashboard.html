@@ -445,45 +445,44 @@
 
     <!-- ================= MODAL PASTE SOAL DARI AI ================= -->
     <div class="modal-overlay" id="modal-paste-soal">
-        <div class="modal-content" style="max-width: 800px;">
-            <h3>📋 Paste Soal dari AI</h3>
-            <p style="margin-bottom: 15px; color: #555; font-size: 0.9rem;">
-                Copy hasil generate dari ChatGPT/Gemini, lalu paste di bawah ini. Pastikan formatnya sesuai (lihat contoh di dalam kotak).
-            </p>
-            
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label>Mata Pelajaran (Wajib)</label>
-                <input type="text" id="paste-mapel" placeholder="Contoh: TIK UH 1">
-            </div>
-    
-            <div class="form-group">
-                <label>Format Teks (Paste di sini):</label>
-                <textarea id="teks-paste-soal" style="width: 100%; height: 300px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
-                    A: Jakarta
-                    B: Bandung
-                    C: Surabaya
-                    D: Medan
-                    E: Bali
-                    KUNCI: A
-                    SKOR: 5
-                    PENJELASAN: Jakarta adalah ibukota Indonesia.
-                    
-                    SOAL: Siapa presiden pertama Indonesia?
-                    A: Soekarno
-                    B: Soeharto
-                    C: Habibie
-                    D: SBY
-                    E: Jokowi
-                    KUNCI: A
-                    SKOR: 5
-                    PENJELASAN: Ir. Soekarno adalah presiden pertama RI.">
-                 </textarea>
-            </div>
-    
-            <button class="btn btn-green" style="width: 100%; margin-top: 15px; background: #9b59b6;" onclick="prosesPasteSoal()">💾 Simpan ke Bank Soal</button>
-            <button class="btn" style="width: 100%; margin-top: 10px; background:#95a5a6;" onclick="tutupModal('modal-paste-soal')">Batal</button>
+    <div class="modal-content" style="max-width: 800px;">
+        <h3>📋 Paste Soal dari AI</h3>
+        <p style="margin-bottom: 15px; color: #555; font-size: 0.9rem;">
+            Copy hasil generate dari ChatGPT/Gemini, lalu paste di bawah ini. Pastikan formatnya sesuai (lihat contoh di dalam kotak).
+        </p>
+        
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Mata Pelajaran (Wajib)</label>
+            <input type="text" id="paste-mapel" placeholder="Contoh: TIK UH 1">
         </div>
+
+        <div class="form-group">
+            <label>Format Teks (Paste di sini):</label>
+            <textarea id="teks-paste-soal" style="width: 100%; height: 300px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
+A: Jakarta
+B: Bandung
+C: Surabaya
+D: Medan
+E: Bali
+KUNCI: A
+SKOR: 5
+PENJELASAN: Jakarta adalah ibukota Indonesia.
+
+SOAL: Siapa presiden pertama Indonesia?
+A: Soekarno
+B: Soeharto
+C: Habibie
+D: SBY
+E: Jokowi
+KUNCI: A
+SKOR: 5
+PENJELASAN: Ir. Soekarno adalah presiden pertama RI."></textarea>
+        </div>
+
+        <button class="btn btn-green" style="width: 100%; margin-top: 15px; background: #9b59b6;" onclick="prosesPasteSoal()">💾 Simpan ke Bank Soal</button>
+        <button class="btn" style="width: 100%; margin-top: 10px; background:#95a5a6;" onclick="tutupModal('modal-paste-soal')">Batal</button>
     </div>
+</div>
 
 <script>
 //const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
