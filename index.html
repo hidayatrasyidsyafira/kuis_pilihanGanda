@@ -897,6 +897,21 @@ function masukFullscreen() {
     }
 }
 
+function paksaFullscreenSaatAwal() {
+    // Jika sudah fullscreen atau sedang dalam ujian, abaikan
+    if (document.fullscreenElement || kuisAktif) return;
+
+    masukFullscreen();
+    
+    // Hapus event listener agar tidak terus-menerus memicu
+    document.removeEventListener('click', paksaFullscreenSaatAwal);
+    document.removeEventListener('touchstart', paksaFullscreenSaatAwal);
+}
+
+// Daftarkan event listener untuk klik pertama di mana saja
+document.addEventListener('click', paksaFullscreenSaatAwal);
+document.addEventListener('touchstart', paksaFullscreenSaatAwal); // Untuk HP    
+
 function aktifkanDeteksiKeluarFullscreen() {
     document.addEventListener("fullscreenchange", async () => {
         // Jika sedang masuk mode fullscreen
@@ -1262,6 +1277,7 @@ aktifkanAntiScreenshot();
 aktifkanDeteksiKeluarFullscreen(); // <-- TAMBAHKAN INI
 ambilJadwal(); 
 ambilDataSiswa();
+    
 </script>
 </body>
 </html>
