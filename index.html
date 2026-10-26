@@ -465,14 +465,47 @@ async function ambilDataSiswa() {
     } catch (err) { console.error("Gagal ambil data siswa:", err); }
 }
 
-function cariSiswa() {
+// function cariSiswa() {
+//     // Pemicu Fullscreen pertama kali (dari interaksi klik)
+//     if (!document.fullscreenElement && !kuisAktif) {
+//         masukFullscreen();
+//     }
+
+//     const nisnInput = document.getElementById("input-nisn").value.trim();
+//     if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
+
+//     const siswa = dataSiswaGlobal.find(s => s.nisn === nisnInput);
+//     if (siswa) {
+//         document.getElementById("hasil-nama").textContent = siswa.nama;
+//         document.getElementById("hasil-kelas").textContent = siswa.kelas;
+//         nisnSiswa = siswa.nisn; namaSiswa = siswa.nama; kelasSiswa = siswa.kelas;
+        
+//         document.getElementById("hasil-cari-siswa").classList.add("aktif");
+//         document.getElementById("form-input-nisn").style.display = "none";
+//         document.getElementById("layar-pilih-jenis").classList.remove("sembunyi");
+//     } else {
+//         alert("❌ NISN tidak ditemukan.");
+//     }
+// }
+async function cariSiswa() {
     // Pemicu Fullscreen pertama kali (dari interaksi klik)
     if (!document.fullscreenElement && !kuisAktif) {
         masukFullscreen();
     }
 
     const nisnInput = document.getElementById("input-nisn").value.trim();
-    if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
+    
+    // Ganti alert kosong dengan SweetAlert
+    if (!nisnInput) { 
+        Swal.fire({
+            icon: 'warning',
+            title: 'Oops...',
+            text: 'Masukkan NISN terlebih dahulu!',
+            confirmButtonColor: '#3498db',
+            confirmButtonText: 'Mengerti'
+        });
+        return; 
+    }
 
     const siswa = dataSiswaGlobal.find(s => s.nisn === nisnInput);
     if (siswa) {
@@ -484,9 +517,16 @@ function cariSiswa() {
         document.getElementById("form-input-nisn").style.display = "none";
         document.getElementById("layar-pilih-jenis").classList.remove("sembunyi");
     } else {
-        alert("❌ NISN tidak ditemukan.");
+        // Ganti alert tidak ditemukan dengan SweetAlert
+        Swal.fire({
+            icon: 'error',
+            title: 'NISN Tidak Ditemukan',
+            text: 'Periksa kembali NISN Anda atau hubungi pengawas.',
+            confirmButtonColor: '#e74c3c',
+            confirmButtonText: 'Tutup'
+        });
     }
-}
+}    
 
 async function ambilJadwal() {
     try {
