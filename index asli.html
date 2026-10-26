@@ -7,7 +7,7 @@
     <!-- Library AI Deteksi Objek -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -350,7 +350,6 @@
                         <div id="area-gambar-soal" style="display: none; margin-bottom: 20px; text-align: center;">
                             <img id="gambar-soal" src="" alt="Gambar Soal" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #dee2e6;">
                         </div>
-                        <div class="soal-box" id="teks-soal"></div>
                         
                         <div class="loader-jawaban" id="loader-jawaban">
                             <div class="spinner"></div>
@@ -432,7 +431,7 @@
 /* =========================================================
    ⚙️ KONFIGURASI & STATE
    ========================================================= */
-const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
+const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
 
 let daftarSoal = [];
 let nomor = 0; // Indeks soal saat ini
@@ -442,6 +441,7 @@ let riwayatJawaban = [];
 let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
 let kuisAktif = false;
 let jumlahPindahTab = 0;
+let jumlahPelanggaranFullscreen = 0;    
 let jumlahPelanggaranKamera = 0;
 let toastTimer = null;
 let jadwalData = [];
@@ -848,6 +848,7 @@ function acakPilihanSoal(soal) {
 
 async function mulaiKuis() {
     if (!namaSiswa || !mapelDipilih) return;
+        masukFullscreen(); 
     try {
         document.getElementById("tombol-mulai").textContent = "⏳ Menyiapkan...";
         await nyalakanKamera(); if (!modelAI) await muatModelAI();
@@ -872,16 +873,45 @@ async function mulaiKuis() {
     jawabanSiswa = {}; // Reset jawaban
     riwayatJawaban = [];
     kuisAktif = true;
-    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0;
+    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
     
     buatGridNavigasi();
     updateTimerTotal();
     mulaiTimerTotal();
     mulaiDeteksiAI();
-    
+
     tampilSoalCBT();
 }
 
+/* =========================================================
+   🖥️ MODE FULLSCREEN (ANTI KELUAR APLIKASI)
+   ========================================================= */
+function masukFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => console.log("Gagal masuk fullscreen:", err));
+    } else if (elem.webkitRequestFullscreen) { /* Safari/Chrome lama */
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE11 */
+        elem.msRequestFullscreen();
+    }
+}
+
+function aktifkanDeteksiKeluarFullscreen() {
+    document.addEventListener("fullscreenchange", () => {
+        // Jika sedang dalam ujian TAPI tidak dalam mode fullscreen
+        if (kuisAktif && !document.fullscreenElement) {
+            jumlahPelanggaranFullscreen++; // Catat pelanggaran
+            blokirLayarSementara("Keluar dari Mode Layar Penuh!");
+            
+            // Paksa masuk fullscreen lagi setelah 1 detik
+            setTimeout(() => {
+                if (kuisAktif) masukFullscreen();
+            }, 1000);
+        }
+    });
+}
+    
 /* --- LOGIKA TAMPILAN CBT --- */
 function buatGridNavigasi() {
     const grid = document.getElementById("grid-nav");
@@ -1002,12 +1032,28 @@ function soalSebelumnya() {
     if (nomor > 0) { nomor--; tampilSoalCBT(); }
 }
 
-function selesaikanUjian() {
-    // Konfirmasi sebelum selesai
-    if (confirm("Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.")) {
+async function selesaikanUjian() {
+    // Menggunakan SweetAlert2 untuk konfirmasi
+    const result = await Swal.fire({
+        title: 'Selesaikan Ujian?',
+        text: "Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2ecc71', // Warna hijau untuk "Ya"
+        cancelButtonColor: '#95a5a6',  // Warna abu-abu untuk "Batal"
+        confirmButtonText: 'Ya, Selesaikan!',
+        cancelButtonText: 'Batal',
+        allowOutsideClick: false // Mencegah klik di luar kotak
+    });
+
+    if (result.isConfirmed) {
         clearInterval(timerInterval);
         kuisAktif = false;
         matikanKamera();
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        }
         
         // Hitung skor
         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
@@ -1030,10 +1076,9 @@ function selesaikanUjian() {
 
         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
         
-        // --- SIMPAN DATA PELANGGARAN KE VARIABEL SEMENTARA SEBELUM DIKIRIM ---
-        // Ini mencegah variabel ter-reset jika ada fungsi lain yang berjalan
         const finalPindahTab = jumlahPindahTab;
         const finalPelanggaranKamera = jumlahPelanggaranKamera;
+        const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
         
         // Tampilkan hasil
         document.getElementById("layar-cbt").style.display = "none";
@@ -1041,10 +1086,54 @@ function selesaikanUjian() {
         document.getElementById("skor-angka").textContent = skorAkhir;
         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
         
-        // Kirim data menggunakan variabel sementara
-        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera);
+        // Kirim data
+        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
     }
 }
+    
+// function selesaikanUjian() {
+//     // Konfirmasi sebelum selesai
+//     if (confirm("Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.")) {
+//         clearInterval(timerInterval);
+//         kuisAktif = false;
+//         matikanKamera();
+        
+//         // Hitung skor
+//         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
+//         daftarSoal.forEach((soal, idx) => {
+//             const jwb = jawabanSiswa[idx];
+//             const benar = jwb === soal.kunci;
+            
+//             skorMaksimal += soal.skor;
+//             if (benar) { skorDidapat += soal.skor; jumlahBenar++; }
+            
+//             // Rekap untuk pembahasan
+//             riwayatJawaban.push({
+//                 nomor: idx, jawabanSiswa: jwb || null, kunci: soal.kunci, benar: benar,
+//                 skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
+//                 teksPilihanSiswa: jwb ? soal.pilihan[jwb] : "-",
+//                 teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+//                 penjelasan: soal.penjelasan
+//             });
+//         });
+
+//         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+        
+//         // --- SIMPAN DATA PELANGGARAN KE VARIABEL SEMENTARA SEBELUM DIKIRIM ---
+//         // Ini mencegah variabel ter-reset jika ada fungsi lain yang berjalan
+//         const finalPindahTab = jumlahPindahTab;
+//         const finalPelanggaranKamera = jumlahPelanggaranKamera;
+        
+//         // Tampilkan hasil
+//         document.getElementById("layar-cbt").style.display = "none";
+//         document.getElementById("layar-akhir").style.display = "block";
+//         document.getElementById("skor-angka").textContent = skorAkhir;
+//         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+        
+//         // Kirim data menggunakan variabel sementara
+//         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera);
+//     }
+// }
 
 function mulaiTimerTotal() {
     clearInterval(timerInterval);
@@ -1073,7 +1162,7 @@ function updateTimerTotal() {
 }
 
 /* --- KIRIM HASIL KE SHEET --- */
-function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera) {
+function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
     if (mapelDipilih && mapelDipilih.isLatihan) {
         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
         return; 
@@ -1088,6 +1177,7 @@ function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggar
         skor: skorAkhir, 
         pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
         pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
+        pelanggaran_fullscreen: pelanggaranFullscreen || 0,
         mapel: mapelSiswa, 
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
@@ -1145,11 +1235,15 @@ function mulaiUlang() {
     
     namaSiswa = ""; nisnSiswa = ""; kelasSiswa = ""; mapelSiswa = ""; mapelDipilih = null;
     nomor = 0; jawabanSiswa = {}; riwayatJawaban = []; kuisAktif = false; sisaWaktuTotal = 0; 
-    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0;
+    jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
 }
 
 /* --- INIT --- */
-aktifkanDeteksiPindahTab(); aktifkanAntiScreenshot(); ambilJadwal(); ambilDataSiswa();
+aktifkanDeteksiPindahTab(); 
+aktifkanAntiScreenshot(); 
+aktifkanDeteksiKeluarFullscreen(); // <-- TAMBAHKAN INI
+ambilJadwal(); 
+ambilDataSiswa();
 </script>
 </body>
 </html>
