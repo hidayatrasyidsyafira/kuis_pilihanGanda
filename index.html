@@ -195,6 +195,16 @@
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4facfe; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* Tombol Ragu-Ragu */
+        .btn-ragu {
+            background: #fff3cd; color: #856404; border: 2px solid #ffc107;
+            padding: 10px 20px; border-radius: 8px; font-weight: bold;
+            cursor: pointer; display: block; width: 100%; margin-bottom: 20px;
+            transition: 0.2s;
+        }
+        .btn-ragu:hover { background: #ffeeba; }
+        .btn-ragu.aktif { background: #f39c12; color: white; border-color: #e67e22; }
+
         /* Tombol Navigasi Bawah */
         .nav-buttons { display: flex; justify-content: space-between; }
         .nav-buttons button {
@@ -226,6 +236,7 @@
         .nav-item:hover { background: #e9ecef; }
         .nav-item.sudah-dijawab { background: #2ecc71; color: white; border-color: #2ecc71; }
         .nav-item.sedang-aktif { border: 3px solid #3498db; color: #3498db; font-weight: bold; }
+        .nav-item.ragu-ragu { background: #f1c40f; color: white; border-color: #f39c12; }
 
         .legend { font-size: 0.85rem; color: #555; display: flex; flex-direction: column; gap: 8px; }
         .legend-item { display: flex; align-items: center; gap: 10px; }
@@ -357,6 +368,8 @@
                         </div>
                         
                         <div class="pilihan-group" id="pilihan-group"></div>
+                        <button class="btn-ragu" id="btn-ragu" onclick="toggleRagu()">🤔 Ragu-Ragu</button>
+                        
                     </div>
 
                     <!-- Tombol Navigasi -->
@@ -436,6 +449,7 @@ const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA
 let daftarSoal = [];
 let nomor = 0; // Indeks soal saat ini
 let jawabanSiswa = {}; // Menyimpan jawaban { index_soal: "A", ... }
+let soalRaguRagu = [];    
 let sisaWaktuTotal = 0, timerInterval;
 let riwayatJawaban = [];
 let namaSiswa = "", nisnSiswa = "", kelasSiswa = "", mapelSiswa = "";
@@ -916,6 +930,7 @@ async function mulaiKuis() {
     // Inisialisasi State
     nomor = 0;
     jawabanSiswa = {}; // Reset jawaban
+    soalRaguRagu = [];
     riwayatJawaban = [];
     kuisAktif = true;
     jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
@@ -1008,10 +1023,14 @@ function updateGridNavigasi() {
         if (!item) return;
         
         // Hapus class state sebelumnya
-        item.classList.remove("sudah-dijawab", "sedang-aktif");
+        item.classList.remove("sudah-dijawab", "sedang-aktif", "ragu-ragu");
         
         // Tandai yang sudah dijawab
         if (jawabanSiswa[index] !== undefined) item.classList.add("sudah-dijawab");
+        
+        // Tandai yang ragu-ragu (Warna Kuning)
+        if (soalRaguRagu.includes(index)) item.classList.add("ragu-ragu");
+        
         // Tandai soal aktif saat ini
         if (index === nomor) item.classList.add("sedang-aktif");
     });
@@ -1042,6 +1061,7 @@ function tampilSoalCBT() {
     }
     
     document.getElementById("teks-soal").textContent = dataSoal.soal;
+    updateTombolRagu();
     
     // Logika Tombol Navigasi
     document.getElementById("btn-prev").style.display = nomor === 0 ? "none" : "block";
@@ -1102,22 +1122,70 @@ function soalBerikutnya() {
     if (nomor < daftarSoal.length - 1) { nomor++; tampilSoalCBT(); }
 }
 
+/* --- FITUR RAGU-RAGU --- */
+function toggleRagu() {
+    const indexSekarang = nomor;
+    
+    if (soalRaguRagu.includes(indexSekarang)) {
+        // Jika sudah ditandai, hapus dari daftar
+        soalRaguRagu = soalRaguRagu.filter(i => i !== indexSekarang);
+    } else {
+        // Jika belum, tambahkan ke daftar
+        soalRaguRagu.push(indexSekarang);
+    }
+    
+    updateTombolRagu();
+    updateGridNavigasi();
+}
+
+function updateTombolRagu() {
+    const btn = document.getElementById("btn-ragu");
+    if (soalRaguRagu.includes(nomor)) {
+        btn.classList.add("aktif");
+        btn.innerHTML = "🤔 Batal Ragu-Ragu";
+    } else {
+        btn.classList.remove("aktif");
+        btn.innerHTML = "🤔 Ragu-Ragu";
+    }
+}    
+
 function soalSebelumnya() {
     if (nomor > 0) { nomor--; tampilSoalCBT(); }
 }
 
 async function selesaikanUjian() {
-    // Menggunakan SweetAlert2 untuk konfirmasi
+    // Cek apakah masih ada soal yang ragu-ragu
+    if (soalRaguRagu.length > 0) {
+        const peringatanRagu = await Swal.fire({
+            title: 'Masih Ada Soal Ragu-Ragu!',
+            text: `Anda masih menandai ${soalRaguRagu.length} soal sebagai "Ragu-Ragu" (kotak kuning). Apakah Anda yakin ingin menyelesaikan ujian?`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3498db',
+            confirmButtonText: 'Ya, Selesaikan',
+            cancelButtonText: 'Cek Kembali'
+        });
+        
+        if (!peringatanRagu.isConfirmed) {
+            // Cari soal pertama yang ragu-ragu dan buka
+            nomor = soalRaguRagu[0];
+            tampilSoalCBT();
+            return;
+        }
+    }
+
+    // Lanjut ke konfirmasi normal
     const result = await Swal.fire({
         title: 'Selesaikan Ujian?',
         text: "Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#2ecc71', // Warna hijau untuk "Ya"
-        cancelButtonColor: '#95a5a6',  // Warna abu-abu untuk "Batal"
+        confirmButtonColor: '#2ecc71',
+        cancelButtonColor: '#95a5a6',
         confirmButtonText: 'Ya, Selesaikan!',
         cancelButtonText: 'Batal',
-        allowOutsideClick: false // Mencegah klik di luar kotak
+        allowOutsideClick: false
     });
 
     if (result.isConfirmed) {
