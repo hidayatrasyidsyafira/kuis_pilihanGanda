@@ -444,21 +444,26 @@
     </div>
 
     <!-- ================= MODAL PASTE SOAL DARI AI ================= -->
-    <div class="modal-overlay" id="modal-paste-soal">
+<div class="modal-overlay" id="modal-paste-soal">
     <div class="modal-content" style="max-width: 800px;">
         <h3>📋 Paste Soal dari AI</h3>
-        <p style="margin-bottom: 15px; color: #555; font-size: 0.9rem;">
-            Copy hasil generate dari ChatGPT/Gemini, lalu paste di bawah ini. Pastikan formatnya sesuai (lihat contoh di dalam kotak).
-        </p>
         
+        <!-- KOTAK BANTUAN PROMPT AI -->
+        <div style="background: #f0f8ff; border: 1px solid #4facfe; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+            <div style="font-size: 0.9rem; color: #2c3e50;">
+                <strong>Langkah 1:</strong> Copy perintah di samping, lalu paste ke ChatGPT/Gemini untuk membuat soal otomatis.
+            </div>
+            <button type="button" class="btn btn-blue" style="background: #3498db; white-space: nowrap;" onclick="copyPromptAI()">📋 Copy Format Prompt AI</button>
+        </div>
+
         <div class="form-group" style="margin-bottom: 15px;">
-            <label>Mata Pelajaran (Wajib)</label>
+            <label>Langkah 2: Mata Pelajaran (Wajib)</label>
             <input type="text" id="paste-mapel" placeholder="Contoh: TIK UH 1">
         </div>
 
         <div class="form-group">
-            <label>Format Teks (Paste di sini):</label>
-            <textarea id="teks-paste-soal" style="width: 100%; height: 300px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
+            <label>Langkah 3: Paste Hasil Generate AI di sini:</label>
+            <textarea id="teks-paste-soal" style="width: 100%; height: 250px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
 A: Jakarta
 B: Bandung
 C: Surabaya
@@ -466,17 +471,7 @@ D: Medan
 E: Bali
 KUNCI: A
 SKOR: 5
-PENJELASAN: Jakarta adalah ibukota Indonesia.
-
-SOAL: Siapa presiden pertama Indonesia?
-A: Soekarno
-B: Soeharto
-C: Habibie
-D: SBY
-E: Jokowi
-KUNCI: A
-SKOR: 5
-PENJELASAN: Ir. Soekarno adalah presiden pertama RI."></textarea>
+PENJELASAN: Jakarta adalah ibukota Indonesia."></textarea>
         </div>
 
         <button class="btn btn-green" style="width: 100%; margin-top: 15px; background: #9b59b6;" onclick="prosesPasteSoal()">💾 Simpan ke Bank Soal</button>
@@ -1337,6 +1332,40 @@ async function prosesPasteSoal() {
         Swal.fire('Error!', 'Terjadi kesalahan koneksi ke server.', 'error'); 
     }
 }
+
+function copyPromptAI() {
+    const promptText = `Tolong buatkan 5 soal pilihan ganda tentang [TEMA_MAPEL_DI_SINI]. 
+Gunakan format persis seperti ini untuk setiap soal, TANPA teks tambahan di luar format:
+
+SOAL: [Pertanyaan]
+A: [Pilihan A]
+B: [Pilihan B]
+C: [Pilihan C]
+D: [Pilihan D]
+E: [Pilihan E]
+KUNCI: [A/B/C/D/E]
+SKOR: 5
+PENJELASAN: [Penjelasan singkat]`;
+
+    // Menggunakan Clipboard API untuk copy
+    navigator.clipboard.writeText(promptText).then(() => {
+        // Menggunakan SweetAlert untuk notifikasi sukses
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+        
+        Toast.fire({
+            icon: 'success',
+            title: 'Format Prompt AI berhasil di-copy!'
+        });
+    }).catch(err => {
+        Swal.fire('Gagal Copy', 'Browser Anda tidak mendukung fitur copy otomatis. Silakan ketik manual.', 'error');
+    });
+}    
     
 async function prosesUploadSoal() {
     const file = document.getElementById("file-csv-soal").files[0];
