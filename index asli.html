@@ -465,9 +465,47 @@ async function ambilDataSiswa() {
     } catch (err) { console.error("Gagal ambil data siswa:", err); }
 }
 
-function cariSiswa() {
+// function cariSiswa() {
+//     // Pemicu Fullscreen pertama kali (dari interaksi klik)
+//     if (!document.fullscreenElement && !kuisAktif) {
+//         masukFullscreen();
+//     }
+
+//     const nisnInput = document.getElementById("input-nisn").value.trim();
+//     if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
+
+//     const siswa = dataSiswaGlobal.find(s => s.nisn === nisnInput);
+//     if (siswa) {
+//         document.getElementById("hasil-nama").textContent = siswa.nama;
+//         document.getElementById("hasil-kelas").textContent = siswa.kelas;
+//         nisnSiswa = siswa.nisn; namaSiswa = siswa.nama; kelasSiswa = siswa.kelas;
+        
+//         document.getElementById("hasil-cari-siswa").classList.add("aktif");
+//         document.getElementById("form-input-nisn").style.display = "none";
+//         document.getElementById("layar-pilih-jenis").classList.remove("sembunyi");
+//     } else {
+//         alert("❌ NISN tidak ditemukan.");
+//     }
+// }
+async function cariSiswa() {
+    // Pemicu Fullscreen pertama kali (dari interaksi klik)
+    if (!document.fullscreenElement && !kuisAktif) {
+        masukFullscreen();
+    }
+
     const nisnInput = document.getElementById("input-nisn").value.trim();
-    if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
+    
+    // Ganti alert kosong dengan SweetAlert
+    if (!nisnInput) { 
+        Swal.fire({
+            icon: 'warning',
+            title: 'Oops...',
+            text: 'Masukkan NISN terlebih dahulu!',
+            confirmButtonColor: '#3498db',
+            confirmButtonText: 'Mengerti'
+        });
+        return; 
+    }
 
     const siswa = dataSiswaGlobal.find(s => s.nisn === nisnInput);
     if (siswa) {
@@ -479,9 +517,16 @@ function cariSiswa() {
         document.getElementById("form-input-nisn").style.display = "none";
         document.getElementById("layar-pilih-jenis").classList.remove("sembunyi");
     } else {
-        alert("❌ NISN tidak ditemukan.");
+        // Ganti alert tidak ditemukan dengan SweetAlert
+        Swal.fire({
+            icon: 'error',
+            title: 'NISN Tidak Ditemukan',
+            text: 'Periksa kembali NISN Anda atau hubungi pengawas.',
+            confirmButtonColor: '#e74c3c',
+            confirmButtonText: 'Tutup'
+        });
     }
-}
+}    
 
 async function ambilJadwal() {
     try {
@@ -897,9 +942,38 @@ function masukFullscreen() {
     }
 }
 
+function paksaFullscreenSaatAwal() {
+    // Jika sudah fullscreen atau sedang dalam ujian, abaikan
+    if (document.fullscreenElement || kuisAktif) return;
+
+    masukFullscreen();
+    
+    // Hapus event listener agar tidak terus-menerus memicu
+    document.removeEventListener('click', paksaFullscreenSaatAwal);
+    document.removeEventListener('touchstart', paksaFullscreenSaatAwal);
+}
+
+// Daftarkan event listener untuk klik pertama di mana saja
+document.addEventListener('click', paksaFullscreenSaatAwal);
+document.addEventListener('touchstart', paksaFullscreenSaatAwal); // Untuk HP        
+
 function aktifkanDeteksiKeluarFullscreen() {
-    document.addEventListener("fullscreenchange", () => {
-        // Jika sedang dalam ujian TAPI tidak dalam mode fullscreen
+    document.addEventListener("fullscreenchange", async () => {
+        // Jika sedang masuk mode fullscreen
+        if (document.fullscreenElement) {
+            // Kunci tombol ESC (tekan lama baru keluar)
+            if ('keyboard' in navigator && 'lock' in navigator.keyboard) {
+                try {
+                    await navigator.keyboard.lock(['Escape']);
+                    console.log("ESC berhasil dikunci: tekan lama untuk keluar.");
+                } catch (err) {
+                    console.warn("Gagal mengunci keyboard:", err);
+                }
+            }
+            return;
+        }
+
+        // Jika sedang ujian TAPI keluar dari fullscreen (pelanggaran)
         if (kuisAktif && !document.fullscreenElement) {
             jumlahPelanggaranFullscreen++; // Catat pelanggaran
             blokirLayarSementara("Keluar dari Mode Layar Penuh!");
@@ -1054,6 +1128,10 @@ async function selesaikanUjian() {
         if (document.fullscreenElement) {
             document.exitFullscreen();
         }
+        // Buka kunci keyboard setelah ujian selesai
+        if ('keyboard' in navigator && 'unlock' in navigator.keyboard) {
+            navigator.keyboard.unlock();
+        }
         
         // Hitung skor
         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
@@ -1088,6 +1166,8 @@ async function selesaikanUjian() {
         
         // Kirim data
         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+        // TAMBAHKAN BARIS INI UNTUK KIRIM WA
+        kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
     }
 }
     
@@ -1186,6 +1266,30 @@ function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggar
     .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
     .catch(err => console.error("❌ Gagal:", err));
 }
+
+function kirimHasilKeWA(skor, benar, total, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
+    // Jangan kirim WA jika hanya ujian latihan
+    if (mapelDipilih && mapelDipilih.isLatihan) return;
+
+    const params = new URLSearchParams({
+        aksi: "kirim_hasil_wa",
+        nama: namaSiswa,
+        nisn: nisnSiswa,
+        mapel: mapelSiswa,
+        skor: skor,
+        benar: benar,
+        total: total,
+        pindah_tab: pindahTab,
+        pelanggaran_kamera: pelanggaranKamera,
+        pelanggaran_fullscreen: pelanggaranFullscreen
+    });
+
+    // Tembak API tanpa menunggu balasan (mode no-cors)
+    fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
+    .then(() => console.log("✅ Perintah kirim WA terkirim ke server."))
+    .catch(err => console.error("❌ Gagal kirim WA:", err));
+}
+    
 /* --- PEMBAHASAN & RESET --- */
 function tampilkanPembahasan() {
     document.getElementById("layar-akhir").style.display = "none";
@@ -1241,9 +1345,11 @@ function mulaiUlang() {
 /* --- INIT --- */
 aktifkanDeteksiPindahTab(); 
 aktifkanAntiScreenshot(); 
-aktifkanDeteksiKeluarFullscreen(); // <-- TAMBAHKAN INI
+aktifkanDeteksiKeluarFullscreen(); 
+// paksaFullscreenSaatAwal();    
 ambilJadwal(); 
 ambilDataSiswa();
+    
 </script>
 </body>
 </html>
