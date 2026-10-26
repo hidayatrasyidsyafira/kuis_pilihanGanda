@@ -898,8 +898,22 @@ function masukFullscreen() {
 }
 
 function aktifkanDeteksiKeluarFullscreen() {
-    document.addEventListener("fullscreenchange", () => {
-        // Jika sedang dalam ujian TAPI tidak dalam mode fullscreen
+    document.addEventListener("fullscreenchange", async () => {
+        // Jika sedang masuk mode fullscreen
+        if (document.fullscreenElement) {
+            // Kunci tombol ESC (tekan lama baru keluar)
+            if ('keyboard' in navigator && 'lock' in navigator.keyboard) {
+                try {
+                    await navigator.keyboard.lock(['Escape']);
+                    console.log("ESC berhasil dikunci: tekan lama untuk keluar.");
+                } catch (err) {
+                    console.warn("Gagal mengunci keyboard:", err);
+                }
+            }
+            return;
+        }
+
+        // Jika sedang ujian TAPI keluar dari fullscreen (pelanggaran)
         if (kuisAktif && !document.fullscreenElement) {
             jumlahPelanggaranFullscreen++; // Catat pelanggaran
             blokirLayarSementara("Keluar dari Mode Layar Penuh!");
@@ -1053,6 +1067,10 @@ async function selesaikanUjian() {
 
         if (document.fullscreenElement) {
             document.exitFullscreen();
+        }
+        // Buka kunci keyboard setelah ujian selesai
+        if ('keyboard' in navigator && 'unlock' in navigator.keyboard) {
+            navigator.keyboard.unlock();
         }
         
         // Hitung skor
