@@ -1078,6 +1078,7 @@ async function selesaikanUjian() {
         
         const finalPindahTab = jumlahPindahTab;
         const finalPelanggaranKamera = jumlahPelanggaranKamera;
+        const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
         
         // Tampilkan hasil
         document.getElementById("layar-cbt").style.display = "none";
@@ -1086,7 +1087,7 @@ async function selesaikanUjian() {
         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
         
         // Kirim data
-        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera);
+        kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
     }
 }
     
@@ -1161,7 +1162,7 @@ function updateTimerTotal() {
 }
 
 /* --- KIRIM HASIL KE SHEET --- */
-function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera) {
+function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
     if (mapelDipilih && mapelDipilih.isLatihan) {
         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
         return; 
@@ -1176,6 +1177,7 @@ function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggar
         skor: skorAkhir, 
         pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
         pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
+        pelanggaran_fullscreen: pelanggaranFullscreen || 0,
         mapel: mapelSiswa, 
         waktu_jawab: new Date().toLocaleString("id-ID")
     });
