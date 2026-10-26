@@ -466,6 +466,11 @@ async function ambilDataSiswa() {
 }
 
 function cariSiswa() {
+    // Pemicu Fullscreen pertama kali (dari interaksi klik)
+    if (!document.fullscreenElement && !kuisAktif) {
+        masukFullscreen();
+    }
+
     const nisnInput = document.getElementById("input-nisn").value.trim();
     if (!nisnInput) { alert("⚠️ Masukkan NISN terlebih dahulu!"); return; }
 
@@ -910,7 +915,7 @@ function paksaFullscreenSaatAwal() {
 
 // Daftarkan event listener untuk klik pertama di mana saja
 document.addEventListener('click', paksaFullscreenSaatAwal);
-document.addEventListener('touchstart', paksaFullscreenSaatAwal); // Untuk HP    
+document.addEventListener('touchstart', paksaFullscreenSaatAwal); // Untuk HP        
 
 function aktifkanDeteksiKeluarFullscreen() {
     document.addEventListener("fullscreenchange", async () => {
@@ -1275,7 +1280,7 @@ function mulaiUlang() {
 aktifkanDeteksiPindahTab(); 
 aktifkanAntiScreenshot(); 
 aktifkanDeteksiKeluarFullscreen(); 
-paksaFullscreenSaatAwal();    
+// paksaFullscreenSaatAwal();    
 ambilJadwal(); 
 ambilDataSiswa();
     
