@@ -236,8 +236,9 @@
                             <th>Pertanyaan & Pilihan</th>
                             <th width="60">Kunci</th>
                             <th width="50">Skor</th>
-                            <th width="80">Aksi</th>
                             <th width="60">Gambar</th>
+                            <th width="80">Aksi</th>
+                            
                         </tr>
                     </thead>
                     <tbody id="tbody-soal"><tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
@@ -1108,12 +1109,13 @@ function renderTabelSoal() {
                 <td style="text-align:center;">
                     <span class="editable-cell" data-baris="${barisSheet}" data-kolom="9" data-tipe="angka">${d.skor}</span>
                 </td>
-                <td style="text-align:center;">
-                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
-                </td>
                 <td>
                     ${d.gambar ? `<span style="color:#2ecc71; font-size:0.85rem; display:block; margin-top:5px;">🖼️ Ada Gambar</span>` : ""}
                 </td>
+                <td style="text-align:center;">
+                    <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
+                </td>
+
             </tr>`;
     });
 
