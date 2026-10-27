@@ -918,6 +918,12 @@ async function mulaiKuis() {
     
     // Acak Soal & Pilihan
     daftarSoal = acak(daftarSoal); 
+
+    const batasMaksimal = parseInt(mapelDipilih.batasSoal) || 0;
+    if (batasMaksimal > 0 && batasMaksimal < daftarSoal.length) {
+        daftarSoal = daftarSoal.slice(0, batasMaksimal);
+    }
+    
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
 
     if (jadwalInterval) clearInterval(jadwalInterval);
