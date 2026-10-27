@@ -243,6 +243,7 @@
                             <th>Pertanyaan & Pilihan</th>
                             <th width="60">Kunci</th>
                             <th width="50">Skor</th>
+                            <th width="100">Kelas</th>
                             <th width="60">Gambar</th>
                             <th width="80">Aksi</th>
                             
@@ -407,6 +408,10 @@
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Mata Pelajaran (Harus sama dengan Jadwal)</label>
                     <input type="text" id="s-mapel" placeholder="Contoh: TIK UH 3 Queue">
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Kelas (Opsional - Kosongkan jika untuk semua kelas)</label>
+                    <input type="text" id="s-kelas" placeholder="Contoh: X-1, X-2 (Pisahkan dengan koma)">
                 </div>
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Pertanyaan</label>
@@ -1236,6 +1241,9 @@ function renderTabelSoal() {
                 <td style="text-align:center;">
                     <span class="editable-cell" data-baris="${barisSheet}" data-kolom="9" data-tipe="angka">${d.skor}</span>
                 </td>
+                <td style="text-align:center;">
+                    <span class="editable-cell badge badge-yellow" data-baris="${barisSheet}" data-kolom="12" data-tipe="text">${d.kelas || 'Semua'}</span>
+                </td>
                 <td>
                     ${d.gambar ? `<span style="color:#2ecc71; font-size:0.85rem; display:block; margin-top:5px;">🖼️ Ada Gambar</span>` : ""}
                 </td>
@@ -1398,7 +1406,8 @@ async function simpanSoalBaru() {
         kunci: document.getElementById("s-kunci").value,
         skor: document.getElementById("s-skor").value,
         penjelasan: document.getElementById("s-penjelasan").value,
-        gambar: document.getElementById("s-gambar").value.trim() // <-- BARU
+        gambar: document.getElementById("s-gambar").value.trim(), // <-- BARU
+        kelas: document.getElementById("s-kelas").value.trim()    
     };
 
     if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); return; }
@@ -1415,6 +1424,7 @@ if (json.status === "success") {
     // Reset form soal & gambar
     hapusGambarSoal();
     document.getElementById("s-mapel").value = "";
+    document.getElementById("s-kelas").value = "";
     document.getElementById("s-soal").value = "";
     document.getElementById("s-a").value = "";
     document.getElementById("s-b").value = "";
