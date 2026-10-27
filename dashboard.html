@@ -162,6 +162,7 @@
                             <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
                             <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
                             <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
+                            <th>Batas Soal</th>
                             <th width="80">Aksi</th>
                             <th width="100">Gambar</th>
                         </tr>
@@ -359,6 +360,10 @@
                     <select id="j-jenis"><option value="UH">UH</option><option value="UAS">UAS</option></select>
                 </div>
                 <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
+                <div class="form-group">
+                    <label>Batas Soal (0 = Semua Soal)</label>
+                    <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
+                </div>
             </div>
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
@@ -752,6 +757,7 @@ function renderTabelJadwal() {
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+                <td>${j.batasSoal || 'Semua'}</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusJadwal(${barisSheet})">Hapus</button>
                 </td>
@@ -793,7 +799,8 @@ async function simpanJadwalBaru() {
         kelas: document.getElementById("j-kelas").value,
         token: document.getElementById("j-token").value,
         jenis: document.getElementById("j-jenis").value,
-        durasi: document.getElementById("j-durasi").value
+        durasi: document.getElementById("j-durasi").value,
+        batasSoal: document.getElementById("j-batas-soal").value
     };
 
     if(!data.waktu || !data.tanggal || !data.mapel) { Swal.fire('Oops...', 'Lengkapi data terlebih dahulu!', 'warning'); return; }
