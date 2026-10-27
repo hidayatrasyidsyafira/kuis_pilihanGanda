@@ -135,6 +135,7 @@
             <h1>⚙️ Dashboard Admin Ujian</h1>
             <div>
                 <!-- <button class="btn btn-green" onclick="bukaModal('modal-upload')">📤 Upload Data Siswa</button> -->
+                <button class="btn btn-red" onclick="logoutGuru()">🚪 Logout</button>
                 <button class="btn btn-blue" onclick="muatSemuaData()">🔄 Refresh Data</button>
             </div>
         </div>
@@ -501,6 +502,18 @@
     </div>
 
 <script>
+
+/* =========================================
+   SATPAM: CEK LOGIN GURU
+   ========================================= */
+const savedSession = sessionStorage.getItem("sessionGuru");
+if (!savedSession) {
+    // Jika belum login, tendang ke halaman login
+    window.location.href = "login.html";
+}
+
+let sessionGuru = savedSession ? JSON.parse(savedSession) : { role: "", nama: "", kelas: [], kelasArray: [] };    
+    
 //const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
 
@@ -688,9 +701,13 @@ function renderTabelNilai() {
         const kelas = String(d.kelas || "");
         const mapel = String(d.mapel || "");
         
-        return nama.includes(fNama) &&
-               (fKelas === "" || kelas === fKelas) &&
-               (fMapel === "" || mapel === fMapel);
+        // Filter pencarian & dropdown
+        const cocokFilter = nama.includes(fNama) && (fKelas === "" || kelas === fKelas) && (fMapel === "" || mapel === fMapel);
+        
+        // Filter berdasarkan kelas guru (admin bisa lihat semua)
+        const cocokKelasGuru = (sessionGuru.role === "admin") || (sessionGuru.kelasArray || []).includes(kelas);
+
+        return cocokFilter && cocokKelasGuru;
     });
 
     const totalData = dataFiltered.length;
@@ -1203,12 +1220,21 @@ function renderTabelSoal() {
     
     document.getElementById("pilih-semua").checked = false;
 
-    const dataTampil = [];
-    semuaDataSoal.forEach((d, indexAsli) => {
-        if (fMapel === "" || d.mapel === fMapel) {
-            dataTampil.push({ ...d, indexAsli: indexAsli });
-        }
-    });
+        const dataTampil = [];
+        semuaDataSoal.forEach((d, indexAsli) => {
+            const cocokMapel = (fMapel === "" || d.mapel === fMapel);
+            const kelasSoal = String(d.kelas || "").toUpperCase();
+            
+            // Admin bisa lihat semua. Guru hanya melihat soal kelasnya + soal umum
+            const cocokKelasGuru = (sessionGuru.role === "admin") 
+                || (kelasSoal === "") 
+                || (kelasSoal === "SEMUA") 
+                || (sessionGuru.kelasArray || []).includes(kelasSoal);
+    
+            if (cocokMapel && cocokKelasGuru) {
+                dataTampil.push({ ...d, indexAsli: indexAsli });
+            }
+        });
 
     if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
 
@@ -2092,9 +2118,41 @@ function hapusGambarSoal() {
     document.getElementById("s-gambar-preview").style.display = "none";
     document.getElementById("s-gambar-file").value = "";
 }
+
+function logoutGuru() {
+    Swal.fire({
+        title: 'Logout?',
+        text: "Anda akan keluar dari Dashboard.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        confirmButtonText: 'Ya, Logout',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            sessionStorage.removeItem("sessionGuru");
+            window.location.href = "login.html";
+        }
+    });
+}    
     
 /* --- INIT --- */
-muatDataSiswa();
+window.addEventListener("DOMContentLoaded", () => {
+    // Terapkan UI sesuai role
+    const headerTitle = document.querySelector(".header h1");
+    if (headerTitle) {
+        headerTitle.innerHTML = `⚙️ Dashboard Admin <span style="font-size: 0.9rem; color: #7f8c8d;">(${sessionGuru.nama} - ${sessionGuru.role.toUpperCase()})</span>`;
+    }
+    
+    // Sembunyikan menu Data Siswa jika role = guru
+    if (sessionGuru.role !== "admin") {
+        const tabSiswa = document.getElementById("tab-btn-siswa");
+        if (tabSiswa) tabSiswa.style.display = "none";
+    }
+
+    // Muat data awal
+    muatDataSiswa();
+});
 </script>
 </body>
 </html>
