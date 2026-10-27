@@ -152,7 +152,6 @@
                 <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="halamanNilaiAktif = 1; renderTabelNilai()">
                 <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
                 <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
-                <button class="btn btn-orange" onclick="tampilkanLeaderboardDashboard()" style="background: #f39c12;">🏆 Lihat Peringkat</button>
                 <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
                 <button class="btn btn-red" onclick="hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button>
             </div>
@@ -162,12 +161,9 @@
                         <tr>
                             <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
                             <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
-                            <th>Skor</th>
-                            <th>Benar/Total</th>
-                            <th>Pindah Tab</th>
-                            <th>Keluar FS</th> <!-- BARU -->
-                            <th>Pelanggaran Kamera</th>
+                            <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
                             <th width="80">Aksi</th>
+                            <th width="100">Gambar</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-nilai"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
@@ -203,7 +199,7 @@
                         <tr>
                             <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
                             <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
-                            <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th><th>Batas Soal</th>
+                            <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
                             <th width="80">Aksi</th>
                         </tr>
                     </thead>
@@ -239,7 +235,6 @@
                             <th width="60">Kunci</th>
                             <th width="50">Skor</th>
                             <th width="80">Aksi</th>
-                            <th width="70">Gambar</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-soal"><tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
@@ -364,10 +359,6 @@
                     <select id="j-jenis"><option value="UH">UH</option><option value="UAS">UAS</option></select>
                 </div>
                 <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
-                <div class="form-group">
-                    <label>Batas Soal (0 = Semua Soal)</label>
-                    <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
-                </div>
             </div>
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
@@ -545,7 +536,6 @@ async function muatDataNilai() {
     }
 }
 
-
 function isiFilterNilai() {
     const setKelas = new Set(); const setMapel = new Set();
     semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
@@ -591,24 +581,15 @@ function renderTabelNilai() {
         let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
         const noUrut = startIndex + index + 1; 
         
-        // Pastikan data tidak undefined
-        const pindahTab = d.pindah_tab || 0;
-        const pelKamera = d.pelanggaran_kamera || 0;
-        const pelFs = d.pelanggaran_fullscreen || 0;
-
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli}"></td>
-                <td>${noUrut}</td>
-                <td>${d.waktu}</td>
-                <td><strong>${d.nama}</strong></td>
-                <td>${d.kelas}</td>
-                <td>${d.mapel}</td>
+                <td>${noUrut}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
+                <td>${d.kelas}</td><td>${d.mapel}</td>
                 <td><span class="badge ${bSkor}">${d.skor}</span></td>
                 <td>${d.jumlah_benar} / ${d.total_soal}</td>
-                <td class="${pindahTab > 0 ? 'warning-text' : ''}">${pindahTab}x</td>
-                <td class="${pelFs > 0 ? 'warning-text' : ''}">${pelFs}x</td>
-                <td class="${pelKamera > 0 ? 'warning-text' : ''}">${pelKamera}x</td>
+                <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
+                <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusNilai(${d.indexAsli})">Hapus</button>
                 </td>
@@ -616,68 +597,10 @@ function renderTabelNilai() {
     });
 }
 
-
 function ubahHalamanNilai(arah) {
     halamanNilaiAktif += arah;
     renderTabelNilai();
 }
-
-async function tampilkanLeaderboardDashboard() {
-    Swal.fire({
-        title: 'Memuat Peringkat...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
-
-    try {
-        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=leaderboard");
-        const json = await res.json();
-        
-        if (json.status === "success") {
-            // Ambil semua nilai, urutkan dari tertinggi
-            const semuaNilai = json.data.sort((a, b) => b.skor - a.skor).slice(0, 10);
-            
-            let htmlTabel = `<div style="text-align: left; margin-top: 15px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                    <thead>
-                        <tr style="background: #f39c12; color: white;">
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Rank</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Nama</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Mapel</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Kelas</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Skor</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
-            semuaNilai.forEach((siswa, index) => {
-                const bgColor = index % 2 === 0 ? "#f9f9f9" : "white";
-                const medal = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : index + 1));
-                htmlTabel += `
-                    <tr style="background: ${bgColor};">
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${medal}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>${siswa.nama}</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${siswa.mapel}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${siswa.kelas}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;"><strong>${siswa.skor}</strong></td>
-                    </tr>
-                `;
-            });
-            
-            htmlTabel += `</tbody></table></div>`;
-
-            Swal.fire({
-                title: '🏆 Top 10 Nilai Tertinggi (Semua Mapel)',
-                html: htmlTabel,
-                width: 650,
-                confirmButtonColor: '#3498db',
-                confirmButtonText: 'Tutup'
-            });
-        }
-    } catch (err) {
-        Swal.fire('Gagal', 'Tidak dapat memuat data peringkat.', 'error');
-    }
-}    
 
 /* =========================================
    FITUR HAPUS NILAI
@@ -773,24 +696,7 @@ function exportKeExcel() {
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
         <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; } td { border: 1px solid #ddd; padding: 8px; text-align: center; } td.text-left { text-align: left; }</style>
-        </head>
-        <body>
-            <table>
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Waktu</th>
-                        <th>Nama Siswa</th>
-                        <th>Kelas</th>
-                        <th>Matapelajaran</th>
-                        <th>Skor</th>
-                        <th>Nilai Benar</th>
-                        <th>Total Soal</th>
-                        <th>Pindah Tab</th>
-                        <th>Pelanggaran Kamera</th>
-                    </tr>
-                </thead>
-            <tbody>`;
+        </head><body><table><thead><tr><th>No</th><th>Waktu</th><th>Nama Siswa</th><th>Kelas</th><th>Matapelajaran</th><th>Skor</th><th>Nilai Benar</th><th>Total Soal</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th></tr></thead><tbody>`;
 
     dataTampil.forEach((d, index) => {
         tableHtml += `<tr><td>${index + 1}</td><td>${d.waktu}</td><td class="text-left">${d.nama}</td><td>${d.kelas}</td><td class="text-left">${d.mapel}</td><td>${d.skor}</td><td>${d.jumlah_benar}</td><td>${d.total_soal}</td><td>${d.pindah_tab}</td><td>${d.pelanggaran_kamera}</td></tr>`;
@@ -846,7 +752,6 @@ function renderTabelJadwal() {
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
-                <td>${j.batasSoal || 'Semua'}</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusJadwal(${barisSheet})">Hapus</button>
                 </td>
@@ -888,8 +793,7 @@ async function simpanJadwalBaru() {
         kelas: document.getElementById("j-kelas").value,
         token: document.getElementById("j-token").value,
         jenis: document.getElementById("j-jenis").value,
-        durasi: document.getElementById("j-durasi").value,
-        batasSoal: document.getElementById("j-batas-soal").value
+        durasi: document.getElementById("j-durasi").value
     };
 
     if(!data.waktu || !data.tanggal || !data.mapel) { Swal.fire('Oops...', 'Lengkapi data terlebih dahulu!', 'warning'); return; }
