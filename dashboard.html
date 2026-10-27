@@ -606,13 +606,16 @@ function isiFilterNilai() {
 // }
 function renderTabelNilai() {
     const tbody = document.getElementById("tbody-nilai");
-    const fNama = document.getElementById("filter-nama").value.toLowerCase();
-    const fKelas = document.getElementById("filter-kelas").value;
-    const fMapel = document.getElementById("filter-mapel").value;
-    const limit = parseInt(document.getElementById("limit-nilai").value) || 10;
+    
+    // Ambil nilai filter, beri nilai default jika kosong
+    const fNama = (document.getElementById("filter-nama")?.value || "").toLowerCase();
+    const fKelas = document.getElementById("filter-kelas")?.value || "";
+    const fMapel = document.getElementById("filter-mapel")?.value || "";
+    const limit = parseInt(document.getElementById("limit-nilai")?.value) || 10;
 
-    document.getElementById("pilih-semua-nilai").checked = false;
+    if(document.getElementById("pilih-semua-nilai")) document.getElementById("pilih-semua-nilai").checked = false;
 
+    // Filter data dengan aman
     const dataFiltered = semuaDataNilai.filter(d => 
         (d.nama || "").toLowerCase().includes(fNama) &&
         (fKelas === "" || d.kelas === fKelas) &&
@@ -629,7 +632,8 @@ function renderTabelNilai() {
     const endIndex = startIndex + limit;
     const dataTampil = dataFiltered.slice(startIndex, endIndex);
 
-    document.getElementById("info-halaman-nilai").textContent = `Halaman ${halamanNilaiAktif} / ${totalHalaman} (Total: ${totalData} data)`;
+    const infoHalaman = document.getElementById("info-halaman-nilai");
+    if(infoHalaman) infoHalaman.textContent = `Halaman ${halamanNilaiAktif} / ${totalHalaman} (Total: ${totalData} data)`;
 
     if (dataTampil.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Tidak ada data.</td></tr>`; 
@@ -638,28 +642,38 @@ function renderTabelNilai() {
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, index) => {
-        let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
+        // Cek keamanan data sebelum dirender
+        const skor = d.skor || 0;
+        const waktu = d.waktu || "-";
+        const nama = d.nama || "-";
+        const kelas = d.kelas || "-";
+        const mapel = d.mapel || "-";
+        const benar = d.jumlah_benar || 0;
+        const total = d.total_soal || 0;
+        const pindah = d.pindah_tab || 0;
+        const kamera = d.pelanggaran_kamera || 0;
+        
+        let bSkor = skor >= 85 ? "badge-green" : (skor >= 70 ? "badge-yellow" : "badge-red");
         const noUrut = startIndex + index + 1; 
         
-        // PERBAIKAN: Pastikan ada 11 <td> agar sesuai dengan 11 <th> di HTML
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli}"></td>
                 <td>${noUrut}</td>
-                <td>${d.waktu}</td>
-                <td><strong>${d.nama}</strong></td>
-                <td>${d.kelas}</td>
-                <td>${d.mapel}</td>
-                <td><span class="badge ${bSkor}">${d.skor}</span></td>
-                <td>${d.jumlah_benar} / ${d.total_soal}</td>
-                <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
-                <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
+                <td>${waktu}</td>
+                <td><strong>${nama}</strong></td>
+                <td>${kelas}</td>
+                <td>${mapel}</td>
+                <td><span class="badge ${bSkor}">${skor}</span></td>
+                <td>${benar} / ${total}</td>
+                <td class="${pindah > 0 ? 'warning-text' : ''}">${pindah}x</td>
+                <td class="${kamera > 0 ? 'warning-text' : ''}">${kamera}x</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusNilai(${d.indexAsli})">Hapus</button>
                 </td>
             </tr>`;
     });
-}    
+}  
 
 function ubahHalamanNilai(arah) {
     halamanNilaiAktif += arah;
