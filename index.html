@@ -844,7 +844,7 @@ function parseCSV(teks) {
 async function ambilSoal(namaMapel, fileKhusus = null) {
     try {
         // Panggil API Apps Script untuk mengambil soal berdasarkan nama mapel
-        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&mapel=" + encodeURIComponent(namaMapel));
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&mapel=" + encodeURIComponent(namaMapel) + "&kelas=" + encodeURIComponent(kelasSiswa));
         const json = await res.json();
         
         if (json.status === "success" && json.data.length > 0) {
