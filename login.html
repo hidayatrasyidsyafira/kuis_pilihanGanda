@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Dashboard Admin Ujian</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: #e9ecef; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .login-container {
+            background: white; padding: 40px 30px; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-width: 400px; width: 100%; text-align: center;
+        }
+        .login-icon { font-size: 3rem; margin-bottom: 10px; }
+        h2 { color: #2c3e50; margin-bottom: 8px; }
+        p { color: #7f8c8d; font-size: 0.95rem; margin-bottom: 25px; }
+        
+        input {
+            width: 100%; padding: 14px; border: 2px solid #b8d8e8;
+            border-radius: 8px; font-size: 1rem; margin-bottom: 15px;
+            outline: none; text-align: center; transition: 0.2s;
+        }
+        input:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15); }
+        
+        button {
+            width: 100%; padding: 15px; background: #3498db; color: white;
+            border: none; border-radius: 8px; font-size: 1.1rem;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #95a5a6; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-icon">🔒</div>
+        <h2>Login Dashboard</h2>
+        <p>Masukkan kredensial Anda untuk melanjutkan.</p>
+        
+        <input type="text" id="input-username" placeholder="Username" autocomplete="username">
+        <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()">
+        
+        <button id="btn-login" onclick="prosesLogin()">🔓 Masuk Dashboard</button>
+    </div>
+
+<script>
+    // GANTI DENGAN URL APPS SCRIPT ANDA
+    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
+
+    async function prosesLogin() {
+        const username = document.getElementById("input-username").value.trim();
+        const password = document.getElementById("input-password").value.trim();
+        const btn = document.getElementById("btn-login");
+
+        if (!username || !password) {
+            Swal.fire('Oops', 'Username dan Password wajib diisi!', 'warning');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "⏳ Memverifikasi...";
+
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ aksi: "login_guru", username: username, password: password })
+            });
+            const json = await res.json();
+
+            if (json.status === "success") {
+                // Simpan data session
+                const sessionGuru = json.data;
+                sessionGuru.kelasArray = sessionGuru.kelas ? sessionGuru.kelas.split(",").map(k => k.trim()) : [];
+                sessionStorage.setItem("sessionGuru", JSON.stringify(sessionGuru));
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: `Selamat datang, ${sessionGuru.nama}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.href = "dashboard.html";
+                });
+            } else {
+                Swal.fire('Akses Ditolak', json.message, 'error');
+                btn.disabled = false;
+                btn.textContent = "🔓 Masuk Dashboard";
+            }
+        } catch (err) {
+            Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+            btn.disabled = false;
+            btn.textContent = "🔓 Masuk Dashboard";
+        }
+    }
+</script>
+</body>
+</html>
