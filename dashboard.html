@@ -200,6 +200,7 @@
                             <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
                             <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
                             <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                            <th>Batas Soal</th>
                             <th width="80">Aksi</th>
                         </tr>
                     </thead>
@@ -359,6 +360,11 @@
                     <select id="j-jenis"><option value="UH">UH</option><option value="UAS">UAS</option></select>
                 </div>
                 <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
+                <!-- TAMBAHKAN INI -->
+                <div class="form-group">
+                    <label>Batas Soal (0 = Semua Soal)</label>
+                    <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
+                </div>
             </div>
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
@@ -793,7 +799,8 @@ async function simpanJadwalBaru() {
         kelas: document.getElementById("j-kelas").value,
         token: document.getElementById("j-token").value,
         jenis: document.getElementById("j-jenis").value,
-        durasi: document.getElementById("j-durasi").value
+        durasi: document.getElementById("j-durasi").value,
+        batasSoal: document.getElementById("j-batas-soal").value // <-- TAMBAHKAN INI
     };
 
     if(!data.waktu || !data.tanggal || !data.mapel) { Swal.fire('Oops...', 'Lengkapi data terlebih dahulu!', 'warning'); return; }
