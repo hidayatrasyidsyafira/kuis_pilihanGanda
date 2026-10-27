@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Guru</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #e9ecef; min-height: 100vh; padding: 30px; }
@@ -155,6 +156,13 @@
                 <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
                 <button class="btn btn-orange" onclick="tampilkanLeaderboardDashboard()" style="background: #f39c12;">🏆 Lihat Peringkat</button>
                 <button class="btn btn-red" onclick="hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button>
+            </div>
+            <!-- GRAFIK STATISTIK -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #2c3e50; font-size: 1.1rem; text-align: center;">📊 Statistik Distribusi Nilai</h4>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="grafik-nilai"></canvas>
+                </div>
             </div>
             <div class="table-responsive">
                 <table>
@@ -492,6 +500,7 @@
    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
 
 let semuaDataNilai = [];
+let chartNilaiInstance = null;    
 let semuaDataJadwal = [];
 let semuaDataSoal = [];
 let semuaDataSiswa = [];    
@@ -574,6 +583,90 @@ async function muatDataNilai() {
     sMapel.value = valMapel;
 }
 
+function renderGrafikNilai() {
+    // 1. Ambil data yang sedang difilter
+    const fNama = document.getElementById("filter-nama").value.toLowerCase();
+    const fKelas = document.getElementById("filter-kelas").value;
+    const fMapel = document.getElementById("filter-mapel").value;
+
+    const dataFiltered = semuaDataNilai.filter(d => 
+        (d.nama || "").toLowerCase().includes(fNama) &&
+        (fKelas === "" || d.kelas === fKelas) &&
+        (fMapel === "" || d.mapel === fMapel)
+    );
+
+    // 2. Hitung Distribusi Nilai
+    let remedial = 0;    // < 70
+    let cukup = 0;       // 70 - 84
+    let baik = 0;        // 85 - 99
+    let sempurna = 0;    // 100
+    let totalSkor = 0;
+
+    dataFiltered.forEach(d => {
+        const skor = parseInt(d.skor) || 0;
+        totalSkor += skor;
+        
+        if (skor < 70) remedial++;
+        else if (skor < 85) cukup++;
+        else if (skor < 100) baik++;
+        else sempurna++;
+    });
+
+    const rataRata = dataFiltered.length > 0 ? (totalSkor / dataFiltered.length).toFixed(1) : 0;
+
+    // 3. Hapus grafik lama jika ada
+    if (chartNilaiInstance) {
+        chartNilaiInstance.destroy();
+    }
+
+    // 4. Gambar Grafik Baru
+    const ctx = document.getElementById('grafik-nilai').getContext('2d');
+    chartNilaiInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Remedial (<70)', 'Cukup (70-84)', 'Baik (85-99)', 'Sempurna (100)'],
+            datasets: [{
+                label: `Jumlah Siswa (Rata-rata: ${rataRata})`,
+                data: [remedial, cukup, baik, sempurna],
+                backgroundColor: [
+                    'rgba(231, 76, 60, 0.7)',   // Merah (Remedial)
+                    'rgba(241, 196, 15, 0.7)',  // Kuning (Cukup)
+                    'rgba(52, 152, 219, 0.7)',  // Biru (Baik)
+                    'rgba(46, 204, 113, 0.7)'   // Hijau (Sempurna)
+                ],
+                borderColor: [
+                    'rgba(231, 76, 60, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)'
+                ],
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, // Sembunyikan legend karena sudah jelas
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ` ${context.raw} Siswa`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 } // Pastikan angka bulat
+                }
+            }
+        }
+    });
+}
+    
 function renderTabelNilai() {
     const tbody = document.getElementById("tbody-nilai");
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
@@ -637,6 +730,7 @@ function renderTabelNilai() {
                 </td>
             </tr>`;
     });
+    renderGrafikNilai();
 }
 
 function ubahHalamanNilai(arah) {
