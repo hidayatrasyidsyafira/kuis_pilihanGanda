@@ -153,6 +153,7 @@
                 <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
                 <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
                 <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
+                <button class="btn btn-orange" onclick="tampilkanLeaderboardDashboard()" style="background: #f39c12;">🏆 Lihat Peringkat</button>
                 <button class="btn btn-red" onclick="hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button>
             </div>
             <div class="table-responsive">
@@ -715,6 +716,63 @@ function exportKeExcel() {
     link.download = `Rekap_Nilai_${new Date().toLocaleDateString('id-ID').replace(/\//g, '-')}.xls`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
+
+async function tampilkanLeaderboardDashboard() {
+    Swal.fire({
+        title: 'Memuat Peringkat...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=leaderboard");
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            // Ambil semua nilai, urutkan dari tertinggi
+            const semuaNilai = json.data.sort((a, b) => b.skor - a.skor).slice(0, 10);
+            
+            let htmlTabel = `<div style="text-align: left; margin-top: 15px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #f39c12; color: white;">
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Rank</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Nama</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Mapel</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Kelas</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            semuaNilai.forEach((siswa, index) => {
+                const bgColor = index % 2 === 0 ? "#f9f9f9" : "white";
+                const medal = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : index + 1));
+                htmlTabel += `
+                    <tr style="background: ${bgColor};">
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${medal}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>${siswa.nama}</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${siswa.mapel}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${siswa.kelas}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;"><strong>${siswa.skor}</strong></td>
+                    </tr>
+                `;
+            });
+            
+            htmlTabel += `</tbody></table></div>`;
+
+            Swal.fire({
+                title: '🏆 Top 10 Nilai Tertinggi (Semua Mapel)',
+                html: htmlTabel,
+                width: 650,
+                confirmButtonColor: '#3498db',
+                confirmButtonText: 'Tutup'
+            });
+        }
+    } catch (err) {
+        Swal.fire('Gagal', 'Tidak dapat memuat data peringkat.', 'error');
+    }
+}    
 
 /* =========================================
    TAB 2: JADWAL (Baca, Tambah, Edit, Hapus)
