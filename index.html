@@ -409,6 +409,7 @@
             </div>
             <p style="margin-bottom: 20px; font-size: 1rem; color: #555;" id="status-kirim">⏳ Memproses hasil...</p>
             
+            <button class="btn-lanjut" style="background: #f39c12;" onclick="tampilkanLeaderboard()">🏆 Lihat Peringkat (Top 10)</button>
             <button class="btn-lanjut" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
             <button class="btn-kembali-login" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
         </div>
@@ -1401,6 +1402,72 @@ function tampilkanPembahasan() {
         wadah.appendChild(div);
     });
 }
+
+async function tampilkanLeaderboard() {
+    // Tampilkan loading
+    Swal.fire({
+        title: 'Memuat Peringkat...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=leaderboard");
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            // 1. Filter hanya untuk mapel yang sedang diuji
+            const nilaiMapelIni = json.data.filter(d => d.mapel === mapelSiswa);
+            
+            // 2. Urutkan dari skor tertinggi ke terendah
+            nilaiMapelIni.sort((a, b) => b.skor - a.skor);
+            
+            // 3. Ambil 10 teratas
+            const top10 = nilaiMapelIni.slice(0, 10);
+            
+            // 4. Susun HTML untuk SweetAlert
+            let htmlTabel = `<div style="text-align: left; margin-top: 15px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+                    <thead>
+                        <tr style="background: #3498db; color: white;">
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Rank</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Nama</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Kelas</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            top10.forEach((siswa, index) => {
+                // Highlight jika siswa yang login ada di daftar
+                const isMe = siswa.nama === namaSiswa;
+                const bgColor = isMe ? "#d4edda" : (index % 2 === 0 ? "#f9f9f9" : "white");
+                const medal = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : index + 1));
+                
+                htmlTabel += `
+                    <tr style="background: ${bgColor}; ${isMe ? 'font-weight: bold;' : ''}">
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${medal}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${siswa.nama}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${siswa.kelas}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${siswa.skor}</td>
+                    </tr>
+                `;
+            });
+            
+            htmlTabel += `</tbody></table></div>`;
+
+            Swal.fire({
+                title: `🏆 Peringkat ${mapelSiswa}`,
+                html: htmlTabel,
+                width: 600,
+                confirmButtonColor: '#3498db',
+                confirmButtonText: 'Tutup'
+            });
+        }
+    } catch (err) {
+        Swal.fire('Gagal', 'Tidak dapat memuat data peringkat.', 'error');
+    }
+}    
 
 function mulaiUlang() {
     clearInterval(timerInterval); if (jadwalInterval) clearInterval(jadwalInterval);
