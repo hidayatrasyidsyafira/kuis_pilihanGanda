@@ -758,6 +758,7 @@ function renderTabelJadwal() {
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+                <td>${j.batasSoal || 'Semua'}</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusJadwal(${barisSheet})">Hapus</button>
                 </td>
