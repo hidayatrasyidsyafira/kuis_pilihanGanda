@@ -580,13 +580,19 @@ function renderTabelNilai() {
     const fMapel = document.getElementById("filter-mapel").value;
     const limit = parseInt(document.getElementById("limit-nilai").value) || 10;
 
-    document.getElementById("pilih-semua-nilai").checked = false;
+    // Kosongkan isi tabel sebelum render ulang
+    tbody.innerHTML = "";
 
-    const dataFiltered = semuaDataNilai.filter(d => 
-        (d.nama || "").toLowerCase().includes(fNama) &&
-        (fKelas === "" || d.kelas === fKelas) &&
-        (fMapel === "" || d.mapel === fMapel)
-    );
+    // 1. Filter data dengan aman (menggunakan String() untuk mencegah error jika data null)
+    const dataFiltered = semuaDataNilai.filter(d => {
+        const nama = String(d.nama || "").toLowerCase();
+        const kelas = String(d.kelas || "");
+        const mapel = String(d.mapel || "");
+        
+        return nama.includes(fNama) &&
+               (fKelas === "" || kelas === fKelas) &&
+               (fMapel === "" || mapel === fMapel);
+    });
 
     const totalData = dataFiltered.length;
     const totalHalaman = Math.ceil(totalData / limit) || 1;
@@ -601,28 +607,30 @@ function renderTabelNilai() {
     document.getElementById("info-halaman-nilai").textContent = `Halaman ${halamanNilaiAktif} / ${totalHalaman} (Total: ${totalData} data)`;
 
     if (dataTampil.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Tidak ada data.</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">Tidak ada data nilai ditemukan.</td></tr>`; 
         return; 
     }
 
-    tbody.innerHTML = "";
+    // 2. Render data per baris
     dataTampil.forEach((d, index) => {
-        let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
+        // Pastikan skor dibaca sebagai angka
+        const skorAngka = parseInt(d.skor) || 0;
+        let bSkor = skorAngka >= 85 ? "badge-green" : (skorAngka >= 70 ? "badge-yellow" : "badge-red");
         const noUrut = startIndex + index + 1; 
         
-        // PERBAIKAN: Pastikan ada 11 <td> agar sesuai dengan 11 <th> di HTML
+        // Pastikan setiap properti memiliki nilai default (|| 0 atau || "-") jika kosong
         tbody.innerHTML += `
             <tr>
-                <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli}"></td>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli || 0}"></td>
                 <td>${noUrut}</td>
-                <td>${d.waktu}</td>
-                <td><strong>${d.nama}</strong></td>
-                <td>${d.kelas}</td>
-                <td>${d.mapel}</td>
-                <td><span class="badge ${bSkor}">${d.skor}</span></td>
-                <td>${d.jumlah_benar} / ${d.total_soal}</td>
-                <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
-                <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
+                <td>${d.waktu || "-"}</td>
+                <td><strong>${d.nama || "-"}</strong></td>
+                <td>${d.kelas || "-"}</td>
+                <td>${d.mapel || "-"}</td>
+                <td><span class="badge ${bSkor}">${skorAngka}</span></td>
+                <td>${d.jumlah_benar || 0} / ${d.total_soal || 0}</td>
+                <td class="${(d.pindah_tab || 0) > 0 ? 'warning-text' : ''}">${d.pindah_tab || 0}x</td>
+                <td class="${(d.pelanggaran_kamera || 0) > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera || 0}x</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusNilai(${d.indexAsli})">Hapus</button>
                 </td>
