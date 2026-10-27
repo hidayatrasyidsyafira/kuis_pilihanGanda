@@ -544,12 +544,33 @@ async function muatDataNilai() {
     }
 }
 
-function isiFilterNilai() {
+// function isiFilterNilai() {
+//     const setKelas = new Set(); const setMapel = new Set();
+//     semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
+//     const sKelas = document.getElementById("filter-kelas"); const sMapel = document.getElementById("filter-mapel");
+//     sKelas.innerHTML = `<option value="">Semua Kelas</option>` + Array.from(setKelas).sort().map(k => `<option value="${k}">${k}</option>`).join('');
+//     sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+// }
+    function isiFilterNilai() {
     const setKelas = new Set(); const setMapel = new Set();
-    semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
-    const sKelas = document.getElementById("filter-kelas"); const sMapel = document.getElementById("filter-mapel");
+    semuaDataNilai.forEach(d => { 
+        if (d.kelas) setKelas.add(d.kelas); 
+        if (d.mapel) setMapel.add(d.mapel); 
+    });
+    
+    const sKelas = document.getElementById("filter-kelas"); 
+    const sMapel = document.getElementById("filter-mapel"); // <-- Diperbaiki (sebelumnya filter-mapel-nilai)
+
+    // Simpan nilai yang sedang dipilih agar tidak ter-reset saat data di-refresh
+    const valKelas = sKelas.value;
+    const valMapel = sMapel.value;
+
     sKelas.innerHTML = `<option value="">Semua Kelas</option>` + Array.from(setKelas).sort().map(k => `<option value="${k}">${k}</option>`).join('');
     sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+    
+    // Kembalikan nilai yang sudah dipilih
+    sKelas.value = valKelas;
+    sMapel.value = valMapel;
 }
 
 function renderTabelNilai() {
