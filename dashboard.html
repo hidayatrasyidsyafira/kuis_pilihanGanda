@@ -162,10 +162,12 @@
                         <tr>
                             <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
                             <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
-                            <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
-                            <!-- <th>Batas Soal</th> -->
+                            <th>Skor</th>
+                            <th>Benar/Total</th>
+                            <th>Pindah Tab</th>
+                            <th>Keluar FS</th> <!-- BARU -->
+                            <th>Pelanggaran Kamera</th>
                             <th width="80">Aksi</th>
-                            <!-- <th width="100">Gambar</th> -->
                         </tr>
                     </thead>
                     <tbody id="tbody-nilai"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
@@ -589,15 +591,24 @@ function renderTabelNilai() {
         let bSkor = d.skor >= 85 ? "badge-green" : (d.skor >= 70 ? "badge-yellow" : "badge-red");
         const noUrut = startIndex + index + 1; 
         
+        // Pastikan data tidak undefined
+        const pindahTab = d.pindah_tab || 0;
+        const pelKamera = d.pelanggaran_kamera || 0;
+        const pelFs = d.pelanggaran_fullscreen || 0;
+
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="checkbox-nilai" value="${d.indexAsli}"></td>
-                <td>${noUrut}</td><td>${d.waktu}</td><td><strong>${d.nama}</strong></td>
-                <td>${d.kelas}</td><td>${d.mapel}</td>
+                <td>${noUrut}</td>
+                <td>${d.waktu}</td>
+                <td><strong>${d.nama}</strong></td>
+                <td>${d.kelas}</td>
+                <td>${d.mapel}</td>
                 <td><span class="badge ${bSkor}">${d.skor}</span></td>
                 <td>${d.jumlah_benar} / ${d.total_soal}</td>
-                <td class="${d.pindah_tab > 0 ? 'warning-text' : ''}">${d.pindah_tab}x</td>
-                <td class="${d.pelanggaran_kamera > 0 ? 'warning-text' : ''}">${d.pelanggaran_kamera}x</td>
+                <td class="${pindahTab > 0 ? 'warning-text' : ''}">${pindahTab}x</td>
+                <td class="${pelFs > 0 ? 'warning-text' : ''}">${pelFs}x</td>
+                <td class="${pelKamera > 0 ? 'warning-text' : ''}">${pelKamera}x</td>
                 <td style="text-align:center;">
                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusNilai(${d.indexAsli})">Hapus</button>
                 </td>
