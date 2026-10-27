@@ -219,6 +219,7 @@
                 </select>
                 <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
                 <button class="btn btn-orange" onclick="bukaModal('modal-upload-soal')">📤 Upload Soal (CSV)</button>
+                <button class="btn btn-green" onclick="bukaModal('modal-paste-soal')" style="background: #9b59b6;">📋 Paste Soal dari AI</button>
                 <button class="btn btn-red" onclick="hapusSoalTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModal('modal-tambah-soal')" style="margin-left: auto;">+ Tambah Soal Manual</button>
             </div>
@@ -442,9 +443,45 @@
         </div>
     </div>
 
+    <!-- ================= MODAL PASTE SOAL DARI AI ================= -->
+<div class="modal-overlay" id="modal-paste-soal">
+    <div class="modal-content" style="max-width: 800px;">
+        <h3>📋 Paste Soal dari AI</h3>
+        
+        <!-- KOTAK BANTUAN PROMPT AI -->
+        <div style="background: #f0f8ff; border: 1px solid #4facfe; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+            <div style="font-size: 0.9rem; color: #2c3e50;">
+                <strong>Langkah 1:</strong> Copy perintah di samping, lalu paste ke ChatGPT/Gemini untuk membuat soal otomatis.
+            </div>
+            <button type="button" class="btn btn-blue" style="background: #3498db; white-space: nowrap;" onclick="copyPromptAI()">📋 Copy Format Prompt AI</button>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Langkah 2: Mata Pelajaran (Wajib)</label>
+            <input type="text" id="paste-mapel" placeholder="Contoh: TIK UH 1">
+        </div>
+
+        <div class="form-group">
+            <label>Langkah 3: Paste Hasil Generate AI di sini:</label>
+            <textarea id="teks-paste-soal" style="width: 100%; height: 250px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
+A: Jakarta
+B: Bandung
+C: Surabaya
+D: Medan
+E: Bali
+KUNCI: A
+SKOR: 5
+PENJELASAN: Jakarta adalah ibukota Indonesia."></textarea>
+        </div>
+
+        <button class="btn btn-green" style="width: 100%; margin-top: 15px; background: #9b59b6;" onclick="prosesPasteSoal()">💾 Simpan ke Bank Soal</button>
+        <button class="btn" style="width: 100%; margin-top: 10px; background:#95a5a6;" onclick="tutupModal('modal-paste-soal')">Batal</button>
+    </div>
+</div>
+
 <script>
-const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
-//const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbwhxrsc6i3qreR8MZcG5rtATsezWI-auI0UI0CPTTpP5FLEfzY9Q7NSAIXWwfKQuEsnUQ/exec";
+//const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
+   const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
 
 let semuaDataNilai = [];
 let semuaDataJadwal = [];
@@ -1197,6 +1234,139 @@ if (json.status === "success") {
     finally { btn.textContent = "Simpan Soal"; btn.disabled = false; }
 }
 
+async function prosesPasteSoal() {
+    const mapel = document.getElementById("paste-mapel").value.trim();
+    const teksMentah = document.getElementById("teks-paste-soal").value.trim();
+
+    if (!mapel) {
+        Swal.fire('Oops...', 'Mata Pelajaran wajib diisi!', 'warning');
+        return;
+    }
+    if (!teksMentah) {
+        Swal.fire('Oops...', 'Teks soal masih kosong!', 'warning');
+        return;
+    }
+
+    const daftarSoal = [];
+    
+    // Memisahkan soal berdasarkan kata kunci "SOAL:" (mengabaikan huruf besar/kecil)
+    // Menggunakan regex untuk split yang aman
+    const blokSoal = teksMentah.split(/(?=SOAL\s*:)/i).filter(t => t.trim() !== "");
+
+    for (let blok of blokSoal) {
+        try {
+            // Ekstrak baris per baris menggunakan Regex
+            const soalMatch = blok.match(/SOAL\s*:\s*([\s\S]*?)(?=\nA\s*:|$)/i);
+            const aMatch = blok.match(/(?:\n|^)A\s*:\s*(.*?)(?=\nB\s*:|$)/i);
+            const bMatch = blok.match(/(?:\n|^)B\s*:\s*(.*?)(?=\nC\s*:|$)/i);
+            const cMatch = blok.match(/(?:\n|^)C\s*:\s*(.*?)(?=\nD\s*:|$)/i);
+            const dMatch = blok.match(/(?:\n|^)D\s*:\s*(.*?)(?=\nE\s*:|$)/i);
+            const eMatch = blok.match(/(?:\n|^)E\s*:\s*(.*?)(?=\nKUNCI\s*:|$)/i);
+            const kunciMatch = blok.match(/KUNCI\s*:\s*([A-E])/i);
+            const skorMatch = blok.match(/SKOR\s*:\s*(\d+)/i);
+            const penjelasanMatch = blok.match(/PENJELASAN\s*:\s*([\s\S]*?)(?=\n*$)/i);
+
+            if (soalMatch && aMatch && bMatch && kunciMatch) {
+                daftarSoal.push({
+                    mapel: mapel,
+                    soal: soalMatch[1].trim(),
+                    pilihanA: aMatch[1].trim(),
+                    pilihanB: bMatch[1].trim(),
+                    pilihanC: cMatch ? cMatch[1].trim() : "",
+                    pilihanD: dMatch ? dMatch[1].trim() : "",
+                    pilihanE: eMatch ? eMatch[1].trim() : "",
+                    kunci: kunciMatch[1].toUpperCase(),
+                    skor: skorMatch ? parseInt(skorMatch[1]) : 1,
+                    penjelasan: penjelasanMatch ? penjelasanMatch[1].trim() : "",
+                    gambar: ""
+                });
+            }
+        } catch (e) {
+            console.warn("Gagal memproses satu blok soal:", e);
+        }
+    }
+
+    if (daftarSoal.length === 0) {
+        Swal.fire('Format Salah!', 'Tidak ada soal yang bisa dibaca. Pastikan formatnya sesuai contoh (SOAL:, A:, B:, KUNCI:, dll).', 'error');
+        return;
+    }
+
+    // Konfirmasi sebelum simpan
+    const konfirmasi = await Swal.fire({
+        title: 'Simpan Soal?',
+        html: `Ditemukan <strong>${daftarSoal.length} soal</strong> valid untuk mapel <strong>${mapel}</strong>.<br><br>Lanjutkan simpan ke Bank Soal?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#9b59b6',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Simpan!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Menyimpan...',
+        text: 'Sedang mengunggah soal ke Bank Soal',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        // Kirim ke Apps Script menggunakan aksi yang sudah ada (upload_soal)
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "upload_soal", daftarSoal: daftarSoal })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message, 'success');
+            tutupModal("modal-paste-soal");
+            document.getElementById("teks-paste-soal").value = ""; // Bersihkan textarea
+            muatBankSoal(); // Refresh tabel
+        } else { 
+            Swal.fire('Gagal!', json.message, 'error'); 
+        }
+    } catch (err) { 
+        Swal.fire('Error!', 'Terjadi kesalahan koneksi ke server.', 'error'); 
+    }
+}
+
+function copyPromptAI() {
+    const promptText = `Tolong buatkan 5 soal pilihan ganda tentang [TEMA_MAPEL_DI_SINI]. 
+Gunakan format persis seperti ini untuk setiap soal, TANPA teks tambahan di luar format:
+
+SOAL: [Pertanyaan]
+A: [Pilihan A]
+B: [Pilihan B]
+C: [Pilihan C]
+D: [Pilihan D]
+E: [Pilihan E]
+KUNCI: [A/B/C/D/E]
+SKOR: 5
+PENJELASAN: [Penjelasan singkat]`;
+
+    // Menggunakan Clipboard API untuk copy
+    navigator.clipboard.writeText(promptText).then(() => {
+        // Menggunakan SweetAlert untuk notifikasi sukses
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+        
+        Toast.fire({
+            icon: 'success',
+            title: 'Format Prompt AI berhasil di-copy!'
+        });
+    }).catch(err => {
+        Swal.fire('Gagal Copy', 'Browser Anda tidak mendukung fitur copy otomatis. Silakan ketik manual.', 'error');
+    });
+}    
+    
 async function prosesUploadSoal() {
     const file = document.getElementById("file-csv-soal").files[0];
     if (!file) { Swal.fire('Oops...', 'Pilih file CSV terlebih dahulu!', 'info'); return; }
