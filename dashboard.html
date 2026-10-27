@@ -759,7 +759,24 @@ function exportKeExcel() {
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
         <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; } td { border: 1px solid #ddd; padding: 8px; text-align: center; } td.text-left { text-align: left; }</style>
-        </head><body><table><thead><tr><th>No</th><th>Waktu</th><th>Nama Siswa</th><th>Kelas</th><th>Matapelajaran</th><th>Skor</th><th>Nilai Benar</th><th>Total Soal</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th></tr></thead><tbody>`;
+        </head>
+        <body>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Waktu</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Matapelajaran</th>
+                        <th>Skor</th>
+                        <th>Nilai Benar</th>
+                        <th>Total Soal</th>
+                        <th>Pindah Tab</th>
+                        <th>Pelanggaran Kamera</th>
+                    </tr>
+                </thead>
+            <tbody>`;
 
     dataTampil.forEach((d, index) => {
         tableHtml += `<tr><td>${index + 1}</td><td>${d.waktu}</td><td class="text-left">${d.nama}</td><td>${d.kelas}</td><td class="text-left">${d.mapel}</td><td>${d.skor}</td><td>${d.jumlah_benar}</td><td>${d.total_soal}</td><td>${d.pindah_tab}</td><td>${d.pelanggaran_kamera}</td></tr>`;
