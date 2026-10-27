@@ -444,40 +444,40 @@
     </div>
 
     <!-- ================= MODAL PASTE SOAL DARI AI ================= -->
-<div class="modal-overlay" id="modal-paste-soal">
-    <div class="modal-content" style="max-width: 800px;">
-        <h3>📋 Paste Soal dari AI</h3>
-        
-        <!-- KOTAK BANTUAN PROMPT AI -->
-        <div style="background: #f0f8ff; border: 1px solid #4facfe; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px;">
-            <div style="font-size: 0.9rem; color: #2c3e50;">
-                <strong>Langkah 1:</strong> Copy perintah di samping, lalu paste ke ChatGPT/Gemini untuk membuat soal otomatis.
+    <div class="modal-overlay" id="modal-paste-soal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h3>📋 Paste Soal dari AI</h3>
+            
+            <!-- KOTAK BANTUAN PROMPT AI -->
+            <div style="background: #f0f8ff; border: 1px solid #4facfe; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+                <div style="font-size: 0.9rem; color: #2c3e50;">
+                    <strong>Langkah 1:</strong> Copy perintah di samping, lalu paste ke ChatGPT/Gemini untuk membuat soal otomatis.
+                </div>
+                <button type="button" class="btn btn-blue" style="background: #3498db; white-space: nowrap;" onclick="copyPromptAI()">📋 Copy Format Prompt AI</button>
             </div>
-            <button type="button" class="btn btn-blue" style="background: #3498db; white-space: nowrap;" onclick="copyPromptAI()">📋 Copy Format Prompt AI</button>
+    
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Langkah 2: Mata Pelajaran (Wajib)</label>
+                <input type="text" id="paste-mapel" placeholder="Contoh: TIK UH 1">
+            </div>
+    
+            <div class="form-group">
+                <label>Langkah 3: Paste Hasil Generate AI di sini:</label>
+                <textarea id="teks-paste-soal" style="width: 100%; height: 250px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
+    A: Jakarta
+    B: Bandung
+    C: Surabaya
+    D: Medan
+    E: Bali
+    KUNCI: A
+    SKOR: 5
+    PENJELASAN: Jakarta adalah ibukota Indonesia."></textarea>
+            </div>
+    
+            <button class="btn btn-green" style="width: 100%; margin-top: 15px; background: #9b59b6;" onclick="prosesPasteSoal()">💾 Simpan ke Bank Soal</button>
+            <button class="btn" style="width: 100%; margin-top: 10px; background:#95a5a6;" onclick="tutupModal('modal-paste-soal')">Batal</button>
         </div>
-
-        <div class="form-group" style="margin-bottom: 15px;">
-            <label>Langkah 2: Mata Pelajaran (Wajib)</label>
-            <input type="text" id="paste-mapel" placeholder="Contoh: TIK UH 1">
-        </div>
-
-        <div class="form-group">
-            <label>Langkah 3: Paste Hasil Generate AI di sini:</label>
-            <textarea id="teks-paste-soal" style="width: 100%; height: 250px; padding: 15px; font-family: monospace; font-size: 0.9rem; border: 2px dashed #9b59b6; border-radius: 8px; resize: vertical;" placeholder="SOAL: Apa ibukota Indonesia?
-A: Jakarta
-B: Bandung
-C: Surabaya
-D: Medan
-E: Bali
-KUNCI: A
-SKOR: 5
-PENJELASAN: Jakarta adalah ibukota Indonesia."></textarea>
-        </div>
-
-        <button class="btn btn-green" style="width: 100%; margin-top: 15px; background: #9b59b6;" onclick="prosesPasteSoal()">💾 Simpan ke Bank Soal</button>
-        <button class="btn" style="width: 100%; margin-top: 10px; background:#95a5a6;" onclick="tutupModal('modal-paste-soal')">Batal</button>
     </div>
-</div>
 
 <script>
 //const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyewTT5UFrkXMteeZDDfnrJFs7MioptXo5fLmVIN8tuCYedloXFYaYrLVaj2H1iPwAh/exec";
