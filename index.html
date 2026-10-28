@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -307,7 +308,10 @@
                         <label for="input-nisn" style="text-align:center;">🔐 Masukkan NISN Anda</label>
                         <input type="text" id="input-nisn" placeholder="Contoh: 12345678" autocomplete="off">
                     </div>
-                    <button class="tombol-lanjut-nisn" onclick="cariSiswa()">🔍 Cari Data Siswa</button>
+                    <button class="tombol-lanjut-nisn" onclick="cariSiswa()">🔍 Login Manual (NISN)</button>
+                    
+                    <!-- TOMBOL QR CODE -->
+                    <button class="tombol-lanjut-nisn" style="background: #8e44ad; margin-top: 10px;" onclick="bukaModalScanQR()">📷 Login via QR Code</button>
                 </div>
 
                 <div class="hasil-cari-siswa" id="hasil-cari-siswa">
@@ -441,6 +445,21 @@
         <span id="teks-toast">Kamu terdeteksi keluar dari halaman kuis.</span>
     </div>
 
+    <div class="modal-overlay" id="modal-scan-qr">
+        <div class="modal-content">
+            <h3>📷 Login via QR Code</h3>
+            <p style="font-size: 0.9rem; color: #555; text-align: center; margin-bottom: 20px;">
+                Upload gambar QR Code yang dikirim guru ke WhatsApp Anda.
+            </p>
+            <input type="file" id="input-file-qr" accept="image/*" onchange="bacaGambarQR(this)" style="width: 100%; padding: 15px; border: 2px dashed #8e44ad; border-radius: 8px; margin-bottom: 15px; cursor: pointer;">
+            <div id="preview-qr-area" style="display: none; text-align: center; margin-bottom: 15px;">
+                <img id="preview-qr-img" style="max-width: 200px; border-radius: 8px;">
+                <p id="status-scan-qr" style="margin-top: 10px; font-weight: bold; color: #3498db;">Memproses QR...</p>
+            </div>
+            <button class="close-btn" onclick="tutupModalScanQR()">Batal</button>
+        </div>
+    </div>    
+    
 <script>
 /* =========================================================
    ⚙️ KONFIGURASI & STATE
@@ -541,6 +560,50 @@ async function cariSiswa() {
             confirmButtonText: 'Tutup'
         });
     }
+}
+
+function bukaModalScanQR() {
+    document.getElementById("modal-scan-qr").classList.add("aktif");
+    document.getElementById("input-file-qr").value = "";
+    document.getElementById("preview-qr-area").style.display = "none";
+}
+
+function tutupModalScanQR() {
+    document.getElementById("modal-scan-qr").classList.remove("aktif");
+}
+
+function bacaGambarQR(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Tampilkan preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById("preview-qr-img").src = e.target.result;
+        document.getElementById("preview-qr-area").style.display = "block";
+        document.getElementById("status-scan-qr").textContent = "Membaca QR...";
+    };
+    reader.readAsDataURL(file);
+
+    // Proses baca QR menggunakan html5-qrcode
+    const html5QrCode = new Html5Qrcode("preview-qr-area");
+    html5QrCode.scanFile(file, true)
+    .then(decodedText => {
+        // Berhasil membaca QR. decodedText berisi NISN
+        document.getElementById("status-scan-qr").textContent = `✅ NISN Terbaca: ${decodedText}`;
+        document.getElementById("status-scan-qr").style.color = "#2ecc71";
+        
+        // Isi input NISN dan panggil login manual
+        setTimeout(() => {
+            tutupModalScanQR();
+            document.getElementById("input-nisn").value = decodedText;
+            cariSiswa(); // Fungsi cariSiswa yang sudah ada
+        }, 1000);
+    })
+    .catch(err => {
+        document.getElementById("status-scan-qr").textContent = "❌ Gambar QR tidak valid / tidak terbaca.";
+        document.getElementById("status-scan-qr").style.color = "#e74c3c";
+    });
 }    
 
 async function ambilJadwal() {
