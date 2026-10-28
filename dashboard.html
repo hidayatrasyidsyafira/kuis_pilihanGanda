@@ -946,14 +946,71 @@ async function muatDataJadwal() {
     }
 }
 
+// function renderTabelJadwal() {
+//     const tbody = document.getElementById("tbody-jadwal");
+//     document.getElementById("pilih-semua-jadwal").checked = false;
+//     tbody.innerHTML = "";
+//     if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
+
+//     semuaDataJadwal.forEach((j, index) => {
+//         const barisSheet = index + 2; 
+//         tbody.innerHTML += `
+//             <tr>
+//                 <td style="text-align:center;"><input type="checkbox" class="checkbox-jadwal" value="${barisSheet}"></td>
+//                 <td>${j.no}</td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 2, '${j.waktu}')">${j.waktu}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 3, '${j.hari}')">${j.hari}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 4, '${j.tanggal}')">${j.tanggal}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 5, '${j.mapel}')">${j.mapel}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 10, '${j.namaGuru}')">${j.namaGuru}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 6, '${j.kelas}')">${j.kelas}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 7, '${j.token}')">${j.token}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 8, '${j.jenis}')">${j.jenis}</div></td>
+//                 <td><div class="editable" onclick="editJadwalSel(this, ${barisSheet}, 9, '${j.durasi}')">${j.durasi}</div></td>
+//                 <td>${j.batasSoal || 'Semua'}</td>
+//                 <td style="text-align:center;">
+//                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusJadwal(${barisSheet})">Hapus</button>
+//                 </td>
+//             </tr>`;
+//     });
+// }
+
 function renderTabelJadwal() {
     const tbody = document.getElementById("tbody-jadwal");
     document.getElementById("pilih-semua-jadwal").checked = false;
     tbody.innerHTML = "";
-    if (semuaDataJadwal.length === 0) { tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">Belum ada jadwal.</td></tr>`; return; }
+    
+    if (semuaDataJadwal.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">Belum ada jadwal.</td></tr>`; 
+        return; 
+    }
 
-    semuaDataJadwal.forEach((j, index) => {
-        const barisSheet = index + 2; 
+    // FILTER: Admin lihat semua, Guru hanya lihat jadwal kelasnya
+    const jadwalTampil = semuaDataJadwal.filter((j, indexAsli) => {
+        // Tambahkan indexAsli secara manual agar nomor baris di sheet selalu akurat
+        j._indexAsli = indexAsli; 
+        
+        if (sessionGuru.role === "admin") return true;
+        
+        // Ambil kelas dari jadwal (misal "X-3, X-4"), pecah per koma
+        const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
+        
+        // Ambil kelas dari guru (misal "X-3"), pecah per koma (jika ada)
+        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        
+        // Cek apakah ada irisan (kelas guru ada di dalam daftar kelas jadwal)
+        return kelasJadwal.some(k => kelasGuru.includes(k));
+    });
+
+    if (jadwalTampil.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">Tidak ada jadwal untuk kelas Anda (${sessionGuru.kelas}).</td></tr>`;
+        return;
+    }
+
+    jadwalTampil.forEach((j) => {
+        // Gunakan _indexAsli untuk nomor baris di sheet
+        const barisSheet = j._indexAsli + 2; 
+        
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="checkbox-jadwal" value="${barisSheet}"></td>
@@ -973,7 +1030,7 @@ function renderTabelJadwal() {
                 </td>
             </tr>`;
     });
-}
+}    
 
 function editJadwalSel(elemen, baris, kolom, nilaiLama) {
     const input = document.createElement("input");
