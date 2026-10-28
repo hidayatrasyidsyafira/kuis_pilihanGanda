@@ -2138,19 +2138,33 @@ function logoutGuru() {
     
 /* --- INIT --- */
 window.addEventListener("DOMContentLoaded", () => {
-    // Terapkan UI sesuai role
+    // 1. Tampilkan nama & role di header
     const headerTitle = document.querySelector(".header h1");
     if (headerTitle) {
         headerTitle.innerHTML = `⚙️ Dashboard Admin <span style="font-size: 0.9rem; color: #7f8c8d;">(${sessionGuru.nama} - ${sessionGuru.role.toUpperCase()})</span>`;
     }
-    
-    // Sembunyikan menu Data Siswa jika role = guru
+
     if (sessionGuru.role !== "admin") {
+        // 2. Sembunyikan tab & isi tabel Data Siswa
         const tabSiswa = document.getElementById("tab-btn-siswa");
+        const isiTabSiswa = document.getElementById("tab-siswa");
         if (tabSiswa) tabSiswa.style.display = "none";
+        if (isiTabSiswa) isiTabSiswa.style.display = "none";
+
+        // 3. Sembunyikan filter Kelas & Mapel di Rekap Nilai
+        const filterKelas = document.getElementById("filter-kelas");
+        const filterMapel = document.getElementById("filter-mapel");
+        if (filterKelas) filterKelas.style.display = "none";
+        if (filterMapel) filterMapel.style.display = "none";
+
+        // 4. Set tab default ke Bank Soal (karena Data Siswa disembunyikan)
+        bukaTab('bank-soal');
+    } else {
+        // Admin: default ke Data Siswa
+        bukaTab('siswa');
     }
 
-    // Muat data awal
+    // 5. Muat data awal
     muatDataSiswa();
 });
 </script>
