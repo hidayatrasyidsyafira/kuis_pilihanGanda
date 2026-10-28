@@ -198,6 +198,7 @@
         <!-- ================= TAB 2: JADWAL UJIAN ================= -->
         <div class="tab-content" id="tab-jadwal">
             <div class="filter-section" style="justify-content: flex-end;">
+                <button class="btn btn-blue" onclick="bukaModalQRCode()" style="background: #8e44ad;">🎓 Kartu Ujian QR</button>
                 <button class="btn btn-orange" onclick="bukaModalKirimToken()">📲 Kirim Token Massal</button>
                 <button class="btn btn-red" onclick="hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModal('modal-jadwal')">+ Tambah Jadwal Baru</button>
@@ -501,6 +502,39 @@
         </div>
     </div>
 
+<!-- ================= MODAL KARTU UJIAN QR ================= -->
+<div class="modal-overlay" id="modal-qr-code">
+    <div class="modal-content" style="max-width: 800px;">
+        <h3>🎓 Kirim Kartu Ujian (QR Code)</h3>
+        <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+            Pilih siswa yang ingin dikirimi QR Code via WhatsApp. Atau kirim massal ke semua siswa di kelas Anda.
+        </p>
+        
+        <div class="table-responsive" style="max-height: 400px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="30"><input type="checkbox" id="pilih-semua-qr" onchange="toggleSemuaQR(this)"></th>
+                        <th width="40">No</th>
+                        <th>NISN</th>
+                        <th>Nama</th>
+                        <th width="100">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-qr">
+                    <!-- Diisi oleh JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 15px; text-align: right;">
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimQR()">🚀 Kirim QR ke Siswa Terpilih</button>
+            <button class="btn btn-orange" style="width: 100%; margin-bottom: 10px; background: #8e44ad;" onclick="prosesKirimQR(true)">📢 Kirim ke SEMUA Siswa di Kelas Saya</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-qr-code')">Batal</button>
+        </div>
+    </div>
+</div>
+    
 <script>
 
 /* =========================================
@@ -1237,6 +1271,128 @@ async function prosesKirimToken() {
         }
     } catch (err) {
         Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    }
+}
+
+// Fungsi Buka Modal QR
+function bukaModalQRCode() {
+    const tbody = document.getElementById("tbody-qr");
+    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>⏳ Memuat data siswa...</td></tr>";
+    bukaModal("modal-qr-code");
+
+    // Filter siswa berdasarkan kelas guru
+    const siswaTampil = semuaDataSiswa.filter(s => {
+        if (sessionGuru.role === "admin") return true;
+        const kelasSiswa = String(s.kelas || "").toUpperCase();
+        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        return kelasGuru.includes(kelasSiswa);
+    });
+
+    tbody.innerHTML = "";
+    if (siswaTampil.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Tidak ada siswa di kelas Anda.</td></tr>";
+        return;
+    }
+
+    siswaTampil.forEach((s, index) => {
+        const nisnBersih = s.nisn.replace(/^'/, '');
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-qr" value="${nisnBersih}"></td>
+                <td>${index + 1}</td>
+                <td>${nisnBersih}</td>
+                <td><strong>${s.nama}</strong></td>
+                <td style="text-align:center;">
+                    <button class="btn btn-blue" style="padding: 4px 10px; font-size: 0.8rem;" onclick="kirimQRSatuSiswa('${nisnBersih}')">📲 Kirim</button>
+                </td>
+            </tr>`;
+    });
+}
+
+function toggleSemuaQR(source) {
+    document.querySelectorAll('.checkbox-qr').forEach(cb => cb.checked = source.checked);
+}
+
+// Kirim QR ke 1 siswa (via tombol di baris tabel)
+async function kirimQRSatuSiswa(nisn) {
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim QR Code?',
+        text: "QR Code akan dikirim ke WhatsApp siswa ini.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#8e44ad',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        // Ambil mapel dari jadwal pertama guru (sebagai default teks)
+        const mapelDefault = semuaDataJadwal.length > 0 ? semuaDataJadwal[0].mapel : "Ujian CBT";
+
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "kirim_qr_siswa", daftarNISN: [nisn], mapel: mapelDefault })
+        });
+        const json = await res.json();
+        Swal.fire(json.status === "success" ? 'Berhasil!' : 'Gagal', json.message, json.status === "success" ? 'success' : 'error');
+    } catch (err) {
+        Swal.fire('Error', 'Koneksi server gagal.', 'error');
+    }
+}
+
+// Kirim QR Massal
+async function prosesKirimQR(kirimSemua = false) {
+    let daftarNISN = [];
+
+    if (kirimSemua) {
+        document.querySelectorAll('.checkbox-qr').forEach(cb => daftarNISN.push(cb.value));
+    } else {
+        const checked = document.querySelectorAll('.checkbox-qr:checked');
+        if (checked.length === 0) {
+            Swal.fire('Oops...', 'Pilih minimal satu siswa atau gunakan tombol Kirim Semua.', 'info');
+            return;
+        }
+        checked.forEach(cb => daftarNISN.push(cb.value));
+    }
+
+    if (daftarNISN.length === 0) {
+        Swal.fire('Kosong', 'Tidak ada siswa untuk dikirimi QR.', 'warning');
+        return;
+    }
+
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim QR Code?',
+        text: `${daftarNISN.length} siswa akan menerima QR Code di WhatsApp mereka.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#8e44ad',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({ title: 'Mengirim...', text: 'Mohon tunggu, proses ini mungkin memakan waktu.', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const mapelDefault = semuaDataJadwal.length > 0 ? semuaDataJadwal[0].mapel : "Ujian CBT";
+
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "kirim_qr_siswa", daftarNISN: daftarNISN, mapel: mapelDefault })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            Swal.fire('Selesai!', json.message, 'success');
+            tutupModal("modal-qr-code");
+        } else {
+            Swal.fire('Gagal', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Koneksi server gagal.', 'error');
     }
 }    
 
