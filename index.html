@@ -451,14 +451,21 @@
             <p style="font-size: 0.9rem; color: #555; text-align: center; margin-bottom: 20px;">
                 Upload gambar QR Code yang dikirim guru ke WhatsApp Anda.
             </p>
+            
             <input type="file" id="input-file-qr" accept="image/*" onchange="bacaGambarQR(this)" style="width: 100%; padding: 15px; border: 2px dashed #8e44ad; border-radius: 8px; margin-bottom: 15px; cursor: pointer;">
+            
+            <!-- AREA PREVIEW -->
             <div id="preview-qr-area" style="display: none; text-align: center; margin-bottom: 15px;">
                 <img id="preview-qr-img" style="max-width: 200px; border-radius: 8px;">
                 <p id="status-scan-qr" style="margin-top: 10px; font-weight: bold; color: #3498db;">Memproses QR...</p>
             </div>
+            
+            <!-- DIV TERSEMBUNYI UNTUK MESIN SCANNER -->
+            <div id="qr-reader" style="display:none;"></div>
+            
             <button class="close-btn" onclick="tutupModalScanQR()">Batal</button>
         </div>
-    </div>    
+    </div>   
     
 <script>
 /* =========================================================
@@ -576,32 +583,36 @@ function bacaGambarQR(input) {
     const file = input.files[0];
     if (!file) return;
 
-    // Tampilkan preview
+    // Tampilkan preview gambar
     const reader = new FileReader();
     reader.onload = function(e) {
         document.getElementById("preview-qr-img").src = e.target.result;
         document.getElementById("preview-qr-area").style.display = "block";
-        document.getElementById("status-scan-qr").textContent = "Membaca QR...";
+        document.getElementById("status-scan-qr").textContent = "⏳ Membaca QR...";
+        document.getElementById("status-scan-qr").style.color = "#3498db";
     };
     reader.readAsDataURL(file);
 
     // Proses baca QR menggunakan html5-qrcode
-    const html5QrCode = new Html5Qrcode("preview-qr-area");
+    // Pastikan library html5-qrcode sudah dimuat di <head>
+    const html5QrCode = new Html5Qrcode("qr-reader");
+    
     html5QrCode.scanFile(file, true)
     .then(decodedText => {
         // Berhasil membaca QR. decodedText berisi NISN
         document.getElementById("status-scan-qr").textContent = `✅ NISN Terbaca: ${decodedText}`;
         document.getElementById("status-scan-qr").style.color = "#2ecc71";
         
-        // Isi input NISN dan panggil login manual
+        // Isi input NISN dan login otomatis setelah 1 detik
         setTimeout(() => {
             tutupModalScanQR();
             document.getElementById("input-nisn").value = decodedText;
-            cariSiswa(); // Fungsi cariSiswa yang sudah ada
+            cariSiswa(); 
         }, 1000);
     })
     .catch(err => {
-        document.getElementById("status-scan-qr").textContent = "❌ Gambar QR tidak valid / tidak terbaca.";
+        console.error("Detail Error Scan QR:", err);
+        document.getElementById("status-scan-qr").textContent = "❌ Gambar QR tidak valid atau tidak terbaca. Pastikan gambar jelas.";
         document.getElementById("status-scan-qr").style.color = "#e74c3c";
     });
 }    
