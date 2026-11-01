@@ -1418,15 +1418,32 @@ async function hapusJadwalTerpilih() {
 function bukaModalKirimToken() {
     const select = document.getElementById("pilih-token-jadwal");
     select.innerHTML = "";
-    
-    if (semuaDataJadwal.length === 0) {
-        Swal.fire('Oops...', 'Belum ada jadwal ujian.', 'warning');
+
+    // === FILTER JADWAL BERDASARKAN ROLE ===
+    // Admin: semua jadwal. Guru: hanya jadwal yang kelasnya diampu.
+    const jadwalTampil = [];
+    semuaDataJadwal.forEach((j, indexAsli) => {
+        if (sessionGuru.role === "admin") {
+            jadwalTampil.push({ ...j, _indexAsli: indexAsli });
+            return;
+        }
+        const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
+        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        if (kelasJadwal.some(k => kelasGuru.includes(k))) {
+            jadwalTampil.push({ ...j, _indexAsli: indexAsli });
+        }
+    });
+
+    if (jadwalTampil.length === 0) {
+        Swal.fire('Oops...', 'Belum ada jadwal untuk kelas yang Anda ampu.', 'warning');
         return;
     }
 
-    semuaDataJadwal.forEach((j, index) => {
+    jadwalTampil.forEach((j) => {
         const opt = document.createElement("option");
-        opt.value = index;
+        // PENTING: value tetap index asli di semuaDataJadwal,
+        // supaya prosesKirimToken() mengambil objek yang benar.
+        opt.value = j._indexAsli;
         opt.textContent = `${j.mapel} - ${j.kelas} (Token: ${j.token})`;
         select.appendChild(opt);
     });
