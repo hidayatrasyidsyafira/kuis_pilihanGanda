@@ -8,7 +8,91 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #e9ecef; min-height: 100vh; padding: 30px; }
+        body { background: #e9ecef; min-height: 100vh; padding: 0; }
+        
+
+        /* ===== LAYOUT SIDEBAR ===== */
+        .app-wrapper { display: flex; min-height: 100vh; }
+        
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px; background: #2c3e50; color: white;
+            position: fixed; top: 0; left: 0; bottom: 0;
+            overflow-y: auto; z-index: 500;
+            transition: transform 0.3s ease;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px; border-bottom: 1px solid #34495e;
+        }
+        .sidebar-header h2 { font-size: 1.1rem; margin-bottom: 4px; }
+        .sidebar-header small { color: #95a5a6; font-size: 0.75rem; }
+        
+        .sidebar-menu { flex: 1; padding: 10px 0; }
+        .menu-item { list-style: none; }
+        .menu-main {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; cursor: pointer; font-weight: 600;
+            color: #ecf0f1; transition: 0.2s; border-left: 3px solid transparent;
+            font-size: 0.95rem;
+        }
+        .menu-main:hover { background: #34495e; }
+        .menu-main.open { background: #34495e; border-left-color: #3498db; }
+        .menu-main .arrow { transition: transform 0.3s; font-size: 0.7rem; }
+        .menu-main.open .arrow { transform: rotate(90deg); }
+        
+        .submenu {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: #243342;
+        }
+        .submenu.open { max-height: 500px; }
+        .submenu li { list-style: none; }
+        .submenu button {
+            display: block; width: 100%; text-align: left;
+            padding: 10px 20px 10px 40px; background: transparent;
+            border: none; color: #bdc3c7; cursor: pointer;
+            font-size: 0.85rem; transition: 0.2s;
+        }
+        .submenu button:hover { background: #2c3e50; color: white; }
+        .submenu button::before { content: "› "; color: #7f8c8d; }
+        
+        .sidebar-footer {
+            padding: 15px; border-top: 1px solid #34495e;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .sidebar-footer button {
+            padding: 10px; border: none; border-radius: 6px;
+            font-weight: bold; cursor: pointer; color: white; font-size: 0.85rem;
+        }
+        
+        /* KONTEN UTAMA */
+        .main-content {
+            flex: 1; margin-left: 260px;
+            padding: 30px; min-height: 100vh;
+        }
+        .main-content .container { margin: 0; max-width: 100%; }
+        
+        /* Tombol toggle sidebar (mobile) */
+        .sidebar-toggle {
+            display: none; position: fixed; top: 15px; left: 15px; z-index: 600;
+            background: #2c3e50; color: white; border: none; padding: 10px 14px;
+            border-radius: 8px; font-size: 1.2rem; cursor: pointer;
+        }
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 400;
+        }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 70px 15px 20px; }
+            .sidebar-toggle { display: block; }
+            .sidebar-overlay.active { display: block; }
+            body { padding: 0; }
+        }
         
         .container {
             max-width: 1200px; margin: 0 auto; background: white;
@@ -152,177 +236,227 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>⚙️ Dashboard Admin Ujian</h1>
-            <div>
-                <!-- <button class="btn btn-green" onclick="bukaModal('modal-upload')">📤 Upload Data Siswa</button> -->
-                <button class="btn btn-orange" onclick="bukaModalUbahPassword()">🔑 Ubah Password</button>
-                <button class="btn btn-red" onclick="logoutGuru()">🚪 Logout</button>
-                <button class="btn btn-blue" onclick="muatSemuaData()">🔄 Refresh Data</button>
+    <!-- Tombol toggle (mobile) -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    
+    <div class="app-wrapper">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>⚙️ Dashboard Admin</h2>
+                <small id="info-user-sidebar"></small>
             </div>
-        </div>
-
-        <!-- TAB MENU -->
-        <div class="tabs">
-            <button class="tab-btn aktif" onclick="bukaTab('siswa')" id="tab-btn-siswa">👥 Data Siswa</button>
-            <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
-            <button class="tab-btn" onclick="bukaTab('bank-soal')" id="tab-btn-bank-soal">📚 Bank Soal</button>
-            <button class="tab-btn" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
-        </div>
-        
-        <!-- ================= TAB 1: REKAP NILAI ================= -->
-        <div class="tab-content" id="tab-nilai">
-            <div class="filter-section">
-                <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="halamanNilaiAktif = 1; renderTabelNilai()">
-                <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
-                <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
-                <button class="btn btn-blue" onclick="exportKeExcel()" style="margin-left: auto;">📥 Export ke Excel</button>
-                <button class="btn btn-orange" onclick="tampilkanLeaderboardDashboard()" style="background: #f39c12;">🏆 Lihat Peringkat</button>
-                <button class="btn btn-red" onclick="hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button>
+    
+            <ul class="sidebar-menu">
+                <!-- DASHBOARD -->
+                <li class="menu-item">
+                    <div class="menu-main" onclick="toggleSubmenu(this)">
+                        <span>📊 Dashboard</span><span class="arrow">▶</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><button onclick="bukaModalUbahPassword()">🔑 Ubah Password</button></li>
+                    </ul>
+                </li>
+    
+                <!-- PENGATURAN JADWAL -->
+                <li class="menu-item">
+                    <div class="menu-main" onclick="toggleSubmenu(this)">
+                        <span>📅 Pengaturan Jadwal</span><span class="arrow">▶</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><button onclick="bukaTab('jadwal'); bukaModalQRCode()">🎓 Kartu Ujian QR</button></li>
+                        <li><button onclick="bukaTab('jadwal'); bukaModalKirimToken()">📲 Kirim Token Massal</button></li>
+                        <li><button onclick="bukaTab('jadwal'); bukaModal('modal-jadwal')">➕ Tambah Jadwal Baru</button></li>
+                        <li><button onclick="bukaTab('jadwal'); hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button></li>
+                    </ul>
+                </li>
+    
+                <!-- BANK SOAL -->
+                <li class="menu-item">
+                    <div class="menu-main" onclick="toggleSubmenu(this)">
+                        <span>📚 Bank Soal</span><span class="arrow">▶</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><button onclick="bukaTab('bank-soal'); bukaModal('modal-tambah-soal')">➕ Tambah Soal Manual</button></li>
+                        <li><button onclick="downloadTemplateSoal()">📥 Download Template CSV</button></li>
+                        <li><button onclick="bukaTab('bank-soal'); bukaModal('modal-upload-soal')">📤 Upload Soal CSV</button></li>
+                        <li><button onclick="bukaTab('bank-soal'); bukaModal('modal-paste-soal')">📋 Paste Soal dari AI</button></li>
+                        <li><button onclick="bukaTab('bank-soal'); hapusSoalTerpilih()">🗑️ Hapus Terpilih</button></li>
+                    </ul>
+                </li>
+    
+                <!-- REKAP NILAI -->
+                <li class="menu-item">
+                    <div class="menu-main" onclick="toggleSubmenu(this)">
+                        <span>📈 Rekap Nilai</span><span class="arrow">▶</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><button onclick="bukaTab('nilai'); exportKeExcel()">📥 Export ke Excel</button></li>
+                        <li><button onclick="bukaTab('nilai'); tampilkanLeaderboardDashboard()">🏆 Lihat Peringkat</button></li>
+                        <li><button onclick="bukaTab('nilai'); hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button></li>
+                    </ul>
+                </li>
+    
+                <!-- DATA SISWA (hanya admin) -->
+                <li class="menu-item" id="menu-item-siswa">
+                    <div class="menu-main" onclick="toggleSubmenu(this)">
+                        <span>👥 Data Siswa</span><span class="arrow">▶</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><button onclick="bukaTab('siswa'); bukaModal('modal-upload')">📤 Upload Data Siswa</button></li>
+                        <li><button onclick="bukaTab('siswa'); bukaModal('modal-tambah-siswa')">➕ Tambah Siswa Manual</button></li>
+                        <li><button onclick="bukaTab('siswa'); hapusSiswaTerpilih()">🗑️ Hapus Terpilih</button></li>
+                    </ul>
+                </li>
+            </ul>
+    
+            <div class="sidebar-footer">
+                <button style="background:#3498db;" onclick="muatSemuaData()">🔄 Refresh Data</button>
+                <button style="background:#e74c3c;" onclick="logoutGuru()">🚪 Logout</button>
             </div>
-            <!-- GRAFIK STATISTIK -->
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px;">
-                <h4 style="margin-bottom: 15px; color: #2c3e50; font-size: 1.1rem; text-align: center;">📊 Statistik Distribusi Nilai</h4>
-                <div style="height: 250px; position: relative;">
-                    <canvas id="grafik-nilai"></canvas>
+        </aside>
+    
+        <!-- ===== KONTEN UTAMA ===== -->
+        <main class="main-content">
+            <div class="container">
+                <div class="header">
+                    <h1 id="judul-halaman">⚙️ Dashboard Admin Ujian</h1>
+                </div>
+    
+                <!-- TAB MENU (disembunyikan, diganti sidebar) -->
+                <div class="tabs" style="display:none;">
+                    <button class="tab-btn aktif" onclick="bukaTab('siswa')" id="tab-btn-siswa">👥 Data Siswa</button>
+                    <button class="tab-btn" onclick="bukaTab('jadwal')" id="tab-btn-jadwal">📅 Pengaturan Jadwal</button>
+                    <button class="tab-btn" onclick="bukaTab('bank-soal')" id="tab-btn-bank-soal">📚 Bank Soal</button>
+                    <button class="tab-btn" onclick="bukaTab('nilai')" id="tab-btn-nilai">📊 Rekap Nilai</button>
+                </div>
+    
+                <!-- ==== TAB NILAI ==== -->
+                <div class="tab-content" id="tab-nilai">
+                    <div class="filter-section">
+                        <input type="text" id="filter-nama" placeholder="🔍 Cari Nama Siswa..." oninput="halamanNilaiAktif = 1; renderTabelNilai()">
+                        <select id="filter-kelas" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Kelas</option></select>
+                        <select id="filter-mapel" onchange="halamanNilaiAktif = 1; renderTabelNilai()"><option value="">Semua Mapel</option></select>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 15px; color: #2c3e50; font-size: 1.1rem; text-align: center;">📊 Statistik Distribusi Nilai</h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="grafik-nilai"></canvas>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
+                                    <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
+                                    <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
+                                    <th width="80">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-nilai"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                        <div>
+                            Tampilkan: 
+                            <select id="limit-nilai" onchange="halamanNilaiAktif = 1; renderTabelNilai()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
+                                <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                                <option value="100">100</option><option value="9999">Semua</option>
+                            </select> data
+                        </div>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(-1)">← Sebelumnya</button>
+                            <span id="info-halaman-nilai" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
+                            <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(1)">Berikutnya →</button>
+                        </div>
+                    </div>
+                </div>
+    
+                <!-- ==== TAB JADWAL ==== -->
+                <div class="tab-content" id="tab-jadwal">
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
+                                    <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
+                                    <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
+                                    <th>Batas Soal</th><th width="80">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-jadwal"><tr><td colspan="13" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                        </table>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
+                        💡 <strong>Tips Edit:</strong> Klik langsung pada teks di tabel untuk mengubahnya. Tekan <strong>Enter</strong> untuk menyimpan.
+                    </p>
+                </div>
+    
+                <!-- ==== TAB BANK SOAL ==== -->
+                <div class="tab-content" id="tab-bank-soal">
+                    <div class="filter-section">
+                        <select id="filter-mapel-soal" onchange="renderTabelSoal()">
+                            <option value="">Semua Mapel</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="30"><input type="checkbox" id="pilih-semua" onchange="toggleSemuaSoal(this)"></th>
+                                    <th width="40">No</th>
+                                    <th width="120">Mapel</th>
+                                    <th>Pertanyaan & Pilihan</th>
+                                    <th width="60">Kunci</th>
+                                    <th width="50">Skor</th>
+                                    <th width="100">Kelas</th>
+                                    <th width="60">Gambar</th>
+                                    <th width="80">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-soal"><tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+    
+                <!-- ==== TAB SISWA ==== -->
+                <div class="tab-content" id="tab-siswa">
+                    <div class="filter-section">
+                        <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="30"><input type="checkbox" id="pilih-semua-siswa" onchange="toggleSemuaSiswa(this)"></th>
+                                    <th width="50">No</th>
+                                    <th>NISN</th>
+                                    <th>Nama Siswa</th>
+                                    <th>Kelas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-siswa"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                        <div>
+                            Tampilkan: 
+                            <select id="limit-siswa" onchange="halamanSiswaAktif = 1; renderTabelSiswa()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
+                                <option value="10">10</option><option value="15">15</option><option value="20">20</option>
+                                <option value="25">25</option><option value="50">50</option><option value="9999">Semua</option>
+                            </select> data
+                        </div>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(-1)">← Sebelumnya</button>
+                            <span id="info-halaman-siswa" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
+                            <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(1)">Berikutnya →</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="30"><input type="checkbox" id="pilih-semua-nilai" onchange="toggleSemuaNilai(this)"></th>
-                            <th>No</th><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Mapel</th>
-                            <th>Skor</th><th>Benar/Total</th><th>Pindah Tab</th><th>Pelanggaran Kamera</th>
-                            <th width="80">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-nilai"><tr><td colspan="11" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
-                </table>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                <div>
-                    Tampilkan: 
-                    <select id="limit-nilai" onchange="halamanNilaiAktif = 1; renderTabelNilai()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
-                        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
-                        <option value="100">100</option><option value="9999">Semua</option>
-                    </select> data
-                </div>
-                <div style="display: flex; gap: 5px; align-items: center;">
-                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(-1)">← Sebelumnya</button>
-                    <span id="info-halaman-nilai" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
-                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanNilai(1)">Berikutnya →</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ================= TAB 2: JADWAL UJIAN ================= -->
-        <div class="tab-content" id="tab-jadwal">
-            <div class="filter-section" style="justify-content: flex-end;">
-                <button class="btn btn-blue" onclick="bukaModalQRCode()" style="background: #8e44ad;">🎓 Kartu Ujian QR</button>
-                <button class="btn btn-orange" onclick="bukaModalKirimToken()">📲 Kirim Token Massal</button>
-                <button class="btn btn-red" onclick="hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button>
-                <button class="btn btn-green" onclick="bukaModal('modal-jadwal')">+ Tambah Jadwal Baru</button>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="30"><input type="checkbox" id="pilih-semua-jadwal" onchange="toggleSemuaJadwal(this)"></th>
-                            <th>No</th><th>Waktu</th><th>Hari</th><th>Tanggal</th>
-                            <th>Matapelajaran</th><th>Nama Guru</th><th>Kelas</th><th>Token</th><th>Jenis</th><th>Durasi</th>
-                            <th>Batas Soal</th>
-                            <th width="80">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-jadwal"><tr><td colspan="12" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
-                </table>
-            </div>
-            <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px;">
-                💡 <strong>Tips Edit:</strong> Klik langsung pada teks di tabel untuk mengubahnya. Tekan <strong>Enter</strong> untuk menyimpan.
-            </p>
-        </div>
-
-        <!-- ================= TAB 3: BANK SOAL ================= -->
-        <div class="tab-content" id="tab-bank-soal">
-            <div class="filter-section">
-                <select id="filter-mapel-soal" onchange="renderTabelSoal()">
-                    <option value="">Semua Mapel</option>
-                </select>
-                <button class="btn btn-blue" onclick="downloadTemplateSoal()">📥 Download Template CSV</button>
-                <button class="btn btn-orange" onclick="bukaModal('modal-upload-soal')">📤 Upload Soal (CSV)</button>
-                <button class="btn btn-green" onclick="bukaModal('modal-paste-soal')" style="background: #9b59b6;">📋 Paste Soal dari AI</button>
-                <button class="btn btn-red" onclick="hapusSoalTerpilih()">🗑️ Hapus Terpilih</button>
-                <button class="btn btn-green" onclick="bukaModal('modal-tambah-soal')" style="margin-left: auto;">+ Tambah Soal Manual</button>
-            </div>
-            
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="30"><input type="checkbox" id="pilih-semua" onchange="toggleSemuaSoal(this)"></th>
-                            <th width="40">No</th>
-                            <th width="120">Mapel</th>
-                            <th>Pertanyaan & Pilihan</th>
-                            <th width="60">Kunci</th>
-                            <th width="50">Skor</th>
-                            <th width="100">Kelas</th>
-                            <th width="60">Gambar</th>
-                            <th width="80">Aksi</th>
-                            
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-soal"><tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= TAB 4: DATA SISWA ================= -->
-        <div class="tab-content aktif" id="tab-siswa">
-            <div class="filter-section">
-                <input type="text" id="filter-cari-siswa" placeholder="🔍 Cari NISN atau Nama..." oninput="renderTabelSiswa()">
-                <button class="btn btn-red" onclick="hapusSiswaTerpilih()">🗑️ Hapus Terpilih</button>
-                <button class="btn btn-green" onclick="bukaModal('modal-upload')" style="margin-left: auto;">📤 Upload Data Siswa (CSV)</button>
-                <button class="btn btn-orange" onclick="bukaModal('modal-tambah-siswa')">+ Tambah Siswa Manual</button>
-            </div>
-            
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="30"><input type="checkbox" id="pilih-semua-siswa" onchange="toggleSemuaSiswa(this)"></th>
-                            <th width="50">No</th>
-                            <th>NISN</th>
-                            <th>Nama Siswa</th>
-                            <th>Kelas</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-siswa"><tr><td colspan="5" style="text-align:center;">⏳ Memuat...</td></tr></tbody>
-                </table>
-            </div>
-            
-            <!-- NAVIGASI PAGINATION SISWA -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                <div>
-                    Tampilkan: 
-                    <select id="limit-siswa" onchange="halamanSiswaAktif = 1; renderTabelSiswa()" style="padding: 8px; border-radius: 6px; border: 1px solid #b8d8e8;">
-                        <option value="10">10</option>
-                        <option value="15">15</option>
-                        <option value="20">20</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="9999">Semua</option>
-                    </select> data
-                </div>
-                <div style="display: flex; gap: 5px; align-items: center;">
-                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(-1)">← Sebelumnya</button>
-                    <span id="info-halaman-siswa" style="font-weight: bold; margin: 0 10px;">Halaman 1 / 1</span>
-                    <button class="btn btn-blue" style="padding: 6px 15px;" onclick="ubahHalamanSiswa(1)">Berikutnya →</button>
-                </div>
-            </div>
-        </div>
+        </main>
     </div> <!-- END CONTAINER -->
 
     <!-- ================= MODAL UPLOAD SISWA ================= -->
@@ -625,13 +759,35 @@ let halamanSiswaAktif = 1;
 function bukaTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('aktif'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('aktif'));
-    document.getElementById(`tab-${tab}`).classList.add('aktif');
-    document.getElementById(`tab-btn-${tab}`).classList.add('aktif');
     
+    const tabEl = document.getElementById(`tab-${tab}`);
+    const btnEl = document.getElementById(`tab-btn-${tab}`);
+    if (tabEl) tabEl.classList.add('aktif');
+    if (btnEl) btnEl.classList.add('aktif');
+    
+    // Update judul halaman
+    const judul = document.getElementById('judul-halaman');
+    const petaJudul = {
+        'siswa': '👥 Data Siswa',
+        'jadwal': '📅 Pengaturan Jadwal',
+        'bank-soal': '📚 Bank Soal',
+        'nilai': '📈 Rekap Nilai'
+    };
+    if (judul) judul.textContent = petaJudul[tab] || '⚙️ Dashboard Admin';
+    
+    // Muat data
     if (tab === 'jadwal') muatDataJadwal();
     if (tab === 'bank-soal') muatBankSoal();
     if (tab === 'siswa') muatDataSiswa();
     if (tab === 'nilai') muatDataNilai();
+    
+    // Tutup sidebar di mobile
+    if (window.innerWidth <= 900) {
+        const sb = document.getElementById('sidebar');
+        const ov = document.getElementById('sidebar-overlay');
+        if (sb) sb.classList.remove('open');
+        if (ov) ov.classList.remove('active');
+    }
 }
 
 function bukaModal(id) { document.getElementById(id).classList.add("aktif"); }
@@ -2497,36 +2653,56 @@ async function prosesUbahPassword() {
         btn.textContent = "💾 Simpan Password Baru";
     }
 }    
+
+/* =========================================
+   SIDEBAR: TOGGLE & ACCORDION
+   ========================================= */
+function toggleSubmenu(el) {
+    const submenu = el.nextElementSibling;
+    const isOpen = submenu.classList.contains('open');
+    
+    // Tutup semua submenu lain
+    document.querySelectorAll('.submenu.open').forEach(s => s.classList.remove('open'));
+    document.querySelectorAll('.menu-main.open').forEach(m => m.classList.remove('open'));
+    
+    if (!isOpen) {
+        submenu.classList.add('open');
+        el.classList.add('open');
+    }
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
+}
     
 /* --- INIT --- */
 window.addEventListener("DOMContentLoaded", () => {
-    // 1. Tampilkan nama & role di header
-    const headerTitle = document.querySelector(".header h1");
-    if (headerTitle) {
-        headerTitle.innerHTML = `⚙️ Dashboard Admin <span style="font-size: 0.9rem; color: #7f8c8d;">(${sessionGuru.nama} - ${sessionGuru.role.toUpperCase()})</span>`;
+    // Tampilkan info user di sidebar
+    const infoUser = document.getElementById('info-user-sidebar');
+    if (infoUser) infoUser.textContent = `${sessionGuru.nama} • ${sessionGuru.role.toUpperCase()}`;
+    
+    const judul = document.getElementById('judul-halaman');
+    if (judul) {
+        judul.innerHTML = `⚙️ Dashboard <span style="font-size: 0.9rem; color: #7f8c8d;">(${sessionGuru.nama})</span>`;
     }
 
     if (sessionGuru.role !== "admin") {
-        // 2. Sembunyikan tab & isi tabel Data Siswa
-        const tabSiswa = document.getElementById("tab-btn-siswa");
-        const isiTabSiswa = document.getElementById("tab-siswa");
-        if (tabSiswa) tabSiswa.style.display = "none";
-        if (isiTabSiswa) isiTabSiswa.style.display = "none";
-
-        // 3. Sembunyikan filter Kelas & Mapel di Rekap Nilai
-        const filterKelas = document.getElementById("filter-kelas");
-        const filterMapel = document.getElementById("filter-mapel");
-        if (filterKelas) filterKelas.style.display = "none";
-        if (filterMapel) filterMapel.style.display = "none";
-
-        // 4. Set tab default ke Bank Soal (karena Data Siswa disembunyikan)
+        // Sembunyikan menu Data Siswa
+        const menuSiswa = document.getElementById('menu-item-siswa');
+        if (menuSiswa) menuSiswa.style.display = "none";
+        
+        // Sembunyikan filter kelas/mapel di Rekap Nilai
+        const fk = document.getElementById("filter-kelas");
+        const fm = document.getElementById("filter-mapel");
+        if (fk) fk.style.display = "none";
+        if (fm) fm.style.display = "none";
+        
         bukaTab('bank-soal');
     } else {
-        // Admin: default ke Data Siswa
         bukaTab('siswa');
     }
 
-    // 5. Muat data awal
     muatDataSiswa();
 });
 
@@ -2534,3 +2710,4 @@ window.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
+
