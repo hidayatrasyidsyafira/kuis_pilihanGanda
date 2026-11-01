@@ -135,6 +135,7 @@
             <h1>⚙️ Dashboard Admin Ujian</h1>
             <div>
                 <!-- <button class="btn btn-green" onclick="bukaModal('modal-upload')">📤 Upload Data Siswa</button> -->
+                <button class="btn btn-orange" onclick="bukaModalUbahPassword()">🔑 Ubah Password</button>
                 <button class="btn btn-red" onclick="logoutGuru()">🚪 Logout</button>
                 <button class="btn btn-blue" onclick="muatSemuaData()">🔄 Refresh Data</button>
             </div>
@@ -534,6 +535,30 @@
         </div>
     </div>
 </div>
+
+<!-- ================= MODAL UBAH PASSWORD ================= -->
+<div class="modal-overlay" id="modal-ubah-password">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3>🔑 Ubah Password</h3>
+        <p style="font-size: 0.9rem; color: #555; text-align: center; margin-bottom: 20px;">
+            Halo <strong>${sessionGuru.nama}</strong>, silakan ubah password Anda di sini.
+        </p>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Password Lama</label>
+            <input type="password" id="pass-lama" placeholder="Masukkan password saat ini">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Password Baru</label>
+            <input type="password" id="pass-baru" placeholder="Minimal 5 karakter">
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Konfirmasi Password Baru</label>
+            <input type="password" id="pass-konfirmasi" placeholder="Ulangi password baru">
+        </div>
+        <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUbahPassword()">💾 Simpan Password Baru</button>
+        <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-ubah-password')">Batal</button>
+    </div>
+</div>    
     
 <script>
 
@@ -2347,6 +2372,63 @@ function logoutGuru() {
             window.location.href = "login.html";
         }
     });
+}
+
+function bukaModalUbahPassword() {
+    document.getElementById("pass-lama").value = "";
+    document.getElementById("pass-baru").value = "";
+    document.getElementById("pass-konfirmasi").value = "";
+    bukaModal("modal-ubah-password");
+}
+
+async function prosesUbahPassword() {
+    const passLama = document.getElementById("pass-lama").value.trim();
+    const passBaru = document.getElementById("pass-baru").value.trim();
+    const passKonfirmasi = document.getElementById("pass-konfirmasi").value.trim();
+
+    if (!passLama || !passBaru || !passKonfirmasi) {
+        Swal.fire('Oops', 'Semua kolom wajib diisi!', 'warning');
+        return;
+    }
+    if (passBaru !== passKonfirmasi) {
+        Swal.fire('Oops', 'Password baru dan konfirmasi tidak cocok!', 'warning');
+        return;
+    }
+    if (passBaru.length < 5) {
+        Swal.fire('Oops', 'Password baru minimal 5 karakter!', 'warning');
+        return;
+    }
+
+    const btn = document.querySelector("#modal-ubah-password .btn-green");
+    btn.disabled = true;
+    btn.textContent = "⏳ Menyimpan...";
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "ubah_password",
+                username: sessionGuru.username,
+                passLama: passLama,
+                passBaru: passBaru
+            })
+        });
+        const json = await res.json();
+
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message, 'success').then(() => {
+                tutupModal("modal-ubah-password");
+                logoutGuru(); // Paksa logout agar guru login ulang dengan password baru
+            });
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Password Baru";
+    }
 }    
     
 /* --- INIT --- */
@@ -2380,6 +2462,8 @@ window.addEventListener("DOMContentLoaded", () => {
     // 5. Muat data awal
     muatDataSiswa();
 });
+
+    
 </script>
 </body>
 </html>
