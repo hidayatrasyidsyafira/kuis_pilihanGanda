@@ -127,6 +127,28 @@
             background: #e3f2fd;
             outline: 1px dashed #3498db;
         }
+
+                /* CSS untuk Input Password dengan Ikon Mata */
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input {
+            padding-right: 40px !important; /* Beri ruang untuk ikon di kanan */
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+        .toggle-password:hover {
+            color: #3498db;
+        }
+        
     </style>
 </head>
 <body>
@@ -135,6 +157,7 @@
             <h1>⚙️ Dashboard Admin Ujian</h1>
             <div>
                 <!-- <button class="btn btn-green" onclick="bukaModal('modal-upload')">📤 Upload Data Siswa</button> -->
+                <button class="btn btn-orange" onclick="bukaModalUbahPassword()">🔑 Ubah Password</button>
                 <button class="btn btn-red" onclick="logoutGuru()">🚪 Logout</button>
                 <button class="btn btn-blue" onclick="muatSemuaData()">🔄 Refresh Data</button>
             </div>
@@ -198,6 +221,7 @@
         <!-- ================= TAB 2: JADWAL UJIAN ================= -->
         <div class="tab-content" id="tab-jadwal">
             <div class="filter-section" style="justify-content: flex-end;">
+                <button class="btn btn-blue" onclick="bukaModalQRCode()" style="background: #8e44ad;">🎓 Kartu Ujian QR</button>
                 <button class="btn btn-orange" onclick="bukaModalKirimToken()">📲 Kirim Token Massal</button>
                 <button class="btn btn-red" onclick="hapusJadwalTerpilih()">🗑️ Hapus Terpilih</button>
                 <button class="btn btn-green" onclick="bukaModal('modal-jadwal')">+ Tambah Jadwal Baru</button>
@@ -501,6 +525,76 @@
         </div>
     </div>
 
+<!-- ================= MODAL KARTU UJIAN QR ================= -->
+<div class="modal-overlay" id="modal-qr-code">
+    <div class="modal-content" style="max-width: 800px;">
+        <h3>🎓 Kirim Kartu Ujian (QR Code)</h3>
+        <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+            Pilih siswa yang ingin dikirimi QR Code via WhatsApp. Atau kirim massal ke semua siswa di kelas Anda.
+        </p>
+        
+        <div class="table-responsive" style="max-height: 400px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="30"><input type="checkbox" id="pilih-semua-qr" onchange="toggleSemuaQR(this)"></th>
+                        <th width="40">No</th>
+                        <th>NISN</th>
+                        <th>Nama</th>
+                        <th width="100">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-qr">
+                    <!-- Diisi oleh JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 15px; text-align: right;">
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimQR()">🚀 Kirim QR ke Siswa Terpilih</button>
+            <button class="btn btn-orange" style="width: 100%; margin-bottom: 10px; background: #8e44ad;" onclick="prosesKirimQR(true)">📢 Kirim ke SEMUA Siswa di Kelas Saya</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-qr-code')">Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL UBAH PASSWORD ================= -->
+<div class="modal-overlay" id="modal-ubah-password">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3>🔑 Ubah Password</h3>
+        <p style="font-size: 0.9rem; color: #555; text-align: center; margin-bottom: 20px;">
+            Halo <strong id="label-nama-guru"></strong>, silakan ubah password Anda di sini.
+        </p>
+        
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Password Lama</label>
+            <div class="password-wrapper">
+                <input type="password" id="pass-lama" placeholder="Masukkan password saat ini">
+                <span class="toggle-password" onclick="togglePassword('pass-lama', this)">👁️</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Password Baru</label>
+            <div class="password-wrapper">
+                <input type="password" id="pass-baru" placeholder="Minimal 5 karakter">
+                <span class="toggle-password" onclick="togglePassword('pass-baru', this)">👁️</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Konfirmasi Password Baru</label>
+            <div class="password-wrapper">
+                <input type="password" id="pass-konfirmasi" placeholder="Ulangi password baru">
+                <span class="toggle-password" onclick="togglePassword('pass-konfirmasi', this)">👁️</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUbahPassword()">💾 Simpan Password Baru</button>
+        <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-ubah-password')">Batal</button>
+    </div>
+</div>  
+    
 <script>
 
 /* =========================================
@@ -1237,6 +1331,128 @@ async function prosesKirimToken() {
         }
     } catch (err) {
         Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    }
+}
+
+// Fungsi Buka Modal QR
+function bukaModalQRCode() {
+    const tbody = document.getElementById("tbody-qr");
+    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>⏳ Memuat data siswa...</td></tr>";
+    bukaModal("modal-qr-code");
+
+    // Filter siswa berdasarkan kelas guru
+    const siswaTampil = semuaDataSiswa.filter(s => {
+        if (sessionGuru.role === "admin") return true;
+        const kelasSiswa = String(s.kelas || "").toUpperCase();
+        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        return kelasGuru.includes(kelasSiswa);
+    });
+
+    tbody.innerHTML = "";
+    if (siswaTampil.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Tidak ada siswa di kelas Anda.</td></tr>";
+        return;
+    }
+
+    siswaTampil.forEach((s, index) => {
+        const nisnBersih = s.nisn.replace(/^'/, '');
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center;"><input type="checkbox" class="checkbox-qr" value="${nisnBersih}"></td>
+                <td>${index + 1}</td>
+                <td>${nisnBersih}</td>
+                <td><strong>${s.nama}</strong></td>
+                <td style="text-align:center;">
+                    <button class="btn btn-blue" style="padding: 4px 10px; font-size: 0.8rem;" onclick="kirimQRSatuSiswa('${nisnBersih}')">📲 Kirim</button>
+                </td>
+            </tr>`;
+    });
+}
+
+function toggleSemuaQR(source) {
+    document.querySelectorAll('.checkbox-qr').forEach(cb => cb.checked = source.checked);
+}
+
+// Kirim QR ke 1 siswa (via tombol di baris tabel)
+async function kirimQRSatuSiswa(nisn) {
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim QR Code?',
+        text: "QR Code akan dikirim ke WhatsApp siswa ini.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#8e44ad',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        // Ambil mapel dari jadwal pertama guru (sebagai default teks)
+        const mapelDefault = semuaDataJadwal.length > 0 ? semuaDataJadwal[0].mapel : "Ujian CBT";
+
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "kirim_qr_siswa", daftarNISN: [nisn], mapel: mapelDefault })
+        });
+        const json = await res.json();
+        Swal.fire(json.status === "success" ? 'Berhasil!' : 'Gagal', json.message, json.status === "success" ? 'success' : 'error');
+    } catch (err) {
+        Swal.fire('Error', 'Koneksi server gagal.', 'error');
+    }
+}
+
+// Kirim QR Massal
+async function prosesKirimQR(kirimSemua = false) {
+    let daftarNISN = [];
+
+    if (kirimSemua) {
+        document.querySelectorAll('.checkbox-qr').forEach(cb => daftarNISN.push(cb.value));
+    } else {
+        const checked = document.querySelectorAll('.checkbox-qr:checked');
+        if (checked.length === 0) {
+            Swal.fire('Oops...', 'Pilih minimal satu siswa atau gunakan tombol Kirim Semua.', 'info');
+            return;
+        }
+        checked.forEach(cb => daftarNISN.push(cb.value));
+    }
+
+    if (daftarNISN.length === 0) {
+        Swal.fire('Kosong', 'Tidak ada siswa untuk dikirimi QR.', 'warning');
+        return;
+    }
+
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim QR Code?',
+        text: `${daftarNISN.length} siswa akan menerima QR Code di WhatsApp mereka.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#8e44ad',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({ title: 'Mengirim...', text: 'Mohon tunggu, proses ini mungkin memakan waktu.', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const mapelDefault = semuaDataJadwal.length > 0 ? semuaDataJadwal[0].mapel : "Ujian CBT";
+
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "kirim_qr_siswa", daftarNISN: daftarNISN, mapel: mapelDefault })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            Swal.fire('Selesai!', json.message, 'success');
+            tutupModal("modal-qr-code");
+        } else {
+            Swal.fire('Gagal', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Koneksi server gagal.', 'error');
     }
 }    
 
@@ -2191,6 +2407,95 @@ function logoutGuru() {
             window.location.href = "login.html";
         }
     });
+}
+
+function bukaModalUbahPassword() {
+    document.getElementById("pass-lama").value = "";
+    document.getElementById("pass-baru").value = "";
+    document.getElementById("pass-konfirmasi").value = "";
+    bukaModal("modal-ubah-password");
+}
+
+function togglePassword(idInput, elemenIkon) {
+    const input = document.getElementById(idInput);
+    if (input.type === "password") {
+        input.type = "text";
+        elemenIkon.textContent = "🙈"; // Ikon mata tertutup
+    } else {
+        input.type = "password";
+        elemenIkon.textContent = "👁️"; // Ikon mata terbuka
+    }
+}
+
+function bukaModalUbahPassword() {
+    document.getElementById("pass-lama").value = "";
+    document.getElementById("pass-baru").value = "";
+    document.getElementById("pass-konfirmasi").value = "";
+    
+    // Reset tipe input menjadi password & ikon menjadi mata terbuka
+    ['pass-lama', 'pass-baru', 'pass-konfirmasi'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.type = "password";
+            const ikon = input.nextElementSibling;
+            if (ikon) ikon.textContent = "👁️";
+        }
+    });
+
+    // Tampilkan nama guru di modal
+    const labelNama = document.getElementById("label-nama-guru");
+    if (labelNama) labelNama.textContent = sessionGuru.nama;
+
+    bukaModal("modal-ubah-password");
+}    
+async function prosesUbahPassword() {
+    const passLama = document.getElementById("pass-lama").value.trim();
+    const passBaru = document.getElementById("pass-baru").value.trim();
+    const passKonfirmasi = document.getElementById("pass-konfirmasi").value.trim();
+
+    if (!passLama || !passBaru || !passKonfirmasi) {
+        Swal.fire('Oops', 'Semua kolom wajib diisi!', 'warning');
+        return;
+    }
+    if (passBaru !== passKonfirmasi) {
+        Swal.fire('Oops', 'Password baru dan konfirmasi tidak cocok!', 'warning');
+        return;
+    }
+    if (passBaru.length < 5) {
+        Swal.fire('Oops', 'Password baru minimal 5 karakter!', 'warning');
+        return;
+    }
+
+    const btn = document.querySelector("#modal-ubah-password .btn-green");
+    btn.disabled = true;
+    btn.textContent = "⏳ Menyimpan...";
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "ubah_password",
+                username: sessionGuru.username,
+                passLama: passLama,
+                passBaru: passBaru
+            })
+        });
+        const json = await res.json();
+
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message, 'success').then(() => {
+                tutupModal("modal-ubah-password");
+                logoutGuru(); // Paksa logout agar guru login ulang dengan password baru
+            });
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Password Baru";
+    }
 }    
     
 /* --- INIT --- */
@@ -2224,6 +2529,8 @@ window.addEventListener("DOMContentLoaded", () => {
     // 5. Muat data awal
     muatDataSiswa();
 });
+
+    
 </script>
 </body>
 </html>
