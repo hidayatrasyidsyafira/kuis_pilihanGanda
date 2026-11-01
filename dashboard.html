@@ -127,6 +127,28 @@
             background: #e3f2fd;
             outline: 1px dashed #3498db;
         }
+
+                /* CSS untuk Input Password dengan Ikon Mata */
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input {
+            padding-right: 40px !important; /* Beri ruang untuk ikon di kanan */
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+        .toggle-password:hover {
+            color: #3498db;
+        }
+        
     </style>
 </head>
 <body>
@@ -541,24 +563,37 @@
     <div class="modal-content" style="max-width: 400px;">
         <h3>🔑 Ubah Password</h3>
         <p style="font-size: 0.9rem; color: #555; text-align: center; margin-bottom: 20px;">
-            Halo <strong>${sessionGuru.nama}</strong>, silakan ubah password Anda di sini.
+            Halo <strong id="label-nama-guru"></strong>, silakan ubah password Anda di sini.
         </p>
+        
         <div class="form-group" style="margin-bottom: 15px;">
             <label>Password Lama</label>
-            <input type="password" id="pass-lama" placeholder="Masukkan password saat ini">
+            <div class="password-wrapper">
+                <input type="password" id="pass-lama" placeholder="Masukkan password saat ini">
+                <span class="toggle-password" onclick="togglePassword('pass-lama', this)">👁️</span>
+            </div>
         </div>
+
         <div class="form-group" style="margin-bottom: 15px;">
             <label>Password Baru</label>
-            <input type="password" id="pass-baru" placeholder="Minimal 5 karakter">
+            <div class="password-wrapper">
+                <input type="password" id="pass-baru" placeholder="Minimal 5 karakter">
+                <span class="toggle-password" onclick="togglePassword('pass-baru', this)">👁️</span>
+            </div>
         </div>
+
         <div class="form-group" style="margin-bottom: 20px;">
             <label>Konfirmasi Password Baru</label>
-            <input type="password" id="pass-konfirmasi" placeholder="Ulangi password baru">
+            <div class="password-wrapper">
+                <input type="password" id="pass-konfirmasi" placeholder="Ulangi password baru">
+                <span class="toggle-password" onclick="togglePassword('pass-konfirmasi', this)">👁️</span>
+            </div>
         </div>
+        
         <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUbahPassword()">💾 Simpan Password Baru</button>
         <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-ubah-password')">Batal</button>
     </div>
-</div>    
+</div>  
     
 <script>
 
@@ -2381,6 +2416,38 @@ function bukaModalUbahPassword() {
     bukaModal("modal-ubah-password");
 }
 
+function togglePassword(idInput, elemenIkon) {
+    const input = document.getElementById(idInput);
+    if (input.type === "password") {
+        input.type = "text";
+        elemenIkon.textContent = "🙈"; // Ikon mata tertutup
+    } else {
+        input.type = "password";
+        elemenIkon.textContent = "👁️"; // Ikon mata terbuka
+    }
+}
+
+function bukaModalUbahPassword() {
+    document.getElementById("pass-lama").value = "";
+    document.getElementById("pass-baru").value = "";
+    document.getElementById("pass-konfirmasi").value = "";
+    
+    // Reset tipe input menjadi password & ikon menjadi mata terbuka
+    ['pass-lama', 'pass-baru', 'pass-konfirmasi'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.type = "password";
+            const ikon = input.nextElementSibling;
+            if (ikon) ikon.textContent = "👁️";
+        }
+    });
+
+    // Tampilkan nama guru di modal
+    const labelNama = document.getElementById("label-nama-guru");
+    if (labelNama) labelNama.textContent = sessionGuru.nama;
+
+    bukaModal("modal-ubah-password");
+}    
 async function prosesUbahPassword() {
     const passLama = document.getElementById("pass-lama").value.trim();
     const passBaru = document.getElementById("pass-baru").value.trim();
