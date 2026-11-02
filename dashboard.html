@@ -1887,7 +1887,7 @@ function isiFilterKelasSoal() {
     // Opsi Default: "Semua Kelas" untuk Admin, "Umum & Kelas Saya" untuk Guru
     let html = sessionGuru.role === "admin" 
         ? `<option value="">Semua Kelas</option>` 
-        : `<option value="">Umum & Kelas Saya</option>`; 
+        : `<option value="">Pilih Kelas</option>`; 
 
     // Urutkan, tapi taruh "SEMUA" di paling atas
     const arrKelas = Array.from(setKelas).sort((a, b) => {
