@@ -1158,9 +1158,26 @@ async function tampilkanLeaderboardDashboard() {
         const json = await res.json();
         
         if (json.status === "success") {
-            // Ambil semua nilai, urutkan dari tertinggi
-            const semuaNilai = json.data.sort((a, b) => b.skor - a.skor).slice(0, 10);
+            // 1. FILTER DATA BERDASARKAN ROLE
+            let dataTampil = json.data;
             
+            // Jika bukan admin (Guru), filter hanya kelas yang dia ampu
+            if (sessionGuru.role !== "admin") {
+                const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+                dataTampil = dataTampil.filter(d => 
+                    kelasGuru.includes(String(d.kelas || "").toUpperCase().trim())
+                );
+            }
+
+            // 2. URUTKAN & AMBIL TOP 10
+            const top10 = dataTampil.sort((a, b) => b.skor - a.skor).slice(0, 10);
+            
+            if (top10.length === 0) {
+                Swal.fire('Kosong', 'Belum ada data nilai untuk kelas Anda.', 'info');
+                return;
+            }
+
+            // 3. RENDER TABEL
             let htmlTabel = `<div style="text-align: left; margin-top: 15px;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                     <thead>
@@ -1174,7 +1191,7 @@ async function tampilkanLeaderboardDashboard() {
                     </thead>
                     <tbody>`;
             
-            semuaNilai.forEach((siswa, index) => {
+            top10.forEach((siswa, index) => {
                 const bgColor = index % 2 === 0 ? "#f9f9f9" : "white";
                 const medal = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : index + 1));
                 htmlTabel += `
@@ -1190,8 +1207,9 @@ async function tampilkanLeaderboardDashboard() {
             
             htmlTabel += `</tbody></table></div>`;
 
+            // 4. TAMPILKAN
             Swal.fire({
-                title: '🏆 Top 10 Nilai Tertinggi (Semua Mapel)',
+                title: sessionGuru.role === 'admin' ? '🏆 Top 10 Nilai Tertinggi (Semua Kelas)' : '🏆 Top 10 Nilai Tertinggi (Kelas Anda)',
                 html: htmlTabel,
                 width: 650,
                 confirmButtonColor: '#3498db',
@@ -1201,7 +1219,7 @@ async function tampilkanLeaderboardDashboard() {
     } catch (err) {
         Swal.fire('Gagal', 'Tidak dapat memuat data peringkat.', 'error');
     }
-}    
+}   
 
 /* =========================================
    TAB 2: JADWAL (Baca, Tambah, Edit, Hapus)
