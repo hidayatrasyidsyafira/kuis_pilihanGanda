@@ -462,23 +462,53 @@
     <!-- ================= MODAL UPLOAD SISWA ================= -->
     <div class="modal-overlay" id="modal-upload">
         <div class="modal-content">
-            <h3>📤 Upload Data Siswa</h3>
-            <p style="margin-bottom: 15px; color: #666; font-size: 0.95rem;">
-                Gunakan template di bawah ini agar format file sesuai dengan sistem.
-            </p>
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button class="btn btn-blue" style="width: 100%;" onclick="downloadTemplateSiswa()">📥 Download Template Siswa</button>
+            <h3>📅 Tambah Jadwal Baru</h3>
+        
+            <!-- MODE UJIAN -->
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Mode Ujian</label>
+                <div style="display: flex; gap: 20px; margin-top: 6px;">
+                    <label style="font-weight: normal; cursor: pointer;">
+                        <input type="radio" name="j-mode" value="UH" checked onchange="ubahModeJadwal()"> Ujian Per Kelas (UH)
+                    </label>
+                    <label style="font-weight: normal; cursor: pointer;">
+                        <input type="radio" name="j-mode" value="UAS" onchange="ubahModeJadwal()"> Ujian Bersamaan (UAS)
+                    </label>
+                </div>
+                <small id="j-mode-hint" style="color: #7f8c8d; display: block; margin-top: 6px;">
+                    Mode UH: satu kelas per input, waktu bisa berbeda per kelas.
+                </small>
             </div>
-            
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace; border: 1px dashed #ccc;">
-                Format Kolom: <strong>NISN, Nama, Kelas</strong><br>
-                Pastikan NISN diawali dengan tanda kutip (') di Excel agar angka 0 tidak hilang.
+        
+            <div class="form-grid">
+                <div class="form-group">
+                    <label id="j-kelas-label">Kelas</label>
+                    <input type="text" id="j-kelas" placeholder="Contoh: X-3">
+                    <small id="j-kelas-hint" style="color: #7f8c8d; font-size: 0.8rem;">Satu kelas saja.</small>
+                </div>
+                <div class="form-group"><label>Waktu (Cth: 09:00 - 10:30)</label><input type="text" id="j-waktu" placeholder="08:00 - 09:30"></div>
+                <div class="form-group"><label>Hari</label>
+                    <select id="j-hari">
+                        <option>Ahad</option><option>Senin</option><option>Selasa</option><option>Rabu</option>
+                        <option>Kamis</option><option>Jumat</option><option>Sabtu</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Tanggal (Cth: 21/10/2026)</label><input type="text" id="j-tanggal" placeholder="DD/MM/YYYY"></div>
+                <div class="form-group"><label>Matapelajaran</label><input type="text" id="j-mapel" placeholder="TIK UH 1"></div>
+                <div class="form-group"><label>Nama Guru</label><input type="text" id="j-guru" placeholder="Budi, S.Kom"></div>
+                <div class="form-group"><label>Token</label><input type="text" id="j-token" placeholder="TIK123"></div>
+                <div class="form-group"><label>Jenis Ujian</label>
+                    <select id="j-jenis"><option value="UH">UH</option><option value="UAS">UAS</option></select>
+                </div>
+                <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
+                <div class="form-group">
+                    <label>Batas Soal (0 = Semua Soal)</label>
+                    <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
+                </div>
             </div>
-            
-            <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 20px; display: block; width: 100%;">
-            
-            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSiswa()">Upload & Simpan</button>
-            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload')">Batal</button>
+        
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
         </div>
     </div>
 
@@ -790,7 +820,10 @@ function bukaTab(tab) {
     }
 }
 
-function bukaModal(id) { document.getElementById(id).classList.add("aktif"); }
+function bukaModal(id) {
+    document.getElementById(id).classList.add("aktif");
+    if (id === "modal-jadwal") ubahModeJadwal();
+}
 function tutupModal(id) { document.getElementById(id).classList.remove("aktif"); }
 
 function muatSemuaData() {
@@ -1336,6 +1369,87 @@ async function simpanJadwalBaru() {
     finally { btn.textContent = "Simpan Jadwal"; btn.disabled = false; }
 }
 
+function ubahModeJadwal() {
+    const mode = document.querySelector('input[name="j-mode"]:checked').value;
+    const inputKelas = document.getElementById("j-kelas");
+    const hintMode = document.getElementById("j-mode-hint");
+    const hintKelas = document.getElementById("j-kelas-hint");
+
+    if (mode === "UH") {
+        inputKelas.placeholder = "Contoh: X-3";
+        hintMode.textContent = "Mode UH: satu kelas per input, waktu bisa berbeda per kelas.";
+        hintKelas.textContent = "Satu kelas saja. Untuk kelas lain di jam berbeda, tambah jadwal lagi.";
+    } else {
+        inputKelas.placeholder = "Contoh: X-1, X-2, X-3, X-4";
+        hintMode.textContent = "Mode UAS: semua kelas ujian di waktu & token yang sama.";
+        hintKelas.textContent = "Pisahkan dengan koma. Sistem otomatis memecah jadi satu baris per kelas.";
+    }
+}
+
+async function simpanJadwalBaru() {
+    const mode = document.querySelector('input[name="j-mode"]:checked').value;
+
+    const dataDasar = {
+        waktu: document.getElementById("j-waktu").value.trim(),
+        hari: document.getElementById("j-hari").value,
+        tanggal: document.getElementById("j-tanggal").value.trim(),
+        mapel: document.getElementById("j-mapel").value.trim(),
+        namaGuru: document.getElementById("j-guru").value.trim(),
+        token: document.getElementById("j-token").value.trim(),
+        jenis: document.getElementById("j-jenis").value,
+        durasi: document.getElementById("j-durasi").value,
+        batasSoal: document.getElementById("j-batas-soal").value
+    };
+    const kelasInput = document.getElementById("j-kelas").value.trim();
+
+    if (!dataDasar.waktu || !dataDasar.tanggal || !dataDasar.mapel || !kelasInput || !dataDasar.token) {
+        Swal.fire('Oops...', 'Waktu, Tanggal, Mapel, Kelas, dan Token wajib diisi!', 'warning');
+        return;
+    }
+
+    // Pecah kelas per koma
+    const daftarKelas = kelasInput.split(",").map(k => k.trim().toUpperCase()).filter(k => k !== "");
+
+    // Validasi mode
+    if (mode === "UH" && daftarKelas.length > 1) {
+        Swal.fire('Oops...', 'Mode UH hanya untuk satu kelas. Untuk multi-kelas gunakan mode UAS.', 'warning');
+        return;
+    }
+    if (mode === "UAS" && daftarKelas.length < 1) {
+        Swal.fire('Oops...', 'Mode UAS minimal satu kelas.', 'warning');
+        return;
+    }
+
+    // Bangun array baris jadwal — satu baris per kelas
+    // Token TIDAK diberi suffix (sesuai kesepakatan)
+    const daftarJadwal = daftarKelas.map(kelas => ({
+        ...dataDasar,
+        kelas: kelas
+    }));
+
+    const btn = document.querySelector("#modal-jadwal .btn-green");
+    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({ aksi: "tambah_jadwal", daftarJadwal: daftarJadwal })
+        });
+        const json = await res.json();
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message || `${daftarJadwal.length} baris jadwal ditambahkan.`, 'success');
+            tutupModal("modal-jadwal");
+            muatDataJadwal();
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi server terputus.', 'error');
+    } finally {
+        btn.textContent = "Simpan Jadwal"; btn.disabled = false;
+    }
+}
+    
 /* =========================================
    FITUR HAPUS JADWAL
    ========================================= */
