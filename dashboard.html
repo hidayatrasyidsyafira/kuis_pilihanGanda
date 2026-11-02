@@ -397,6 +397,9 @@
                 <!-- ==== TAB BANK SOAL ==== -->
                 <div class="tab-content" id="tab-bank-soal">
                     <div class="filter-section">
+                        <select id="filter-kelas-soal" onchange="renderTabelSoal()">
+                            <option value="">Semua Kelas</option>
+                        </select>
                         <select id="filter-mapel-soal" onchange="renderTabelSoal()">
                             <option value="">Semua Mapel</option>
                         </select>
@@ -1806,6 +1809,7 @@ async function muatBankSoal() {
         if (json.status === "success") {
             semuaDataSoal = json.data;
             isiFilterSoal();
+            isiFilterKelasSoal();
             renderTabelSoal();
         } else {
             tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Gagal: ${json.message}</td></tr>`;
@@ -1816,6 +1820,47 @@ async function muatBankSoal() {
     }
 }
 
+function isiFilterKelasSoal() {
+    const setKelas = new Set();
+    
+    semuaDataSoal.forEach(d => {
+        const kelasSoal = String(d.kelas || "").toUpperCase().trim();
+        
+        // Jika admin, ambil semua kelas. Jika guru, hanya ambil kelas yang diampu + kelas "SEMUA"
+        if (sessionGuru.role === "admin") {
+            if (kelasSoal) setKelas.add(kelasSoal);
+        } else {
+            const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+            if (kelasSoal === "" || kelasSoal === "SEMUA") {
+                setKelas.add("SEMUA");
+            } else if (kelasGuru.includes(kelasSoal)) {
+                setKelas.add(kelasSoal);
+            }
+        }
+    });
+    
+    const sKelas = document.getElementById("filter-kelas-soal");
+    if (!sKelas) return;
+    
+    const val = sKelas.value;
+    
+    // Opsi "Semua Kelas" hanya ditampilkan untuk Admin. Guru tidak perlu.
+    let html = sessionGuru.role === "admin" ? `<option value="">Semua Kelas</option>` : "";
+    
+    // Urutkan, tapi taruh "SEMUA" di paling atas (jika ada)
+    const arrKelas = Array.from(setKelas).sort((a, b) => {
+        if (a === "SEMUA") return -1;
+        if (b === "SEMUA") return 1;
+        return a.localeCompare(b);
+    });
+
+    html += arrKelas.map(k => `<option value="${k === "SEMUA" ? "" : k}">${k === "SEMUA" ? "Umum (Semua Kelas)" : k}</option>`).join('');
+    sKelas.innerHTML = html;
+    
+    sKelas.value = val;
+    if (!sKelas.value && sKelas.options.length > 0) sKelas.selectedIndex = 0;
+}
+    
 function isiFilterSoal() {
     const setMapel = new Set();
     semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
@@ -1828,26 +1873,41 @@ function isiFilterSoal() {
 function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
+    const fKelas = document.getElementById("filter-kelas-soal").value; // Ambil nilai dropdown Kelas
     
     document.getElementById("pilih-semua").checked = false;
 
-        const dataTampil = [];
-        semuaDataSoal.forEach((d, indexAsli) => {
-            const cocokMapel = (fMapel === "" || d.mapel === fMapel);
-            const kelasSoal = String(d.kelas || "").toUpperCase();
-            
-            // Admin bisa lihat semua. Guru hanya melihat soal kelasnya + soal umum
-            const cocokKelasGuru = (sessionGuru.role === "admin") 
-                || (kelasSoal === "") 
-                || (kelasSoal === "SEMUA") 
-                || (sessionGuru.kelasArray || []).includes(kelasSoal);
-    
-            if (cocokMapel && cocokKelasGuru) {
-                dataTampil.push({ ...d, indexAsli: indexAsli });
-            }
-        });
+    const dataTampil = [];
+    semuaDataSoal.forEach((d, indexAsli) => {
+        const cocokMapel = (fMapel === "" || d.mapel === fMapel);
+        const kelasSoal = String(d.kelas || "").toUpperCase().trim();
+        
+        // === LOGIKA FILTER KELAS BARU ===
+        let cocokFilterKelas = false;
+        
+        if (fKelas === "") {
+            // Jika dropdown pilih "Semua Kelas" atau "Umum", tampilkan yang kelasnya sama/kosong
+            cocokFilterKelas = (kelasSoal === "" || kelasSoal === "SEMUA");
+        } else {
+            // Jika dropdown pilih kelas spesifik (misal X-3), tampilkan yang kelasnya X-3
+            cocokFilterKelas = (kelasSoal === fKelas || kelasSoal.includes(fKelas));
+        }
 
-    if (dataTampil.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; return; }
+        // Hak akses Guru: hanya lihat soal kelasnya + soal umum
+        const cocokKelasGuru = (sessionGuru.role === "admin") 
+            || (kelasSoal === "") 
+            || (kelasSoal === "SEMUA") 
+            || (sessionGuru.kelasArray || []).includes(kelasSoal);
+
+        if (cocokMapel && cocokFilterKelas && cocokKelasGuru) {
+            dataTampil.push({ ...d, indexAsli: indexAsli });
+        }
+    });
+
+    if (dataTampil.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; 
+        return; 
+    }
 
     tbody.innerHTML = "";
     dataTampil.forEach((d, indexTampil) => {
