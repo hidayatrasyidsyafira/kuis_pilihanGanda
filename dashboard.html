@@ -2850,6 +2850,20 @@ function toggleSubmenu(el) {
     if (!isOpen) {
         submenu.classList.add('open');
         el.classList.add('open');
+        
+        // === TAMBAHKAN INI: Deteksi Menu yang Diklik & Tampilkan Tabel ===
+        const teksMenu = el.innerText.toUpperCase();
+        
+        if (teksMenu.includes('PENGATURAN JADWAL')) {
+            bukaTab('jadwal');
+        } else if (teksMenu.includes('BANK SOAL')) {
+            bukaTab('bank-soal');
+        } else if (teksMenu.includes('REKAP NILAI')) {
+            bukaTab('nilai');
+        } else if (teksMenu.includes('DATA SISWA')) {
+            bukaTab('siswa');
+        }
+        // ===============================================================
     }
 }
 
