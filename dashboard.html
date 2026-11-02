@@ -879,35 +879,52 @@ async function muatDataNilai() {
     }
 }
 
-// function isiFilterNilai() {
-//     const setKelas = new Set(); const setMapel = new Set();
-//     semuaDataNilai.forEach(d => { if (d.kelas) setKelas.add(d.kelas); if (d.mapel) setMapel.add(d.mapel); });
-//     const sKelas = document.getElementById("filter-kelas"); const sMapel = document.getElementById("filter-mapel");
-//     sKelas.innerHTML = `<option value="">Semua Kelas</option>` + Array.from(setKelas).sort().map(k => `<option value="${k}">${k}</option>`).join('');
-//     sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
-// }
-    function isiFilterNilai() {
-    const setKelas = new Set(); const setMapel = new Set();
-    semuaDataNilai.forEach(d => { 
-        if (d.kelas) setKelas.add(d.kelas); 
-        if (d.mapel) setMapel.add(d.mapel); 
+function isiFilterNilai() {
+    const setKelas = new Set(); 
+    const setMapel = new Set();
+    
+    // 1. Saring data terlebih dahulu berdasarkan Role
+    const dataValid = semuaDataNilai.filter(d => {
+        if (sessionGuru.role === "admin") return true;
+        
+        const kelasNilai = String(d.kelas || "").toUpperCase().trim();
+        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        
+        return kelasGuru.includes(kelasNilai);
+    });
+
+    // 2. Kumpulkan opsi Kelas dan Mapel dari data yang sudah disaring
+    dataValid.forEach(d => { 
+        if (d.kelas) setKelas.add(d.kelas.toUpperCase().trim()); 
+        if (d.mapel) setMapel.add(d.mapel.trim()); 
     });
     
     const sKelas = document.getElementById("filter-kelas"); 
-    const sMapel = document.getElementById("filter-mapel"); // <-- Diperbaiki (sebelumnya filter-mapel-nilai)
+    const sMapel = document.getElementById("filter-mapel");
 
     // Simpan nilai yang sedang dipilih agar tidak ter-reset saat data di-refresh
     const valKelas = sKelas.value;
     const valMapel = sMapel.value;
 
-    sKelas.innerHTML = `<option value="">Semua Kelas</option>` + Array.from(setKelas).sort().map(k => `<option value="${k}">${k}</option>`).join('');
-    sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+    // 3. Buat HTML Dropdown
+    // Admin mendapat opsi "Semua", Guru tidak (karena sudah difilter per kelas)
+    let htmlKelas = sessionGuru.role === "admin" ? `<option value="">Semua Kelas</option>` : "";
+    htmlKelas += Array.from(setKelas).sort().map(k => `<option value="${k}">${k}</option>`).join('');
+
+    let htmlMapel = sessionGuru.role === "admin" ? `<option value="">Semua Mapel</option>` : "";
+    htmlMapel += Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+
+    sKelas.innerHTML = htmlKelas;
+    sMapel.innerHTML = htmlMapel;
     
-    // Kembalikan nilai yang sudah dipilih
+    // 4. Kembalikan nilai yang sudah dipilih sebelumnya (jika masih ada di list)
     sKelas.value = valKelas;
     sMapel.value = valMapel;
-}
 
+    // 5. Jika dropdown kosong (misal guru belum ada nilai sama sekali), arahkan ke opsi pertama
+    if (!sKelas.value && sKelas.options.length > 0) sKelas.selectedIndex = 0;
+    if (!sMapel.value && sMapel.options.length > 0) sMapel.selectedIndex = 0;
+}
 function renderGrafikNilai() {
     // 1. Ambil data yang sedang difilter
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
@@ -2856,10 +2873,10 @@ window.addEventListener("DOMContentLoaded", () => {
         if (menuSiswa) menuSiswa.style.display = "none";
         
         // Sembunyikan filter kelas/mapel di Rekap Nilai
-        const fk = document.getElementById("filter-kelas");
-        const fm = document.getElementById("filter-mapel");
-        if (fk) fk.style.display = "none";
-        if (fm) fm.style.display = "none";
+    // const fk = document.getElementById("filter-kelas");
+    // const fm = document.getElementById("filter-mapel");
+    // if (fk) fk.style.display = "none";
+    // if (fm) fm.style.display = "none";
         
         bukaTab('bank-soal');
     } else {
