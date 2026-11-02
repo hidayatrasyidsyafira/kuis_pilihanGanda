@@ -469,11 +469,14 @@
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <button class="btn btn-blue" style="width: 100%;" onclick="downloadTemplateSiswa()">📥 Download Template Siswa</button>
             </div>
+            
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; font-family: monospace; border: 1px dashed #ccc;">
                 Format Kolom: <strong>NISN, Nama, Kelas</strong><br>
                 Pastikan NISN diawali dengan tanda kutip (') di Excel agar angka 0 tidak hilang.
             </div>
+            
             <input type="file" id="file-csv" accept=".csv" style="margin-bottom: 20px; display: block; width: 100%;">
+            
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUploadSiswa()">Upload & Simpan</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-upload')">Batal</button>
         </div>
@@ -510,39 +513,7 @@
     <div class="modal-overlay" id="modal-jadwal">
         <div class="modal-content">
             <h3>📅 Tambah Jadwal Baru</h3>
-            <div class="form-grid">
-                <div class="form-group"><label>Waktu (Cth: 09:00 - 10:30)</label><input type="text" id="j-waktu" placeholder="08:00 - 09:30"></div>
-                <div class="form-group"><label>Hari</label>
-                    <select id="j-hari">
-                        <option>Ahad</option><option>Senin</option><option>Selasa</option><option>Rabu</option>
-                        <option>Kamis</option><option>Jumat</option><option>Sabtu</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>Tanggal (Cth: 21/10/2026)</label><input type="text" id="j-tanggal" placeholder="DD/MM/YYYY"></div>
-                <div class="form-group"><label>Matapelajaran</label><input type="text" id="j-mapel" placeholder="TIK UH 1"></div>
-                <div class="form-group"><label>Nama Guru</label><input type="text" id="j-guru" placeholder="Budi, S.Kom"></div>
-                <div class="form-group"><label>Kelas (Pisahkan koma)</label><input type="text" id="j-kelas" placeholder="X-1, X-2"></div>
-                <div class="form-group"><label>Token</label><input type="text" id="j-token" placeholder="TIK123"></div>
-                <div class="form-group"><label>Jenis Ujian</label>
-                    <select id="j-jenis"><option value="UH">UH</option><option value="UAS">UAS</option></select>
-                </div>
-                <div class="form-group"><label>Durasi (Menit)</label><input type="number" id="j-durasi" value="20"></div>
-                <!-- TAMBAHKAN INI -->
-                <div class="form-group">
-                    <label>Batas Soal (0 = Semua Soal)</label>
-                    <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
-                </div>
-            </div>
-            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
-            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
-        </div>
-    </div>
-
-    <!-- MODAL KIRIM TOKEN -->
-    <div class="modal-overlay" id="modal-kirim-token">
-        <div class="modal-content">
-            <h3>📅 Tambah Jadwal Baru</h3>
-        
+    
             <!-- MODE UJIAN -->
             <div class="form-group" style="margin-bottom: 15px;">
                 <label>Mode Ujian</label>
@@ -558,7 +529,7 @@
                     Mode UH: satu kelas per input, waktu bisa berbeda per kelas.
                 </small>
             </div>
-        
+    
             <div class="form-grid">
                 <div class="form-group">
                     <label id="j-kelas-label">Kelas</label>
@@ -585,9 +556,27 @@
                     <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
                 </div>
             </div>
-        
+    
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
             <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-jadwal')">Batal</button>
+        </div>
+    </div>
+    
+    <!-- MODAL KIRIM TOKEN -->
+    <div class="modal-overlay" id="modal-kirim-token">
+        <div class="modal-content">
+            <h3>📲 Kirim Token Massal via WA</h3>
+            <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+                Token akan di-generate otomatis (TokenUtama + Nama + NISN) dan dikirim ke nomor WA siswa.
+            </p>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label>Pilih Ujian (Mapel - Kelas)</label>
+                    <select id="pilih-token-jadwal"></select>
+                </div>
+            </div>
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimToken()">🚀 Kirim Token Sekarang</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-kirim-token')">Batal</button>
         </div>
     </div>
 
@@ -1342,24 +1331,28 @@ async function simpanEditJadwal(baris, kolom, nilaiBaru, elemen) {
 }
 
 function ubahModeJadwal() {
-    const mode = document.querySelector('input[name="j-mode"]:checked').value;
+    const modeEl = document.querySelector('input[name="j-mode"]:checked');
+    if (!modeEl) return;
+    const mode = modeEl.value;
     const inputKelas = document.getElementById("j-kelas");
     const hintMode = document.getElementById("j-mode-hint");
     const hintKelas = document.getElementById("j-kelas-hint");
+    if (!inputKelas) return;
 
     if (mode === "UH") {
         inputKelas.placeholder = "Contoh: X-3";
-        hintMode.textContent = "Mode UH: satu kelas per input, waktu bisa berbeda per kelas.";
-        hintKelas.textContent = "Satu kelas saja. Untuk kelas lain di jam berbeda, tambah jadwal lagi.";
+        if (hintMode) hintMode.textContent = "Mode UH: satu kelas per input, waktu bisa berbeda per kelas.";
+        if (hintKelas) hintKelas.textContent = "Satu kelas saja. Untuk kelas lain di jam berbeda, tambah jadwal lagi.";
     } else {
         inputKelas.placeholder = "Contoh: X-1, X-2, X-3, X-4";
-        hintMode.textContent = "Mode UAS: semua kelas ujian di waktu & token yang sama.";
-        hintKelas.textContent = "Pisahkan dengan koma. Sistem otomatis memecah jadi satu baris per kelas.";
+        if (hintMode) hintMode.textContent = "Mode UAS: semua kelas ujian di waktu & token yang sama.";
+        if (hintKelas) hintKelas.textContent = "Pisahkan dengan koma. Sistem otomatis memecah jadi satu baris per kelas.";
     }
 }
 
 async function simpanJadwalBaru() {
-    const mode = document.querySelector('input[name="j-mode"]:checked').value;
+    const modeEl = document.querySelector('input[name="j-mode"]:checked');
+    const mode = modeEl ? modeEl.value : "UH";
 
     const dataDasar = {
         waktu: document.getElementById("j-waktu").value.trim(),
@@ -1379,25 +1372,14 @@ async function simpanJadwalBaru() {
         return;
     }
 
-    // Pecah kelas per koma
     const daftarKelas = kelasInput.split(",").map(k => k.trim().toUpperCase()).filter(k => k !== "");
 
-    // Validasi mode
     if (mode === "UH" && daftarKelas.length > 1) {
         Swal.fire('Oops...', 'Mode UH hanya untuk satu kelas. Untuk multi-kelas gunakan mode UAS.', 'warning');
         return;
     }
-    if (mode === "UAS" && daftarKelas.length < 1) {
-        Swal.fire('Oops...', 'Mode UAS minimal satu kelas.', 'warning');
-        return;
-    }
 
-    // Bangun array baris jadwal — satu baris per kelas
-    // Token TIDAK diberi suffix (sesuai kesepakatan)
-    const daftarJadwal = daftarKelas.map(kelas => ({
-        ...dataDasar,
-        kelas: kelas
-    }));
+    const daftarJadwal = daftarKelas.map(kelas => ({ ...dataDasar, kelas: kelas }));
 
     const btn = document.querySelector("#modal-jadwal .btn-green");
     btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
@@ -1421,7 +1403,7 @@ async function simpanJadwalBaru() {
         btn.textContent = "Simpan Jadwal"; btn.disabled = false;
     }
 }
-    
+
 /* =========================================
    FITUR HAPUS JADWAL
    ========================================= */
@@ -1505,8 +1487,6 @@ function bukaModalKirimToken() {
     const select = document.getElementById("pilih-token-jadwal");
     select.innerHTML = "";
 
-    // === FILTER JADWAL BERDASARKAN ROLE ===
-    // Admin: semua jadwal. Guru: hanya jadwal yang kelasnya diampu.
     const jadwalTampil = [];
     semuaDataJadwal.forEach((j, indexAsli) => {
         if (sessionGuru.role === "admin") {
@@ -1527,8 +1507,6 @@ function bukaModalKirimToken() {
 
     jadwalTampil.forEach((j) => {
         const opt = document.createElement("option");
-        // PENTING: value tetap index asli di semuaDataJadwal,
-        // supaya prosesKirimToken() mengambil objek yang benar.
         opt.value = j._indexAsli;
         opt.textContent = `${j.mapel} - ${j.kelas} (Token: ${j.token})`;
         select.appendChild(opt);
