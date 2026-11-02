@@ -752,7 +752,36 @@
         <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesUbahPassword()">💾 Simpan Password Baru</button>
         <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-ubah-password')">Batal</button>
     </div>
-</div>  
+</div>
+
+<!-- ================= MODAL PERINGKAT NILAI ================= -->
+<div class="modal-overlay" id="modal-peringkat">
+    <div class="modal-content" style="max-width: 800px;">
+        <h3>🏆 Peringkat Nilai Siswa</h3>
+        
+        <div class="filter-section" style="margin-bottom: 20px;">
+            <select id="peringkat-kelas" onchange="renderTabelPeringkat()" style="flex: 1;"></select>
+            <select id="peringkat-mapel" onchange="renderTabelPeringkat()" style="flex: 2;"></select>
+        </div>
+
+        <div class="table-responsive" style="max-height: 400px;">
+            <table>
+                <thead>
+                    <tr style="background: #f39c12; color: white;">
+                        <th width="60" style="text-align: center;">Rank</th>
+                        <th>Nama Siswa</th>
+                        <th style="text-align: center;">Skor</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-peringkat">
+                    <!-- Diisi oleh JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <button class="btn" style="width: 100%; background:#95a5a6; margin-top: 20px;" onclick="tutupModal('modal-peringkat')">Tutup</button>
+    </div>
+</div>    
     
 <script>
 
@@ -1146,6 +1175,7 @@ function exportKeExcel() {
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
+let dataLeaderboardGlobal = []; // Menyimpan data sementara    
 async function tampilkanLeaderboardDashboard() {
     Swal.fire({
         title: 'Memuat Peringkat...',
@@ -1158,68 +1188,90 @@ async function tampilkanLeaderboardDashboard() {
         const json = await res.json();
         
         if (json.status === "success") {
-            // 1. FILTER DATA BERDASARKAN ROLE
-            let dataTampil = json.data;
-            
-            // Jika bukan admin (Guru), filter hanya kelas yang dia ampu
-            if (sessionGuru.role !== "admin") {
-                const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
-                dataTampil = dataTampil.filter(d => 
-                    kelasGuru.includes(String(d.kelas || "").toUpperCase().trim())
-                );
-            }
+            dataLeaderboardGlobal = json.data;
 
-            // 2. URUTKAN & AMBIL TOP 10
-            const top10 = dataTampil.sort((a, b) => b.skor - a.skor).slice(0, 10);
-            
-            if (top10.length === 0) {
+            // 1. Dapatkan daftar kelas & mapel unik berdasarkan role
+            const setKelas = new Set();
+            const setMapel = new Set();
+
+            dataLeaderboardGlobal.forEach(d => {
+                const kelas = String(d.kelas || "").toUpperCase().trim();
+                const mapel = String(d.mapel || "").trim();
+                
+                // Jika admin, ambil semua. Jika guru, hanya ambil kelas yang diampu.
+                if (sessionGuru.role === "admin" || (sessionGuru.kelasArray || []).includes(kelas)) {
+                    if (kelas) setKelas.add(kelas);
+                    if (mapel) setMapel.add(mapel);
+                }
+            });
+
+            const arrKelas = Array.from(setKelas).sort();
+            const arrMapel = Array.from(setMapel).sort();
+
+            if (arrKelas.length === 0) {
                 Swal.fire('Kosong', 'Belum ada data nilai untuk kelas Anda.', 'info');
                 return;
             }
 
-            // 3. RENDER TABEL
-            let htmlTabel = `<div style="text-align: left; margin-top: 15px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                    <thead>
-                        <tr style="background: #f39c12; color: white;">
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Rank</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Nama</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Mapel</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Kelas</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Skor</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
-            top10.forEach((siswa, index) => {
-                const bgColor = index % 2 === 0 ? "#f9f9f9" : "white";
-                const medal = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : index + 1));
-                htmlTabel += `
-                    <tr style="background: ${bgColor};">
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${medal}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>${siswa.nama}</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${siswa.mapel}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${siswa.kelas}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;"><strong>${siswa.skor}</strong></td>
-                    </tr>
-                `;
-            });
-            
-            htmlTabel += `</tbody></table></div>`;
+            // 2. Isi Dropdown Kelas
+            const selectKelas = document.getElementById("peringkat-kelas");
+            selectKelas.innerHTML = arrKelas.map(k => `<option value="${k}">Kelas: ${k}</option>`).join('');
 
-            // 4. TAMPILKAN
-            Swal.fire({
-                title: sessionGuru.role === 'admin' ? '🏆 Top 10 Nilai Tertinggi (Semua Kelas)' : '🏆 Top 10 Nilai Tertinggi (Kelas Anda)',
-                html: htmlTabel,
-                width: 650,
-                confirmButtonColor: '#3498db',
-                confirmButtonText: 'Tutup'
-            });
+            // 3. Isi Dropdown Mapel
+            const selectMapel = document.getElementById("peringkat-mapel");
+            selectMapel.innerHTML = arrMapel.map(m => `<option value="${m}">${m}</option>`).join('');
+
+            // 4. Tampilkan Modal & Render Tabel Pertama Kali
+            Swal.close();
+            bukaModal("modal-peringkat");
+            renderTabelPeringkat();
         }
     } catch (err) {
         Swal.fire('Gagal', 'Tidak dapat memuat data peringkat.', 'error');
     }
-}   
+}
+
+function renderTabelPeringkat() {
+    const fKelas = document.getElementById("peringkat-kelas").value;
+    const fMapel = document.getElementById("peringkat-mapel").value;
+    const tbody = document.getElementById("tbody-peringkat");
+
+    // 1. Filter Data Berdasarkan Dropdown
+    const dataFiltered = dataLeaderboardGlobal.filter(d => {
+        const cocokKelas = String(d.kelas || "").toUpperCase().trim() === fKelas;
+        const cocokMapel = String(d.mapel || "").trim() === fMapel;
+        
+        // Pastikan guru hanya bisa lihat kelasnya (lapisan pengaman ganda)
+        const cocokRole = (sessionGuru.role === "admin") || (sessionGuru.kelasArray || []).includes(fKelas);
+
+        return cocokKelas && cocokMapel && cocokRole;
+    });
+
+    // 2. Urutkan & Ambil Top 10
+    const top10 = dataFiltered.sort((a, b) => b.skor - a.skor).slice(0, 10);
+
+    // 3. Render Tabel
+    if (top10.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">Belum ada nilai untuk ujian ini.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    top10.forEach((siswa, index) => {
+        const bgColor = index % 2 === 0 ? "#f9f9f9" : "white";
+        const medal = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : index + 1));
+        
+        tbody.innerHTML += `
+            <tr style="background: ${bgColor};">
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-size: 1.1rem;">${medal}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>${siswa.nama}</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;"><span class="badge badge-green">${siswa.skor}</span></td>
+            </tr>
+        `;
+    });
+}
+
+    
 
 /* =========================================
    TAB 2: JADWAL (Baca, Tambah, Edit, Hapus)
