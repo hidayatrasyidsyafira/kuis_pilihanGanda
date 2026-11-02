@@ -1820,13 +1820,53 @@ async function muatBankSoal() {
     }
 }
 
+// function isiFilterKelasSoal() {
+//     const setKelas = new Set();
+    
+//     semuaDataSoal.forEach(d => {
+//         const kelasSoal = String(d.kelas || "").toUpperCase().trim();
+        
+//         // Jika admin, ambil semua kelas. Jika guru, hanya ambil kelas yang diampu + kelas "SEMUA"
+//         if (sessionGuru.role === "admin") {
+//             if (kelasSoal) setKelas.add(kelasSoal);
+//         } else {
+//             const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+//             if (kelasSoal === "" || kelasSoal === "SEMUA") {
+//                 setKelas.add("SEMUA");
+//             } else if (kelasGuru.includes(kelasSoal)) {
+//                 setKelas.add(kelasSoal);
+//             }
+//         }
+//     });
+    
+//     const sKelas = document.getElementById("filter-kelas-soal");
+//     if (!sKelas) return;
+    
+//     const val = sKelas.value;
+    
+//     // Opsi "Semua Kelas" hanya ditampilkan untuk Admin. Guru tidak perlu.
+//     let html = sessionGuru.role === "admin" ? `<option value="">Semua Kelas</option>` : "";
+    
+//     // Urutkan, tapi taruh "SEMUA" di paling atas (jika ada)
+//     const arrKelas = Array.from(setKelas).sort((a, b) => {
+//         if (a === "SEMUA") return -1;
+//         if (b === "SEMUA") return 1;
+//         return a.localeCompare(b);
+//     });
+
+//     html += arrKelas.map(k => `<option value="${k === "SEMUA" ? "" : k}">${k === "SEMUA" ? "Umum (Semua Kelas)" : k}</option>`).join('');
+//     sKelas.innerHTML = html;
+    
+//     sKelas.value = val;
+//     if (!sKelas.value && sKelas.options.length > 0) sKelas.selectedIndex = 0;
+// }
+
 function isiFilterKelasSoal() {
     const setKelas = new Set();
     
     semuaDataSoal.forEach(d => {
         const kelasSoal = String(d.kelas || "").toUpperCase().trim();
         
-        // Jika admin, ambil semua kelas. Jika guru, hanya ambil kelas yang diampu + kelas "SEMUA"
         if (sessionGuru.role === "admin") {
             if (kelasSoal) setKelas.add(kelasSoal);
         } else {
@@ -1844,10 +1884,12 @@ function isiFilterKelasSoal() {
     
     const val = sKelas.value;
     
-    // Opsi "Semua Kelas" hanya ditampilkan untuk Admin. Guru tidak perlu.
-    let html = sessionGuru.role === "admin" ? `<option value="">Semua Kelas</option>` : "";
-    
-    // Urutkan, tapi taruh "SEMUA" di paling atas (jika ada)
+    // Opsi Default: "Semua Kelas" untuk Admin, "Umum & Kelas Saya" untuk Guru
+    let html = sessionGuru.role === "admin" 
+        ? `<option value="">Semua Kelas</option>` 
+        : `<option value="">Umum & Kelas Saya</option>`; 
+
+    // Urutkan, tapi taruh "SEMUA" di paling atas
     const arrKelas = Array.from(setKelas).sort((a, b) => {
         if (a === "SEMUA") return -1;
         if (b === "SEMUA") return 1;
@@ -1855,11 +1897,13 @@ function isiFilterKelasSoal() {
     });
 
     html += arrKelas.map(k => `<option value="${k === "SEMUA" ? "" : k}">${k === "SEMUA" ? "Umum (Semua Kelas)" : k}</option>`).join('');
+    
     sKelas.innerHTML = html;
     
     sKelas.value = val;
+    // Biarkan default (index 0) terpilih jika kosong
     if (!sKelas.value && sKelas.options.length > 0) sKelas.selectedIndex = 0;
-}
+}    
     
 function isiFilterSoal() {
     const setMapel = new Set();
