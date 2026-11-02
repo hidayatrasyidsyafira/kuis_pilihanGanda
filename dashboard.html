@@ -1337,6 +1337,14 @@ function ubahModeJadwal() {
     const inputKelas = document.getElementById("j-kelas");
     const hintMode = document.getElementById("j-mode-hint");
     const hintKelas = document.getElementById("j-kelas-hint");
+    
+    // === TAMBAHKAN INI: Sinkronisasi dropdown Jenis Ujian ===
+    const selectJenis = document.getElementById("j-jenis");
+    if (selectJenis) {
+        selectJenis.value = mode; // Otomatis mengubah combobox jadi UH atau UAS
+    }
+    // ========================================================
+
     if (!inputKelas) return;
 
     if (mode === "UH") {
