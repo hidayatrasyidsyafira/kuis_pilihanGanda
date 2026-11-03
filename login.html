@@ -34,6 +34,32 @@
         }
         button:hover { background: #2980b9; }
         button:disabled { background: #95a5a6; cursor: not-allowed; }
+
+        /* CSS untuk Input Password dengan Ikon */
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .password-wrapper input {
+            margin-bottom: 0; /* Menghapus margin karena sudah diatur wrapper */
+            padding-right: 45px; /* Beri ruang di kanan agar teks tidak tertutup ikon */
+        }
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            user-select: none;
+            transition: 0.2s;
+        }
+        .toggle-password:hover {
+            color: #3498db;
+        }
+        
     </style>
 </head>
 <body>
@@ -43,8 +69,11 @@
         <p>Masukkan kredensial Anda untuk melanjutkan.</p>
         
         <input type="text" id="input-username" placeholder="Username" autocomplete="username">
-        <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()">
-        
+        <!-- <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()"> -->
+        <div class="password-wrapper">
+            <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()">
+            <span class="toggle-password" onclick="togglePassword()">👁️</span>
+        </div>
         <button id="btn-login" onclick="prosesLogin()">🔓 Masuk Dashboard</button>
     </div>
 
@@ -52,6 +81,19 @@
     // GANTI DENGAN URL APPS SCRIPT ANDA
     const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
 
+    function togglePassword() {
+        const input = document.getElementById("input-password");
+        const icon = document.querySelector(".toggle-password");
+        
+        if (input.type === "password") {
+            input.type = "text";
+            icon.textContent = "🙈"; // Ikon mata tertutup (sembunyikan)
+        } else {
+            input.type = "password";
+            icon.textContent = "👁️"; // Ikon mata terbuka (lihat)
+        }
+    }
+    
     async function prosesLogin() {
         const username = document.getElementById("input-username").value.trim();
         const password = document.getElementById("input-password").value.trim();
