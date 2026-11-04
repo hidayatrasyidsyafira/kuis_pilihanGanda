@@ -297,7 +297,16 @@
                         <li><button onclick="bukaTab('nilai'); hapusNilaiTerpilih()">🗑️ Hapus Terpilih</button></li>
                     </ul>
                 </li>
-    
+
+                <!-- MONITORING LIVE -->
+                <li class="menu-item">
+                    <div class="menu-main" onclick="toggleSubmenu(this)">
+                        <span>🎥 Monitoring Live</span><span class="arrow">▶</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><button onclick="bukaTab('monitoring')">📊 Lihat Ujian Berlangsung</button></li>
+                    </ul>
+                </li>
                 <!-- DATA SISWA (hanya admin) -->
                 <li class="menu-item" id="menu-item-siswa">
                     <div class="menu-main" onclick="toggleSubmenu(this)">
@@ -423,7 +432,33 @@
                         </table>
                     </div>
                 </div>
-    
+
+                <!-- ==== TAB MONITORING ==== -->
+                <div class="tab-content" id="tab-monitoring">
+                    <div class="filter-section">
+                        <select id="filter-mapel-monitoring" onchange="renderTabelMonitoring()">
+                            <option value="">Semua Mapel</option>
+                        </select>
+                        <button class="btn btn-blue" onclick="muatMonitoringLive()">🔄 Refresh Manual</button>
+                        <span style="margin-left: auto; font-size: 0.9rem; color: #7f8c8d;">
+                            ⏱️ Auto-refresh setiap 30 detik
+                        </span>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>No</th><th>Nama Siswa</th><th>Kelas</th><th>Mapel</th>
+                                    <th>Status</th><th>Pelanggaran</th><th>Waktu Mulai</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-monitoring">
+                                <tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
                 <!-- ==== TAB SISWA ==== -->
                 <div class="tab-content" id="tab-siswa">
                     <div class="filter-section">
@@ -811,6 +846,114 @@ let halamanNilaiAktif = 1;
 let halamanSiswaAktif = 1;
 
 /* =========================================
+   MONITORING LIVE (Pengawas)
+   ========================================= */
+    let dataMonitoring = [];
+    let intervalMonitoring = null;
+    
+    async function muatMonitoringLive() {
+        const tbody = document.getElementById("tbody-monitoring");
+        if (!tbody) return;
+        
+        // Jangan tampilkan loading jika sudah ada data (agar tidak berkedip)
+        if (dataMonitoring.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">⏳ Memuat data monitoring...</td></tr>`;
+        }
+        
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=monitoring_live&t=" + new Date().getTime());
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                // Filter berdasarkan role guru
+                let dataTampil = json.data;
+                if (sessionGuru.role !== "admin") {
+                    const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+                    dataTampil = dataTampil.filter(d => kelasGuru.includes(String(d.kelas).toUpperCase().trim()));
+                }
+                
+                dataMonitoring = dataTampil;
+                isiFilterMapelMonitoring();
+                renderTabelMonitoring();
+            }
+        } catch (err) {
+            console.error("Gagal muat monitoring:", err);
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error Koneksi</td></tr>`;
+        }
+    }
+    
+    function isiFilterMapelMonitoring() {
+        const select = document.getElementById("filter-mapel-monitoring");
+        if (!select) return;
+        
+        const setMapel = new Set();
+        dataMonitoring.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+        
+        const val = select.value;
+        select.innerHTML = `<option value="">Semua Mapel</option>` + 
+            Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+        select.value = val;
+    }
+    
+    function renderTabelMonitoring() {
+        const tbody = document.getElementById("tbody-monitoring");
+        const fMapel = document.getElementById("filter-mapel-monitoring")?.value || "";
+        
+        const dataFiltered = dataMonitoring.filter(d => fMapel === "" || d.mapel === fMapel);
+        
+        if (dataFiltered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada aktivitas ujian ditemukan.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = "";
+        dataFiltered.forEach((d, index) => {
+            // Tentukan badge warna status
+            let badge = "";
+            if (d.status === "MENGERJAKAN") {
+                badge = `<span class="badge badge-green">🟢 Mengerjakan</span>`;
+            } else if (d.status === "SELESAI") {
+                badge = `<span class="badge" style="background:#d1ecf1; color:#0c5460;">✅ Selesai</span>`;
+            }
+            
+            // Warna pelanggaran
+            const pelanggaranCell = d.pelanggaran > 0 
+                ? `<span class="warning-text">⚠️ ${d.pelanggaran}x</span>` 
+                : `<span style="color:#7f8c8d;">0x</span>`;
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><strong>${d.nama}</strong></td>
+                    <td>${d.kelas}</td>
+                    <td>${d.mapel}</td>
+                    <td>${badge}</td>
+                    <td>${pelanggaranCell}</td>
+                    <td>${d.waktuMulai}</td>
+                </tr>`;
+        });
+    }
+    
+    function mulaiAutoRefreshMonitoring() {
+        // Bersihkan interval lama jika ada
+        if (intervalMonitoring) clearInterval(intervalMonitoring);
+        
+        // Auto-refresh setiap 30 detik
+        intervalMonitoring = setInterval(() => {
+            // Hanya refresh jika tab monitoring sedang aktif
+            const tabAktif = document.getElementById("tab-monitoring")?.classList.contains("aktif");
+            if (tabAktif) muatMonitoringLive();
+        }, 30000);
+    }
+    
+    function hentikanAutoRefreshMonitoring() {
+        if (intervalMonitoring) {
+            clearInterval(intervalMonitoring);
+            intervalMonitoring = null;
+        }
+    }
+    
+/* =========================================
    NAVIGASI TAB & UTIL
    ========================================= */
 function bukaTab(tab) {
@@ -828,7 +971,8 @@ function bukaTab(tab) {
         'siswa': '👥 Data Siswa',
         'jadwal': '📅 Pengaturan Jadwal',
         'bank-soal': '📚 Bank Soal',
-        'nilai': '📈 Rekap Nilai'
+        'nilai': '📈 Rekap Nilai',
+        'monitoring': '🎥 Monitoring Ujian Live'
     };
     if (judul) judul.textContent = petaJudul[tab] || '⚙️ Dashboard Admin';
     
@@ -837,6 +981,14 @@ function bukaTab(tab) {
     if (tab === 'bank-soal') muatBankSoal();
     if (tab === 'siswa') muatDataSiswa();
     if (tab === 'nilai') muatDataNilai();
+    
+    // === KHUSUS MONITORING ===
+    if (tab === 'monitoring') {
+        muatMonitoringLive();
+        mulaiAutoRefreshMonitoring();
+    } else {
+        hentikanAutoRefreshMonitoring();
+    }
     
     // Tutup sidebar di mobile
     if (window.innerWidth <= 900) {
@@ -2981,7 +3133,10 @@ function toggleSubmenu(el) {
             bukaTab('nilai');
         } else if (teksMenu.includes('DATA SISWA')) {
             bukaTab('siswa');
+        } else if (teksMenu.includes('MONITORING')) {
+            bukaTab('monitoring');    
         }
+        
         // ===============================================================
     }
 }
