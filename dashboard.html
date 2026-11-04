@@ -1768,16 +1768,17 @@ function bukaModalKirimToken() {
     const select = document.getElementById("pilih-token-jadwal");
     select.innerHTML = "";
 
+    // Filter jadwal berdasarkan role
     const jadwalTampil = [];
     semuaDataJadwal.forEach((j, indexAsli) => {
         if (sessionGuru.role === "admin") {
             jadwalTampil.push({ ...j, _indexAsli: indexAsli });
-            return;
-        }
-        const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
-        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
-        if (kelasJadwal.some(k => kelasGuru.includes(k))) {
-            jadwalTampil.push({ ...j, _indexAsli: indexAsli });
+        } else {
+            const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
+            const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+            if (kelasJadwal.some(k => kelasGuru.includes(k))) {
+                jadwalTampil.push({ ...j, _indexAsli: indexAsli });
+            }
         }
     });
 
@@ -1794,16 +1795,91 @@ function bukaModalKirimToken() {
     });
 
     bukaModal("modal-kirim-token");
+    renderTabelTokenSiswa(); // Panggil fungsi untuk isi tabel
 }
 
-async function prosesKirimToken() {
+function renderTabelTokenSiswa() {
+    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
+    const tbody = document.getElementById("tbody-token-siswa");
+    
+    if (indexTerpilih === "" || !semuaDataJadwal[indexTerpilih]) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Pilih ujian terlebih dahulu.</td></tr>`;
+        return;
+    }
+
+    const jadwal = semuaDataJadwal[indexTerpilih];
+    const kelasTarget = jadwal.kelas.split(",").map(k => k.trim().toUpperCase());
+    
+    // Filter siswa yang kelasnya sesuai
+    const siswaTerkait = semuaDataSiswa.filter(s => kelasTarget.includes(s.kelas.toUpperCase()));
+
+    if (siswaTerkait.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa di kelas ${jadwal.kelas}.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    siswaTerkait.forEach((s, index) => {
+        const nisnBersih = s.nisn.replace(/^'/, '');
+        const waTampil = s.wa ? s.wa : '<span style="color:red;">Kosong</span>';
+        
+        tbody.innerHTML += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${nisnBersih}</td>
+                <td><strong>${s.nama}</strong></td>
+                <td>${waTampil}</td>
+                <td style="text-align:center;">
+                    <button class="btn btn-blue" style="padding: 4px 10px; font-size: 0.8rem;" onclick="kirimTokenSatuSiswa('${nisnBersih}')">📲 Kirim</button>
+                </td>
+            </tr>`;
+    });
+}
+
+async function kirimTokenSatuSiswa(nisn) {
+    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
+    const jadwal = semuaDataJadwal[indexTerpilih];
+    
+    // Cari siswa berdasarkan NISN
+    const siswa = semuaDataSiswa.find(s => s.nisn.replace(/^'/, '') === nisn);
+    if (!siswa) return;
+
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim Token?',
+        text: `Token akan dikirim ke ${siswa.nama}.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#f39c12',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "kirim_token_massal",
+                tokenUtama: jadwal.token,
+                mapel: jadwal.mapel,
+                siswa: [siswa] // Kirim dalam bentuk array 1 item
+            })
+        });
+        const json = await res.json();
+        Swal.fire(json.status === "success" ? 'Berhasil!' : 'Gagal', json.message, json.status === "success" ? 'success' : 'error');
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi server gagal.', 'error');
+    }
+}    
+
+async function prosesKirimToken(kirimSemua = true) {
     const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
     if (indexTerpilih === "") return;
     
     const jadwal = semuaDataJadwal[indexTerpilih];
     const kelasTarget = jadwal.kelas.split(",").map(k => k.trim().toUpperCase());
-
-    // Filter siswa yang kelasnya sesuai dengan jadwal
     const siswaTerkait = semuaDataSiswa.filter(s => kelasTarget.includes(s.kelas.toUpperCase()));
 
     if (siswaTerkait.length === 0) {
@@ -1812,12 +1888,12 @@ async function prosesKirimToken() {
     }
 
     const konfirmasi = await Swal.fire({
-        title: 'Kirim Token?',
-        text: `Token akan dikirim ke ${siswaTerkait.length} siswa kelas ${jadwal.kelas}. Pastikan nomor WA siswa sudah benar.`,
+        title: 'Kirim Token Massal?',
+        text: `Token akan dikirim ke ${siswaTerkait.length} siswa kelas ${jadwal.kelas}.`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#f39c12',
-        confirmButtonText: 'Ya, Kirim!'
+        confirmButtonText: 'Ya, Kirim Semua!'
     });
 
     if (!konfirmasi.isConfirmed) return;
@@ -1836,14 +1912,14 @@ async function prosesKirimToken() {
                 aksi: "kirim_token_massal",
                 tokenUtama: jadwal.token,
                 mapel: jadwal.mapel,
-                siswa: siswaTerkait
+                siswa: siswaTerkait // Kirim semua siswa
             })
         });
         const json = await res.json();
         
         if (json.status === "success") {
             Swal.fire('Selesai!', json.message, 'success');
-            tutupModal("modal-kirim-token");
+            // tutupModal("modal-kirim-token"); // Biarkan modal terbuka agar bisa kirim lagi jika ada yang gagal
         } else {
             Swal.fire('Gagal!', json.message, 'error');
         }
@@ -1851,7 +1927,7 @@ async function prosesKirimToken() {
         Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
     }
 }
-
+    
 // Fungsi Buka Modal QR
 function bukaModalQRCode() {
     const tbody = document.getElementById("tbody-qr");
