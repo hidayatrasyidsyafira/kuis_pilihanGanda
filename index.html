@@ -989,6 +989,18 @@ async function mulaiKuis() {
     } catch (error) { document.getElementById("tombol-mulai").textContent = "▶️ MULAI UJIAN"; return; }
 
     mapelSiswa = mapelDipilih.mapel;
+    // Catat ke sheet MonitoringLive
+    fetch(URL_GOOGLE_SHEETS, {
+        method: "POST",
+        body: JSON.stringify({
+            aksi: "catat_mulai_ujian",
+            nisn: nisnSiswa,
+            nama: namaSiswa,
+            kelas: kelasSiswa,
+            mapel: mapelSiswa
+        })
+    }).catch(err => console.warn("Gagal catat mulai:", err));
+    
     await ambilSoal(mapelSiswa, mapelDipilih.file);
     
     // Acak Soal & Pilihan
@@ -1317,6 +1329,17 @@ async function selesaikanUjian() {
         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
         // TAMBAHKAN BARIS INI UNTUK KIRIM WA
         kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+
+        // Tandai selesai di MonitoringLive
+        fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "tandai_selesai_ujian",
+                nisn: nisnSiswa,
+                mapel: mapelSiswa,
+                pelanggaran: finalPindahTab + finalPelanggaranKamera + finalPelanggaranFullscreen
+            })
+        }).catch(err => console.warn("Gagal tandai selesai:", err));
     }
 }
     
