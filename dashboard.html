@@ -1347,17 +1347,53 @@ async function hapusNilaiTerpilih() {
     }
 }    
 
-function exportKeExcel() {
+async function exportKeExcel() {
     const fNama = document.getElementById("filter-nama").value.toLowerCase();
     const fKelas = document.getElementById("filter-kelas").value;
     const fMapel = document.getElementById("filter-mapel").value;
 
+    // 1. Susun teks informasi filter untuk notifikasi
+    let teksFilter = [];
+    if (fNama) teksFilter.push(`Pencarian: "<strong>${fNama}</strong>"`);
+    if (fKelas) teksFilter.push(`Kelas: <strong>${fKelas}</strong>`);
+    if (fMapel) teksFilter.push(`Mapel: <strong>${fMapel}</strong>`);
+
+    let infoFilter = teksFilter.length > 0 
+        ? teksFilter.join("<br>") 
+        : "<strong>SEMUA Kelas & SEMUA Mapel</strong>";
+
+    // 2. Tampilkan Popup Konfirmasi
+    const konfirmasi = await Swal.fire({
+        title: 'Konfirmasi Export Excel',
+        html: `Anda akan mengekspor data nilai berdasarkan filter berikut:<br><br>
+               <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #dee2e6; text-align:left;">
+                   ${infoFilter}
+               </div><br>
+               Lanjutkan mengunduh file?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#2ecc71',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: '📥 Ya, Export!',
+        cancelButtonText: 'Batal'
+    });
+
+    // Jika user klik "Batal" atau menutup popup
+    if (!konfirmasi.isConfirmed) return;
+
+    // 3. Filter data (proses yang sama seperti sebelumnya)
     const dataTampil = semuaDataNilai.filter(d => 
-        (d.nama || "").toLowerCase().includes(fNama) && (fKelas === "" || d.kelas === fKelas) && (fMapel === "" || d.mapel === fMapel)
+        (d.nama || "").toLowerCase().includes(fNama) && 
+        (fKelas === "" || d.kelas === fKelas) && 
+        (fMapel === "" || d.mapel === fMapel)
     );
 
-    if (dataTampil.length === 0) { Swal.fire('Kosong!', 'Tidak ada data untuk diexport.', 'info'); return; }
+    if (dataTampil.length === 0) { 
+        Swal.fire('Kosong!', 'Tidak ada data yang sesuai dengan filter untuk diexport.', 'info'); 
+        return; 
+    }
 
+    // 4. Proses pembuatan file Excel
     let tableHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Nilai</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
@@ -1369,13 +1405,32 @@ function exportKeExcel() {
     });
 
     tableHtml += `</tbody></table></body></html>`;
+    
+    // 5. Trigger Download
     const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Rekap_Nilai_${new Date().toLocaleDateString('id-ID').replace(/\//g, '-')}.xls`;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-}
+    
+    // Penamaan file otomatis menyesuaikan filter
+    let namaFile = "Rekap_Nilai";
+    if (fKelas) namaFile += `_${fKelas}`;
+    if (fMapel) namaFile += `_${fMapel.replace(/\s+/g, '_')}`;
+    namaFile += `_${new Date().toLocaleDateString('id-ID').replace(/\//g, '-')}.xls`;
+    
+    link.download = namaFile;
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link);
 
+    // 6. Notifikasi Sukses
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'File Excel berhasil diunduh.',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
 let dataLeaderboardGlobal = []; // Menyimpan data sementara    
 async function tampilkanLeaderboardDashboard() {
     Swal.fire({
