@@ -740,33 +740,40 @@
 <!-- ================= MODAL KARTU UJIAN QR ================= -->
 <div class="modal-overlay" id="modal-qr-code">
     <div class="modal-content" style="max-width: 800px;">
-        <h3>🎓 Kirim Kartu Ujian (QR Code)</h3>
-        <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
-            Pilih siswa yang ingin dikirimi QR Code via WhatsApp. Atau kirim massal ke semua siswa di kelas Anda.
-        </p>
-        
-        <div class="table-responsive" style="max-height: 400px;">
-            <table>
-                <thead>
-                    <tr>
-                        <th width="30"><input type="checkbox" id="pilih-semua-qr" onchange="toggleSemuaQR(this)"></th>
-                        <th width="40">No</th>
-                        <th>NISN</th>
-                        <th>Nama</th>
-                        <th width="100">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-qr">
-                    <!-- Diisi oleh JS -->
-                </tbody>
-            </table>
-        </div>
+    <h3>🎓 Kirim Kartu Ujian (QR Code)</h3>
+    <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+        Pilih siswa yang ingin dikirimi QR Code via WhatsApp. Atau kirim massal ke semua siswa di kelas yang dipilih.
+    </p>
+    
+    <!-- DROPDOWN PILIH KELAS -->
+    <div class="form-group" style="margin-bottom: 15px;">
+        <label>Pilih Kelas:</label>
+        <select id="filter-kelas-qr" onchange="renderTabelQR()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+            <!-- Opsi akan diisi oleh JavaScript -->
+        </select>
+    </div>
 
-        <div style="margin-top: 15px; text-align: right;">
-            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimQR()">🚀 Kirim QR ke Siswa Terpilih</button>
-            <button class="btn btn-orange" style="width: 100%; margin-bottom: 10px; background: #8e44ad;" onclick="prosesKirimQR(true)">📢 Kirim ke SEMUA Siswa di Kelas Saya</button>
-            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-qr-code')">Batal</button>
-        </div>
+    <div class="table-responsive" style="max-height: 400px;">
+        <table>
+            <thead>
+                <tr>
+                    <th width="30"><input type="checkbox" id="pilih-semua-qr" onchange="toggleSemuaQR(this)"></th>
+                    <th width="40">No</th>
+                    <th>NISN</th>
+                    <th>Nama</th>
+                    <th width="100">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-qr">
+                <!-- Diisi oleh JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 15px; text-align: right;">
+        <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimQR()">🚀 Kirim QR ke Siswa Terpilih</button>
+        <button class="btn btn-orange" style="width: 100%; margin-bottom: 10px; background: #8e44ad;" onclick="prosesKirimQR(true)">📢 Kirim ke SEMUA Siswa di Kelas Ini</button>
+        <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-qr-code')">Batal</button>
     </div>
 </div>
 
@@ -1930,21 +1937,68 @@ async function prosesKirimToken(kirimSemua = true) {
     
 // Fungsi Buka Modal QR
 function bukaModalQRCode() {
-    const tbody = document.getElementById("tbody-qr");
-    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>⏳ Memuat data siswa...</td></tr>";
     bukaModal("modal-qr-code");
 
-    // Filter siswa berdasarkan kelas guru
-    const siswaTampil = semuaDataSiswa.filter(s => {
+    const selectKelas = document.getElementById("filter-kelas-qr");
+    const setKelas = new Set();
+    
+    // Filter siswa berdasarkan role guru/admin untuk mendapatkan daftar kelas
+    const siswaValid = semuaDataSiswa.filter(s => {
         if (sessionGuru.role === "admin") return true;
         const kelasSiswa = String(s.kelas || "").toUpperCase();
         const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
         return kelasGuru.includes(kelasSiswa);
     });
 
+    // Kumpulkan kelas unik dari data siswa yang valid
+    siswaValid.forEach(s => { 
+        if (s.kelas) setKelas.add(s.kelas.toUpperCase()); 
+    });
+
+    const arrKelas = Array.from(setKelas).sort();
+
+    if (arrKelas.length === 0) {
+        selectKelas.innerHTML = `<option value="">Tidak ada kelas</option>`;
+        document.getElementById("tbody-qr").innerHTML = "<tr><td colspan='5' style='text-align:center;'>Tidak ada siswa di kelas Anda.</td></tr>";
+        return;
+    }
+
+    // Isi Dropdown Kelas
+    selectKelas.innerHTML = arrKelas.map(k => `<option value="${k}">Kelas: ${k}</option>`).join('');
+    
+    // Render Tabel Pertama Kali
+    renderTabelQR();
+}
+
+// Fungsi Render Tabel Siswa (Berdasarkan Dropdown)
+function renderTabelQR() {
+    const tbody = document.getElementById("tbody-qr");
+    const fKelas = document.getElementById("filter-kelas-qr").value;
+    
+    if (!fKelas) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Pilih kelas terlebih dahulu.</td></tr>";
+        return;
+    }
+
+    // Filter siswa berdasarkan kelas yang dipilih
+    const siswaTampil = semuaDataSiswa.filter(s => {
+        const kelasSiswa = String(s.kelas || "").toUpperCase();
+        const cocokKelas = kelasSiswa === fKelas;
+        
+        // Lapisan pengaman ganda (Role)
+        const cocokRole = (sessionGuru.role === "admin") 
+            || (sessionGuru.kelasArray || []).map(k => k.toUpperCase()).includes(kelasSiswa);
+            
+        return cocokKelas && cocokRole;
+    });
+
     tbody.innerHTML = "";
+    
+    // Reset checkbox "Pilih Semua" saat ganti kelas
+    document.getElementById("pilih-semua-qr").checked = false;
+
     if (siswaTampil.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Tidak ada siswa di kelas Anda.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Tidak ada siswa di kelas ini.</td></tr>";
         return;
     }
 
@@ -1962,7 +2016,6 @@ function bukaModalQRCode() {
             </tr>`;
     });
 }
-
 function toggleSemuaQR(source) {
     document.querySelectorAll('.checkbox-qr').forEach(cb => cb.checked = source.checked);
 }
