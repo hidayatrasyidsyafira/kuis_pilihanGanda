@@ -2566,7 +2566,7 @@ async function prosesPasteSoal() {
     // Menggunakan regex untuk split yang aman
     const blokSoal = teksMentah.split(/(?=SOAL\s*:)/i).filter(t => t.trim() !== "");
 
-    for (let blok of blokSoal) {
+        for (let blok of blokSoal) {
         try {
             // Ekstrak baris per baris menggunakan Regex
             const soalMatch = blok.match(/SOAL\s*:\s*([\s\S]*?)(?=\nA\s*:|$)/i);
@@ -2577,6 +2577,10 @@ async function prosesPasteSoal() {
             const eMatch = blok.match(/(?:\n|^)E\s*:\s*(.*?)(?=\nKUNCI\s*:|$)/i);
             const kunciMatch = blok.match(/KUNCI\s*:\s*([A-E])/i);
             const skorMatch = blok.match(/SKOR\s*:\s*(\d+)/i);
+            
+            // TAMBAHKAN INI: Regex untuk menangkap Kelas
+            const kelasMatch = blok.match(/KELAS\s*:\s*(.*?)(?=\nPENJELASAN\s*:|$)/i);
+            
             const penjelasanMatch = blok.match(/PENJELASAN\s*:\s*([\s\S]*?)(?=\n*$)/i);
 
             if (soalMatch && aMatch && bMatch && kunciMatch) {
@@ -2590,6 +2594,8 @@ async function prosesPasteSoal() {
                     pilihanE: eMatch ? eMatch[1].trim() : "",
                     kunci: kunciMatch[1].toUpperCase(),
                     skor: skorMatch ? parseInt(skorMatch[1]) : 1,
+                    // TAMBAHKAN INI: Ambil data kelas
+                    kelas: kelasMatch ? kelasMatch[1].trim() : "", 
                     penjelasan: penjelasanMatch ? penjelasanMatch[1].trim() : "",
                     gambar: ""
                 });
@@ -2658,14 +2664,14 @@ D: [Pilihan D]
 E: [Pilihan E]
 KUNCI: [A/B/C/D/E]
 SKOR: 5
+KELAS: [X-1, X-2 / Kosongkan jika untuk semua kelas]
 PENJELASAN: [Penjelasan singkat]`;
 
     // Menggunakan Clipboard API untuk copy
     navigator.clipboard.writeText(promptText).then(() => {
-        // Menggunakan SweetAlert untuk notifikasi sukses
         const Toast = Swal.mixin({
             toast: true,
-            position: 'top-end',
+            position: 'top-center',
             showConfirmButton: false,
             timer: 3000,
             timerProgressBar: true
@@ -2673,12 +2679,12 @@ PENJELASAN: [Penjelasan singkat]`;
         
         Toast.fire({
             icon: 'success',
-            title: 'Format Prompt AI berhasil di-copy!'
+            title: 'Format Prompt AI (dengan Kelas) berhasil di-copy!'
         });
     }).catch(err => {
         Swal.fire('Gagal Copy', 'Browser Anda tidak mendukung fitur copy otomatis. Silakan ketik manual.', 'error');
     });
-}    
+} 
     
 async function prosesUploadSoal() {
     const file = document.getElementById("file-csv-soal").files[0];
