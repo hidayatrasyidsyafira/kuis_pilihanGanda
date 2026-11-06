@@ -64,18 +64,40 @@
 </head>
 <body>
     <div class="login-container">
-        <div class="login-icon">🔒</div>
-        <h2>Login Dashboard</h2>
-        <p>Masukkan kredensial Anda untuk melanjutkan.</p>
-        
+    <div class="login-icon">🔒</div>
+    <h2 id="judul-form">Login Dashboard</h2>
+    <p id="subjudul-form">Masukkan kredensial Anda untuk melanjutkan.</p>
+    
+    <!-- ===== FORM LOGIN ===== -->
+    <div id="form-login">
         <input type="text" id="input-username" placeholder="Username" autocomplete="username">
-        <!-- <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()"> -->
         <div class="password-wrapper">
             <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()">
-            <span class="toggle-password" onclick="togglePassword()">👁️</span>
+            <span class="toggle-password" onclick="togglePassword('input-password', this)">👁️</span>
         </div>
         <button id="btn-login" onclick="prosesLogin()">🔓 Masuk Dashboard</button>
+        
+        <p style="margin-top: 20px; font-size: 0.9rem;">
+            Belum punya akun? <a href="javascript:void(0)" onclick="tampilkanFormDaftar()" style="color: #3498db; font-weight: bold; text-decoration: none;">Daftar di sini</a>
+        </p>
     </div>
+
+    <!-- ===== FORM DAFTAR (Tersembunyi) ===== -->
+    <div id="form-daftar" style="display: none;">
+        <input type="text" id="reg-nama" placeholder="Nama Lengkap (Cth: Budi, S.Kom)">
+        <input type="text" id="reg-username" placeholder="Username (Untuk Login)">
+        <div class="password-wrapper">
+            <input type="password" id="reg-password" placeholder="Password (Min. 5 Karakter)">
+            <span class="toggle-password" onclick="togglePassword('reg-password', this)">👁️</span>
+        </div>
+        <input type="text" id="reg-kelas" placeholder="Kelas yang Diampu (Cth: X-1, X-2)">
+        <button id="btn-daftar" style="background: #2ecc71;" onclick="prosesDaftar()">📝 Daftar Sekarang</button>
+        
+        <p style="margin-top: 20px; font-size: 0.9rem;">
+            Sudah punya akun? <a href="javascript:void(0)" onclick="tampilkanFormLogin()" style="color: #3498db; font-weight: bold; text-decoration: none;">Login di sini</a>
+        </p>
+    </div>
+</div>
 
 <script>
     // GANTI DENGAN URL APPS SCRIPT ANDA
@@ -139,6 +161,83 @@
             btn.disabled = false;
             btn.textContent = "🔓 Masuk Dashboard";
         }
+    }
+
+    // Fungsi untuk beralih tampilan
+    function tampilkanFormDaftar() {
+        document.getElementById("form-login").style.display = "none";
+        document.getElementById("form-daftar").style.display = "block";
+        document.getElementById("judul-form").textContent = "Daftar Akun Guru";
+        document.getElementById("subjudul-form").textContent = "Lengkapi data Anda untuk mendaftar.";
+    }
+    
+    function tampilkanFormLogin() {
+        document.getElementById("form-daftar").style.display = "none";
+        document.getElementById("form-login").style.display = "block";
+        document.getElementById("judul-form").textContent = "Login Dashboard";
+        document.getElementById("subjudul-form").textContent = "Masukkan kredensial Anda untuk melanjutkan.";
+    }
+    
+    // Fungsi untuk memproses pendaftaran
+    async function prosesDaftar() {
+        const nama = document.getElementById("reg-nama").value.trim();
+        const username = document.getElementById("reg-username").value.trim();
+        const password = document.getElementById("reg-password").value.trim();
+        const kelas = document.getElementById("reg-kelas").value.trim();
+        const btn = document.getElementById("btn-daftar");
+    
+        if (!nama || !username || !password || !kelas) {
+            Swal.fire('Oops', 'Semua kolom pendaftaran wajib diisi!', 'warning');
+            return;
+        }
+        if (password.length < 5) {
+            Swal.fire('Oops', 'Password minimal 5 karakter!', 'warning');
+            return;
+        }
+    
+        btn.disabled = true;
+        btn.textContent = "⏳ Mendaftar...";
+    
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    aksi: "register", 
+                    nama: nama, 
+                    username: username, 
+                    password: password, 
+                    kelas: kelas 
+                })
+            });
+            const json = await res.json();
+    
+            if (json.status === "success") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: json.message,
+                    confirmButtonText: 'Login Sekarang'
+                }).then(() => {
+                    tampilkanFormLogin();
+                    // Isi otomatis username di form login
+                    document.getElementById("input-username").value = username;
+                    document.getElementById("input-password").focus();
+                });
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "📝 Daftar Sekarang";
+        }
+    }
+    
+    // Fungsi Toggle Password (jika belum ada di file Anda)
+    function togglePassword(inputId, iconElement) {
+        const input = document.getElementById(id);
+        // ... (kode toggle password Anda)
     }
 </script>
 </body>
