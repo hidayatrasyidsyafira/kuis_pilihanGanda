@@ -72,7 +72,7 @@
     <div id="form-login">
         <input type="text" id="input-username" placeholder="Username" autocomplete="username">
         <div class="password-wrapper">
-            <input type="password" id="input-password" placeholder="Password" autocomplete="current-password" onkeyup="if(event.key === 'Enter') prosesLogin()">
+            <input type="password" id="input-password" placeholder="Password" ...>
             <span class="toggle-password" onclick="togglePassword('input-password', this)">👁️</span>
         </div>
         <button id="btn-login" onclick="prosesLogin()">🔓 Masuk Dashboard</button>
@@ -103,16 +103,14 @@
     // GANTI DENGAN URL APPS SCRIPT ANDA
     const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzyDMjqxcjCOA41OSaYgbpvQBAddWvEO5sPJaeNWLGxJP22FwsfI41gKGafEK0CXLAh/exec";
 
-    function togglePassword() {
-        const input = document.getElementById("input-password");
-        const icon = document.querySelector(".toggle-password");
-        
+    function togglePassword(idInput, elemenIkon) {
+        const input = document.getElementById(idInput);
         if (input.type === "password") {
             input.type = "text";
-            icon.textContent = "🙈"; // Ikon mata tertutup (sembunyikan)
+            elemenIkon.textContent = "🙈"; // Ikon mata tertutup
         } else {
             input.type = "password";
-            icon.textContent = "👁️"; // Ikon mata terbuka (lihat)
+            elemenIkon.textContent = "👁️"; // Ikon mata terbuka
         }
     }
     
