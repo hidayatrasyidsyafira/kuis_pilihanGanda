@@ -2244,7 +2244,7 @@ function isiFilterSoal() {
 function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
-    const fKelas = document.getElementById("filter-kelas-soal").value;
+    const fKelas = document.getElementById("filter-kelas-soal").value; 
     
     document.getElementById("pilih-semua").checked = false;
 
@@ -2253,24 +2253,36 @@ function renderTabelSoal() {
         const cocokMapel = (fMapel === "" || d.mapel === fMapel);
         const kelasSoal = String(d.kelas || "").toUpperCase().trim();
         
+        // === 1. LOGIKA FILTER KELAS DROPDOWN ===
         let cocokFilterKelas = false;
         if (fKelas === "") {
+            // Jika dropdown pilih "Semua Kelas" atau "Pilih Kelas" (kosong), tampilkan yang umum
             cocokFilterKelas = (kelasSoal === "" || kelasSoal === "SEMUA");
         } else {
+            // Pisahkan jika multi-kelas (misal "X-3, X-4" menjadi ["X-3", "X-4"])
             const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
             cocokFilterKelas = arrKelasSoal.includes(fKelas);
         }
 
+        // === 2. LOGIKA HAK AKSES GURU TERHADAP KELAS ===
         let cocokKelasGuru = (sessionGuru.role === "admin") 
             || (kelasSoal === "") 
             || (kelasSoal === "SEMUA");
             
         if (!cocokKelasGuru && sessionGuru.role !== "admin") {
             const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
-            cocokKelasGuru = arrKelasSoal.some(k => (sessionGuru.kelasArray || []).includes(k));
+            const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+            cocokKelasGuru = arrKelasSoal.some(k => kelasGuru.includes(k));
         }
 
-        if (cocokMapel && cocokFilterKelas && cocokKelasGuru) {
+        // === 3. LOGIKA KEPEMILIKAN SOAL (Dibuat Oleh) ===
+        // Admin bebas lihat semua. Guru hanya lihat soal yang dibuat olehnya.
+        const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
+        const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
+        const cocokPemilik = (sessionGuru.role === "admin") || (pembuatSoal === userLogin);
+
+        // Jika lolos semua filter, masukkan ke data yang akan ditampilkan
+        if (cocokMapel && cocokFilterKelas && cocokKelasGuru && cocokPemilik) {
             dataTampil.push({ ...d, indexAsli: indexAsli });
         }
     });
@@ -2479,7 +2491,8 @@ async function simpanSoalBaru() {
         skor: document.getElementById("s-skor").value,
         penjelasan: document.getElementById("s-penjelasan").value,
         gambar: document.getElementById("s-gambar").value.trim(), // <-- BARU
-        kelas: document.getElementById("s-kelas").value.trim()    
+        kelas: document.getElementById("s-kelas").value.trim(),
+        dibuat_oleh: sessionGuru.username // <-- Tambahan 
     };
 
     if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); return; }
@@ -2560,7 +2573,8 @@ async function prosesPasteSoal() {
                     kunci: kunciMatch[1].toUpperCase(),
                     skor: skorMatch ? parseInt(skorMatch[1]) : 1,
                     // TAMBAHKAN INI: Ambil data kelas
-                    kelas: kelasMatch ? kelasMatch[1].trim() : "", 
+                    kelas: kelasMatch ? kelasMatch[1].trim() : "",
+                    dibuat_oleh: sessionGuru.username, // <-- Tambahan
                     penjelasan: penjelasanMatch ? penjelasanMatch[1].trim() : "",
                     gambar: ""
                 });
@@ -2673,7 +2687,8 @@ async function prosesUploadSoal() {
                     kunci: baris[i][8].toUpperCase(),
                     skor: parseInt(baris[i][9]) || 1,
                     penjelasan: baris[i][10] || "",
-                    gambar: baris[i][11] || "" // <-- BARU
+                    gambar: baris[i][11] || "",
+                    dibuat_oleh: sessionGuru.username // <-- Tambahan
                 });
             }
         }
