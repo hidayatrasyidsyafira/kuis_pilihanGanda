@@ -1614,13 +1614,17 @@ function mulaiUlang() {
 }
 
 function mulaiRemedial() {
-    if (!soalRemedialData) {
-        Swal.fire('Oops', 'Data soal remedial tidak ditemukan.', 'error');
+    if (!mapelDipilih) {
+        Swal.fire('Oops', 'Data ujian tidak ditemukan.', 'error');
         return;
     }
+    
+    // Set mode remedial
     mapelDipilih.isRemedial = true;
+    
+    // Panggil mulaiKuis (data akan otomatis diambil dari server di dalam fungsi ini)
     mulaiKuis(); 
-}    
+}  
 
 /* --- INIT --- */
 aktifkanDeteksiPindahTab(); 
