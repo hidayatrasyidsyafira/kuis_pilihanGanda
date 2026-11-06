@@ -2675,6 +2675,7 @@ async function prosesUploadSoal() {
         const daftarSoal = [];
         
         for (let i = 1; i < baris.length; i++) {
+            // Minimal 9 kolom (sampai kunci jawaban) agar dianggap valid
             if (baris[i].length >= 9) { 
                 daftarSoal.push({
                     mapel: baris[i][1],
@@ -2688,7 +2689,8 @@ async function prosesUploadSoal() {
                     skor: parseInt(baris[i][9]) || 1,
                     penjelasan: baris[i][10] || "",
                     gambar: baris[i][11] || "",
-                    dibuat_oleh: sessionGuru.username // <-- Tambahan
+                    kelas: baris[i][12] || "", // <-- Ambil kolom ke-13 (Index 12) untuk Kelas
+                    dibuat_oleh: sessionGuru.username // <-- TAMBAHKAN: Catat pemilik soal
                 });
             }
         }
@@ -2739,14 +2741,56 @@ async function prosesUploadSoal() {
 }
 
 function downloadTemplateSoal() {
-        let excelContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-            <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; } td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }</style>
-        </head><body><table><thead><tr><th width="30">No</th><th>Mapel</th><th>Soal</th><th>Pilihan A</th><th>Pilihan B</th><th>Pilihan C</th><th>Pilihan D</th><th>Pilihan E</th><th>Kunci</th><th>Skor</th><th>Penjelasan</th><th>Link Gambar</th></tr></thead><tbody>
-            <tr><td style="text-align:center;">1</td><td>TIK UH 1</td><td>Apa singkatan dari CPU?</td><td>Central Processing Unit</td><td>Computer Personal Unit</td><td>Central Program Utility</td><td>Control Processing Unit</td><td>Central Personal Utility</td><td style="text-align:center;">A</td><td style="text-align:center;">5</td><td>CPU adalah otak dari komputer.</td><td></td></tr>
-            <tr><td style="text-align:center;">2</td><td>TIK UH 1</td><td>Fungsi utama RAM adalah...</td><td>Menyimpan data permanen</td><td>Menyimpan data sementara</td><td>Memproses grafis</td><td>Menampilkan gambar</td><td>Mendinginkan prosesor</td><td style="text-align:center;">B</td><td style="text-align:center;">5</td><td>RAM bersifat sementara.</td><td>https://contoh.com/gambar.png</td></tr>
-        </tbody></table></body></html>`;
+    let excelContent = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template Soal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+        <style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; } th { background-color: #4facfe; color: white; border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold; } td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }</style>
+    </head><body><table><thead><tr>
+        <th width="30">No</th>
+        <th>Mapel</th>
+        <th>Soal</th>
+        <th>Pilihan A</th>
+        <th>Pilihan B</th>
+        <th>Pilihan C</th>
+        <th>Pilihan D</th>
+        <th>Pilihan E</th>
+        <th>Kunci</th>
+        <th>Skor</th>
+        <th>Penjelasan</th>
+        <th>Link Gambar</th>
+        <th>Kelas</th>
+    </tr></thead><tbody>
+        <tr>
+            <td style="text-align:center;">1</td>
+            <td>TIK UH 1</td>
+            <td>Apa singkatan dari CPU?</td>
+            <td>Central Processing Unit</td>
+            <td>Computer Personal Unit</td>
+            <td>Central Program Utility</td>
+            <td>Control Processing Unit</td>
+            <td>Central Personal Utility</td>
+            <td style="text-align:center;">A</td>
+            <td style="text-align:center;">5</td>
+            <td>CPU adalah otak dari komputer.</td>
+            <td></td>
+            <td style="text-align:center;">X-1, X-2</td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">2</td>
+            <td>TIK UH 1</td>
+            <td>Fungsi utama RAM adalah...</td>
+            <td>Menyimpan data permanen</td>
+            <td>Menyimpan data sementara</td>
+            <td>Memproses grafis</td>
+            <td>Menampilkan gambar</td>
+            <td>Mendinginkan prosesor</td>
+            <td style="text-align:center;">B</td>
+            <td style="text-align:center;">5</td>
+            <td>RAM bersifat sementara.</td>
+            <td>https://contoh.com/gambar.png</td>
+            <td style="text-align:center;">X-3</td>
+        </tr>
+    </tbody></table></body></html>`;
 
     const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
     const link = document.createElement("a");
