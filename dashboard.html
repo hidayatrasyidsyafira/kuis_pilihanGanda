@@ -2295,19 +2295,22 @@ function isiFilterKelasSoal() {
     sKelas.value = val;
     if (!sKelas.value && sKelas.options.length > 0) sKelas.selectedIndex = 0;
 }
-    
+
 function isiFilterSoal() {
-    const setMapel = new Set();
+    const countMapel = {}; // Objek untuk menyimpan jumlah soal per mapel
+
+    // 1. Kumpulkan soal yang berhak dilihat oleh user
+    const soalValid = [];
     
     if (sessionGuru.role === "admin") {
-        // ADMIN: Ambil semua mapel dari bank soal
-        semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+        soalValid.push(...semuaDataSoal);
     } else {
-        // GURU: Hanya ambil mapel yang diajar berdasarkan Jadwal & Soal buatannya
+        const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
         const namaGuru = String(sessionGuru.nama || "").toLowerCase().trim();
         const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
         
-        // 1. Ambil mapel dari Jadwal yang kelasnya cocok atau nama gurunya cocok
+        // Ambil mapel dari Jadwal yang diajar
+        const mapelDariJadwal = new Set();
         if (typeof semuaDataJadwal !== 'undefined') {
             semuaDataJadwal.forEach(j => {
                 const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
@@ -2315,28 +2318,96 @@ function isiFilterSoal() {
                 const cocokGuru = String(j.namaGuru || "").toLowerCase().includes(namaGuru);
                 
                 if (cocokKelas || cocokGuru) {
-                    if (j.mapel) setMapel.add(j.mapel);
+                    if (j.mapel) mapelDariJadwal.add(j.mapel.trim());
                 }
             });
         }
-        
-        // 2. Sebagai pengaman, tambahkan mapel dari soal yang pernah dia buat
-        const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
-        semuaDataSoal.forEach(d => { 
+
+        // Saring soal berdasarkan pembuatnya atau mapel yang diajar
+        semuaDataSoal.forEach(d => {
             const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
-            if (pembuatSoal === userLogin && d.mapel) {
-                setMapel.add(d.mapel); 
+            if (pembuatSoal === userLogin || mapelDariJadwal.has(d.mapel)) {
+                soalValid.push(d);
             }
         });
     }
-    
+
+    // 2. Hitung jumlah soal untuk masing-masing mapel
+    soalValid.forEach(d => {
+        if (d.mapel) {
+            const namaMapel = d.mapel.trim();
+            if (countMapel[namaMapel]) {
+                countMapel[namaMapel]++;
+            } else {
+                countMapel[namaMapel] = 1;
+            }
+        }
+    });
+
+    // 3. Render ke Dropdown
     const sMapel = document.getElementById("filter-mapel-soal");
     if (!sMapel) return;
     
-    const val = sMapel.value;
-    sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
-    sMapel.value = val;
-}
+    const valTerpilih = sMapel.value;
+    
+    // Buat opsi default
+    let html = `<option value="">Semua Mapel</option>`;
+    
+    // Urutkan nama mapel berdasarkan abjad (A-Z)
+    const arrMapel = Object.keys(countMapel).sort();
+    
+    // Buat opsi dengan format: "Nama Mapel / X soal"
+    arrMapel.forEach(m => {
+        html += `<option value="${m}">${m} / ${countMapel[m]} soal</option>`;
+    });
+    
+    sMapel.innerHTML = html;
+    
+    // Kembalikan pilihan user sebelumnya (jika ada dan masih valid)
+    sMapel.value = valTerpilih;
+}    
+    
+// function isiFilterSoal() {
+//     const setMapel = new Set();
+    
+//     if (sessionGuru.role === "admin") {
+//         // ADMIN: Ambil semua mapel dari bank soal
+//         semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+//     } else {
+//         // GURU: Hanya ambil mapel yang diajar berdasarkan Jadwal & Soal buatannya
+//         const namaGuru = String(sessionGuru.nama || "").toLowerCase().trim();
+//         const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        
+//         // 1. Ambil mapel dari Jadwal yang kelasnya cocok atau nama gurunya cocok
+//         if (typeof semuaDataJadwal !== 'undefined') {
+//             semuaDataJadwal.forEach(j => {
+//                 const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
+//                 const cocokKelas = kelasJadwal.some(k => kelasGuru.includes(k));
+//                 const cocokGuru = String(j.namaGuru || "").toLowerCase().includes(namaGuru);
+                
+//                 if (cocokKelas || cocokGuru) {
+//                     if (j.mapel) setMapel.add(j.mapel);
+//                 }
+//             });
+//         }
+        
+//         // 2. Sebagai pengaman, tambahkan mapel dari soal yang pernah dia buat
+//         const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
+//         semuaDataSoal.forEach(d => { 
+//             const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
+//             if (pembuatSoal === userLogin && d.mapel) {
+//                 setMapel.add(d.mapel); 
+//             }
+//         });
+//     }
+    
+//     const sMapel = document.getElementById("filter-mapel-soal");
+//     if (!sMapel) return;
+    
+//     const val = sMapel.value;
+//     sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
+//     sMapel.value = val;
+// }
 
 function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
