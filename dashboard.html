@@ -2297,50 +2297,37 @@ function isiFilterKelasSoal() {
 }
 
 function isiFilterSoal() {
-    const countMapel = {}; // Objek untuk menyimpan jumlah soal per mapel
-
-    // 1. Kumpulkan soal yang berhak dilihat oleh user
+    const countMapel = {}; 
     const soalValid = [];
     
-    if (sessionGuru.role === "admin") {
-        soalValid.push(...semuaDataSoal);
-    } else {
-        const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
-        const namaGuru = String(sessionGuru.nama || "").toLowerCase().trim();
-        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
-        
-        // Ambil mapel dari Jadwal yang diajar
-        const mapelDariJadwal = new Set();
-        if (typeof semuaDataJadwal !== 'undefined') {
-            semuaDataJadwal.forEach(j => {
-                const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
-                const cocokKelas = kelasJadwal.some(k => kelasGuru.includes(k));
-                const cocokGuru = String(j.namaGuru || "").toLowerCase().includes(namaGuru);
-                
-                if (cocokKelas || cocokGuru) {
-                    if (j.mapel) mapelDariJadwal.add(j.mapel.trim());
-                }
-            });
-        }
+    const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
+    const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+    
+    // 1. Saring soal yang berhak dilihat
+    semuaDataSoal.forEach(d => {
+        const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
+        const kelasSoal = String(d.kelas || "").toUpperCase().trim();
+        const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
+        const isSoalUmum = (kelasSoal === "" || kelasSoal === "SEMUA");
 
-        // Saring soal berdasarkan pembuatnya atau mapel yang diajar
-        semuaDataSoal.forEach(d => {
-            const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
-            if (pembuatSoal === userLogin || mapelDariJadwal.has(d.mapel)) {
+        if (sessionGuru.role === "admin") {
+            soalValid.push(d);
+        } else {
+            // GURU: Wajib dia yang buat, DAN kelasnya harus diampu (atau soal umum)
+            const cocokPemilik = (pembuatSoal === userLogin);
+            const cocokKelas = isSoalUmum || arrKelasSoal.some(k => kelasGuru.includes(k));
+            
+            if (cocokPemilik && cocokKelas) {
                 soalValid.push(d);
             }
-        });
-    }
+        }
+    });
 
-    // 2. Hitung jumlah soal untuk masing-masing mapel
+    // 2. Hitung jumlah soal per mapel dari data yang valid
     soalValid.forEach(d => {
         if (d.mapel) {
             const namaMapel = d.mapel.trim();
-            if (countMapel[namaMapel]) {
-                countMapel[namaMapel]++;
-            } else {
-                countMapel[namaMapel] = 1;
-            }
+            countMapel[namaMapel] = (countMapel[namaMapel] || 0) + 1;
         }
     });
 
@@ -2349,21 +2336,14 @@ function isiFilterSoal() {
     if (!sMapel) return;
     
     const valTerpilih = sMapel.value;
-    
-    // Buat opsi default
     let html = `<option value="">Semua Mapel</option>`;
     
-    // Urutkan nama mapel berdasarkan abjad (A-Z)
     const arrMapel = Object.keys(countMapel).sort();
-    
-    // Buat opsi dengan format: "Nama Mapel / X soal"
     arrMapel.forEach(m => {
         html += `<option value="${m}">${m} / ${countMapel[m]} soal</option>`;
     });
     
     sMapel.innerHTML = html;
-    
-    // Kembalikan pilihan user sebelumnya (jika ada dan masih valid)
     sMapel.value = valTerpilih;
 }    
     
@@ -2409,6 +2389,115 @@ function isiFilterSoal() {
 //     sMapel.value = val;
 // }
 
+// function renderTabelSoal() {
+//     const tbody = document.getElementById("tbody-soal");
+//     const fMapel = document.getElementById("filter-mapel-soal").value;
+//     const fKelas = document.getElementById("filter-kelas-soal").value; 
+    
+//     document.getElementById("pilih-semua").checked = false;
+
+//     const dataTampil = [];
+//     semuaDataSoal.forEach((d, indexAsli) => {
+//         const cocokMapel = (fMapel === "" || d.mapel === fMapel);
+//         const kelasSoal = String(d.kelas || "").toUpperCase().trim();
+        
+//         // === 1. LOGIKA FILTER KELAS DROPDOWN ===
+//         let cocokFilterKelas = false;
+//         if (fKelas === "") {
+//             // Jika dropdown pilih "Semua Kelas" atau "Pilih Kelas" (kosong), tampilkan yang umum
+//             cocokFilterKelas = (kelasSoal === "" || kelasSoal === "SEMUA");
+//         } else {
+//             // Pisahkan jika multi-kelas (misal "X-3, X-4" menjadi ["X-3", "X-4"])
+//             const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
+//             cocokFilterKelas = arrKelasSoal.includes(fKelas);
+//         }
+
+//         // === 2. LOGIKA HAK AKSES GURU TERHADAP KELAS ===
+//         let cocokKelasGuru = (sessionGuru.role === "admin") 
+//             || (kelasSoal === "") 
+//             || (kelasSoal === "SEMUA");
+            
+//         if (!cocokKelasGuru && sessionGuru.role !== "admin") {
+//             const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
+//             const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+//             cocokKelasGuru = arrKelasSoal.some(k => kelasGuru.includes(k));
+//         }
+
+//         // === 3. LOGIKA KEPEMILIKAN SOAL (Dibuat Oleh) ===
+//         // Admin bebas lihat semua. Guru hanya lihat soal yang dibuat olehnya.
+//         const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
+//         const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
+//         const cocokPemilik = (sessionGuru.role === "admin") || (pembuatSoal === userLogin);
+
+//         // Jika lolos semua filter, masukkan ke data yang akan ditampilkan
+//         if (cocokMapel && cocokFilterKelas && cocokKelasGuru && cocokPemilik) {
+//             dataTampil.push({ ...d, indexAsli: indexAsli });
+//         }
+//     });
+
+//     if (dataTampil.length === 0) { 
+//         tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada soal ditemukan.</td></tr>`; 
+//         return; 
+//     }
+
+//     tbody.innerHTML = "";
+//     dataTampil.forEach((d, indexTampil) => {
+//         const barisSheet = d.indexAsli + 2; 
+        
+//         tbody.innerHTML += `
+//             <tr>
+//                 <td style="text-align:center;">
+//                     <input type="checkbox" class="checkbox-soal" value="${barisSheet}">
+//                 </td>
+//                 <td>${indexTampil + 1}</td>
+//                 <td class="editable-cell" data-baris="${barisSheet}" data-kolom="1" data-tipe="text">${d.mapel}</td>
+//                 <td style="max-width: 500px; white-space: normal;">
+//                     <div class="editable-cell" style="margin-bottom: 8px; font-weight: bold;" data-baris="${barisSheet}" data-kolom="2" data-tipe="text">
+//                         ${d.soal}
+//                     </div>
+//                     <div style="font-size: 0.9rem; color: #555; line-height: 1.6;">
+//                         <div><span style="font-weight:bold; color:#3498db;">A.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="3" data-tipe="text">${d.pilihanA}</span></div>
+//                         <div><span style="font-weight:bold; color:#3498db;">B.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="4" data-tipe="text">${d.pilihanB}</span></div>
+//                         <div><span style="font-weight:bold; color:#3498db;">C.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="5" data-tipe="text">${d.pilihanC}</span></div>
+//                         <div><span style="font-weight:bold; color:#3498db;">D.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="6" data-tipe="text">${d.pilihanD}</span></div>
+//                         ${d.pilihanE ? `<div><span style="font-weight:bold; color:#3498db;">E.</span> <span class="editable-cell" data-baris="${barisSheet}" data-kolom="7" data-tipe="text">${d.pilihanE}</span></div>` : ""}
+//                     </div>
+//                 </td>
+//                 <td style="text-align:center;">
+//                     <span class="badge badge-green editable-cell" data-baris="${barisSheet}" data-kolom="8" data-tipe="kunci">${d.kunci}</span>
+//                 </td>
+//                 <td style="text-align:center;">
+//                     <span class="editable-cell" data-baris="${barisSheet}" data-kolom="9" data-tipe="angka">${d.skor}</span>
+//                 </td>
+//                 <td style="text-align:center;">
+//                     <span class="editable-cell badge badge-yellow" data-baris="${barisSheet}" data-kolom="12" data-tipe="text">${d.kelas || 'Semua'}</span>
+//                 </td>
+//                 <td>
+//                     ${d.gambar ? `<span style="color:#2ecc71; font-size:0.85rem; display:block; margin-top:5px;">🖼️ Ada Gambar</span>` : ""}
+//                 </td>
+//                 <td style="text-align:center;">
+//                     <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapus(${barisSheet})">Hapus</button>
+//                 </td>
+//             </tr>`;
+//     });
+
+//     document.querySelectorAll('.editable-cell').forEach(el => {
+//         el.style.cursor = "pointer";
+//         el.style.padding = "4px";
+//         el.style.borderRadius = "4px";
+//         el.style.display = "inline-block";
+//         el.onmouseover = () => el.style.background = "#e3f2fd";
+//         el.onmouseout = () => el.style.background = "transparent";
+//         el.onclick = function() {
+//             const baris = parseInt(this.getAttribute('data-baris'));
+//             const kolom = parseInt(this.getAttribute('data-kolom'));
+//             const tipe = this.getAttribute('data-tipe');
+//             let nilaiLama = this.textContent.trim();
+//             buatInputEdit(this, baris, kolom, nilaiLama, tipe);
+//         };
+//     });
+// }
+
 function renderTabelSoal() {
     const tbody = document.getElementById("tbody-soal");
     const fMapel = document.getElementById("filter-mapel-soal").value;
@@ -2417,40 +2506,37 @@ function renderTabelSoal() {
     document.getElementById("pilih-semua").checked = false;
 
     const dataTampil = [];
+    const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
+    const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+    
     semuaDataSoal.forEach((d, indexAsli) => {
         const cocokMapel = (fMapel === "" || d.mapel === fMapel);
         const kelasSoal = String(d.kelas || "").toUpperCase().trim();
+        const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
+        const isSoalUmum = (kelasSoal === "" || kelasSoal === "SEMUA");
         
-        // === 1. LOGIKA FILTER KELAS DROPDOWN ===
+        // === 1. FILTER DROPDOWN KELAS ===
         let cocokFilterKelas = false;
         if (fKelas === "") {
-            // Jika dropdown pilih "Semua Kelas" atau "Pilih Kelas" (kosong), tampilkan yang umum
-            cocokFilterKelas = (kelasSoal === "" || kelasSoal === "SEMUA");
+            cocokFilterKelas = isSoalUmum;
         } else {
-            // Pisahkan jika multi-kelas (misal "X-3, X-4" menjadi ["X-3", "X-4"])
-            const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
             cocokFilterKelas = arrKelasSoal.includes(fKelas);
         }
 
-        // === 2. LOGIKA HAK AKSES GURU TERHADAP KELAS ===
-        let cocokKelasGuru = (sessionGuru.role === "admin") 
-            || (kelasSoal === "") 
-            || (kelasSoal === "SEMUA");
+        // === 2. HAK AKSES GURU ===
+        let cocokAkses = false;
+        if (sessionGuru.role === "admin") {
+            cocokAkses = true;
+        } else {
+            const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
+            const cocokPemilik = (pembuatSoal === userLogin);
+            const cocokKelas = isSoalUmum || arrKelasSoal.some(k => kelasGuru.includes(k));
             
-        if (!cocokKelasGuru && sessionGuru.role !== "admin") {
-            const arrKelasSoal = kelasSoal.split(",").map(k => k.trim());
-            const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
-            cocokKelasGuru = arrKelasSoal.some(k => kelasGuru.includes(k));
+            cocokAkses = cocokPemilik && cocokKelas;
         }
 
-        // === 3. LOGIKA KEPEMILIKAN SOAL (Dibuat Oleh) ===
-        // Admin bebas lihat semua. Guru hanya lihat soal yang dibuat olehnya.
-        const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
-        const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
-        const cocokPemilik = (sessionGuru.role === "admin") || (pembuatSoal === userLogin);
-
-        // Jika lolos semua filter, masukkan ke data yang akan ditampilkan
-        if (cocokMapel && cocokFilterKelas && cocokKelasGuru && cocokPemilik) {
+        // Tampilkan hanya jika lolos semua filter
+        if (cocokMapel && cocokFilterKelas && cocokAkses) {
             dataTampil.push({ ...d, indexAsli: indexAsli });
         }
     });
