@@ -1284,7 +1284,7 @@ async function selesaikanUjian() {
             navigator.keyboard.unlock();
         }
         
-        // Hitung skor
+        // 1. Hitung skor
         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
         daftarSoal.forEach((soal, idx) => {
             const jwb = jawabanSiswa[idx];
@@ -1305,22 +1305,53 @@ async function selesaikanUjian() {
 
         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
         
+        // === 2. LOGIKA REMEDIAL & KKM (BARU) ===
+        const soalSalah = [];
+        daftarSoal.forEach((soal, idx) => {
+            if (jawabanSiswa[idx] !== soal.kunci) {
+                soalSalah.push(soal);
+            }
+        });
+
+        // Simpan soal yang salah ke server (jika bukan sedang remedial)
+        if (soalSalah.length > 0 && !mapelDipilih.isRemedial) {
+            fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({
+                    aksi: "simpan_soal_salah",
+                    nisn: nisnSiswa,
+                    mapel: mapelSiswa,
+                    soalSalahJSON: JSON.stringify(soalSalah)
+                })
+            });
+        }
+
+        // Logika Tampilkan Tombol Remedial berdasarkan KKM dari database
+        const nilaiKKM = parseInt(mapelDipilih.kkm) || 70;
+        const btnRemedial = document.getElementById("btn-remedial");
+        
+        if (skorAkhir < nilaiKKM && !mapelDipilih.isRemedial && soalSalah.length > 0) {
+            btnRemedial.style.display = "block";
+        } else {
+            btnRemedial.style.display = "none";
+        }
+        // =====================================
+
         const finalPindahTab = jumlahPindahTab;
         const finalPelanggaranKamera = jumlahPelanggaranKamera;
         const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
         
-        // Tampilkan hasil
+        // 3. Tampilkan hasil
         document.getElementById("layar-cbt").style.display = "none";
         document.getElementById("layar-akhir").style.display = "block";
         document.getElementById("skor-angka").textContent = skorAkhir;
         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
         
-        // Kirim data
+        // 4. Kirim data ke Google Sheets dan WA
         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
-        // TAMBAHKAN BARIS INI UNTUK KIRIM WA
         kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
 
-        // Tandai selesai di MonitoringLive
+        // 5. Tandai selesai di MonitoringLive (KODE INI TETAP ADA)
         fetch(URL_GOOGLE_SHEETS, {
             method: "POST",
             body: JSON.stringify({
