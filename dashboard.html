@@ -2222,6 +2222,13 @@ async function muatBankSoal() {
     const tbody = document.getElementById("tbody-soal");
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">⏳ Memuat data soal...</td></tr>`;
     try {
+        // Pastikan data jadwal sudah dimuat (untuk mengambil mapel yang diajar guru)
+        if (typeof semuaDataJadwal !== 'undefined' && semuaDataJadwal.length === 0) {
+            const resJadwal = await fetch(URL_GOOGLE_SHEETS + "?aksi=jadwal&t=" + new Date().getTime());
+            const jsonJadwal = await resJadwal.json();
+            if (jsonJadwal.status === "success") semuaDataJadwal = jsonJadwal.data;
+        }
+
         const res = await fetch(URL_GOOGLE_SHEETS + "?aksi=bank_soal&t=" + new Date().getTime());
         const json = await res.json();
         if (json.status === "success") {
@@ -2237,7 +2244,7 @@ async function muatBankSoal() {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error Koneksi</td></tr>`; 
     }
 }
-
+    
 function isiFilterKelasSoal() {
     const setKelas = new Set();
     
@@ -2291,8 +2298,41 @@ function isiFilterKelasSoal() {
     
 function isiFilterSoal() {
     const setMapel = new Set();
-    semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+    
+    if (sessionGuru.role === "admin") {
+        // ADMIN: Ambil semua mapel dari bank soal
+        semuaDataSoal.forEach(d => { if (d.mapel) setMapel.add(d.mapel); });
+    } else {
+        // GURU: Hanya ambil mapel yang diajar berdasarkan Jadwal & Soal buatannya
+        const namaGuru = String(sessionGuru.nama || "").toLowerCase().trim();
+        const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+        
+        // 1. Ambil mapel dari Jadwal yang kelasnya cocok atau nama gurunya cocok
+        if (typeof semuaDataJadwal !== 'undefined') {
+            semuaDataJadwal.forEach(j => {
+                const kelasJadwal = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
+                const cocokKelas = kelasJadwal.some(k => kelasGuru.includes(k));
+                const cocokGuru = String(j.namaGuru || "").toLowerCase().includes(namaGuru);
+                
+                if (cocokKelas || cocokGuru) {
+                    if (j.mapel) setMapel.add(j.mapel);
+                }
+            });
+        }
+        
+        // 2. Sebagai pengaman, tambahkan mapel dari soal yang pernah dia buat
+        const userLogin = String(sessionGuru.username || "").toLowerCase().trim();
+        semuaDataSoal.forEach(d => { 
+            const pembuatSoal = String(d.dibuat_oleh || "Admin").toLowerCase().trim();
+            if (pembuatSoal === userLogin && d.mapel) {
+                setMapel.add(d.mapel); 
+            }
+        });
+    }
+    
     const sMapel = document.getElementById("filter-mapel-soal");
+    if (!sMapel) return;
+    
     const val = sMapel.value;
     sMapel.innerHTML = `<option value="">Semua Mapel</option>` + Array.from(setMapel).sort().map(m => `<option value="${m}">${m}</option>`).join('');
     sMapel.value = val;
