@@ -701,19 +701,58 @@ function pilihMapel(jadwal, isLatihan = false) {
 }
 
 async function cekRiwayatSiswa() {
+    // 1. CEK DULU: Apakah siswa ini punya data remedial yang belum dikerjakan?
+    try {
+        const resRem = await fetch(URL_GOOGLE_SHEETS + `?aksi=ambil_soal_salah&nisn=${nisnSiswa}&mapel=${encodeURIComponent(mapelDipilih.mapel)}`);
+        const jsonRem = await resRem.json();
+        
+        if (jsonRem.status === "success" && jsonRem.data) {
+            // Siswa punya data remedial
+            const konfirmasi = await Swal.fire({
+                title: 'Anda Belum Remedial',
+                text: `Anda belum menyelesaikan remedial untuk mapel ${mapelDipilih.mapel}. Remedial sekarang?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#95a5a6',
+                confirmButtonText: 'Ya, Remedial',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            });
+            
+            if (konfirmasi.isConfirmed) {
+                mapelDipilih.isRemedial = true;
+                mulaiKuis(); // Langsung masuk CBT, lewati form token
+            } else {
+                mulaiUlang(); // Kembali ke menu awal
+            }
+            return; // Hentikan eksekusi agar tidak lanjut ke cek riwayat normal
+        }
+    } catch (err) {
+        console.warn("Gagal cek data remedial", err);
+    }
+
+    // 2. Jika tidak ada data remedial, baru cek riwayat ujian normal (Anti Ujian 2x)
     const params = new URLSearchParams({ aksi: "cek_riwayat", nisn: nisnSiswa, mapel: mapelDipilih.mapel });
     try {
         const res = await fetch(URL_GOOGLE_SHEETS + "?" + params.toString());
         const json = await res.json();
+        
         if (json.status === "success" && json.sudahUjian) {
+            // Jika sudah ujian DAN TIDAK PUNYA data remedial (sudah remedial atau nilainya bagus)
             document.getElementById("area-mulai").innerHTML = `
                 <div style="background:#f8d7da; color:#721c24; padding:30px; border-radius:12px; border:2px solid #e74c3c;">
                     <h2 style="margin-bottom:15px;">⛔ Akses Ditolak</h2>
-                    <p>Anda sudah mengerjakan ujian <strong>${mapelDipilih.mapel}</strong>.</p>
+                    <p>Anda sudah mengerjakan ujian <strong>${mapelDipilih.mapel}</strong> dan tidak ada jadwal remedial untuk Anda.</p>
                     <button class="tombol-lanjut-nisn" style="background:#e74c3c; margin-top:20px;" onclick="mulaiUlang()">Kembali ke Login</button>
                 </div>`;
-        } else { cekStatusWaktu(mapelDipilih); }
-    } catch (err) { cekStatusWaktu(mapelDipilih); }
+        } else { 
+            // Belum ujian sama sekali, lanjut ke form token normal
+            cekStatusWaktu(mapelDipilih); 
+        }
+    } catch (err) { 
+        cekStatusWaktu(mapelDipilih); 
+    }
 }
 
 function cekStatusWaktu(jadwal) {
@@ -1327,13 +1366,33 @@ async function selesaikanUjian() {
         }
 
         // Logika Tampilkan Tombol Remedial berdasarkan KKM dari database
-        const nilaiKKM = parseInt(mapelDipilih.kkm) || 70;
-        const btnRemedial = document.getElementById("btn-remedial");
+        // Tampilkan hasil ujian terlebih dahulu
+        document.getElementById("layar-cbt").style.display = "none";
+        document.getElementById("layar-akhir").style.display = "block";
+        document.getElementById("skor-angka").textContent = skorAkhir;
+        document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
         
+        // Cek apakah nilai di bawah KKM dan ada soal salah
         if (skorAkhir < nilaiKKM && !mapelDipilih.isRemedial && soalSalah.length > 0) {
-            btnRemedial.style.display = "block";
-        } else {
-            btnRemedial.style.display = "none";
+            // Munculkan Popup Konfirmasi Remedial
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Nilai di Bawah KKM!',
+                    text: `Nilai Anda (${skorAkhir}) di bawah standar (${nilaiKKM}). Apakah Anda ingin langsung mengerjakan soal Remedial sekarang?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e74c3c',
+                    cancelButtonColor: '#95a5a6',
+                    confirmButtonText: 'Ya, Remedial',
+                    cancelButtonText: 'Tidak (Nanti)',
+                    allowOutsideClick: false
+                }).then((res) => {
+                    if (res.isConfirmed) {
+                        mapelDipilih.isRemedial = true;
+                        mulaiKuis(); // Langsung mulai tanpa token
+                    }
+                });
+            }, 500); // Jeda 0.5 detik agar layar hasil muncul dulu
         }
         // =====================================
 
