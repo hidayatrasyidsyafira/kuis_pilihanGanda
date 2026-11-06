@@ -2641,33 +2641,43 @@ async function prosesUploadSoal() {
         const daftarSoal = [];
         
         for (let i = 1; i < baris.length; i++) {
-            // Minimal 9 kolom (sampai kunci jawaban) agar dianggap valid
-            if (baris[i].length >= 9) { 
-                daftarSoal.push({
-                    mapel: baris[i][1],
-                    soal: baris[i][2],
-                    pilihanA: baris[i][3],
-                    pilihanB: baris[i][4],
-                    pilihanC: baris[i][5],
-                    pilihanD: baris[i][6],
-                    pilihanE: baris[i][7],
-                    kunci: baris[i][8].toUpperCase(),
-                    skor: parseInt(baris[i][9]) || 1,
-                    penjelasan: baris[i][10] || "",
-                    gambar: baris[i][11] || "",
-                    kelas: baris[i][12] || "", // <-- Ambil kolom ke-13 (Index 12) untuk Kelas
-                    dibuat_oleh: sessionGuru.username // <-- TAMBAHKAN: Catat pemilik soal
-                });
+            const row = baris[i];
+            
+            // Pastikan minimal ada 9 kolom (sampai Kunci Jawaban)
+            if (row.length >= 9) {
+                const mapel = (row[1] || "").trim();
+                const soal = (row[2] || "").trim();
+                const kunci = (row[8] || "").toUpperCase().trim();
+                
+                // Validasi: Mapel, Soal, dan Kunci tidak boleh kosong
+                if (mapel !== "" && soal !== "" && kunci !== "") {
+                    daftarSoal.push({
+                        mapel: mapel,
+                        soal: soal,
+                        pilihanA: (row[3] || "").trim(),
+                        pilihanB: (row[4] || "").trim(),
+                        pilihanC: (row[5] || "").trim(),
+                        pilihanD: (row[6] || "").trim(),
+                        pilihanE: (row[7] || "").trim(),
+                        kunci: kunci,
+                        skor: parseInt(row[9]) || 1,
+                        penjelasan: (row[10] || "").trim(),
+                        gambar: (row[11] || "").trim(),
+                        kelas: (row[12] || "").trim(), 
+                        dibuat_oleh: sessionGuru.username 
+                    });
+                }
             }
         }
+
         if (daftarSoal.length === 0) { 
-            Swal.fire('Format Salah!', 'Format file tidak sesuai atau data kosong. Pastikan menggunakan template terbaru.', 'error'); 
+            Swal.fire('Format Salah!', 'Tidak ada data soal valid yang terbaca. Pastikan kolom Mapel, Soal, dan Kunci terisi.', 'error'); 
             return; 
         }
         
         const konfirmasi = await Swal.fire({
             title: 'Upload Soal?',
-            text: `Ditemukan ${daftarSoal.length} soal valid. Soal yang sudah ada sebelumnya tidak akan diduplikasi.`,
+            text: `Ditemukan ${daftarSoal.length} soal valid. Lanjutkan upload?`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#f39c12',
@@ -2705,7 +2715,6 @@ async function prosesUploadSoal() {
     };
     reader.readAsText(file);
 }
-
 function downloadTemplateSoal() {
     let excelContent = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -2817,15 +2826,20 @@ function downloadTemplateSiswa() {
 }    
 
 function parseCSV(teks) {
-    return teks.split("\n").map(r => {
-        const hasil = []; let bagian = "", dalamKutip = false;
-        for (let c of r) {
-            if (c === '"') dalamKutip = !dalamKutip;
-            else if ((c === "," || c === ";") && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
-            else bagian += c;
-        }
-        hasil.push(bagian.trim()); return hasil.map(s => s.replace(/^"|"$/g, ""));
-    });
+    // \r?\n akan mendeteksi Enter dari Windows (Excel) maupun Mac/Linux
+    return teks.split(/\r?\n/)
+        .map(r => r.trim())
+        .filter(r => r !== "") // Buang baris yang kosong melompong
+        .map(r => {
+            const hasil = []; let bagian = "", dalamKutip = false;
+            for (let c of r) {
+                if (c === '"') dalamKutip = !dalamKutip;
+                else if ((c === "," || c === ";") && !dalamKutip) { hasil.push(bagian.trim()); bagian = ""; }
+                else bagian += c;
+            }
+            hasil.push(bagian.trim()); 
+            return hasil.map(s => s.replace(/^"|"$/g, ""));
+        });
 }
 
 /* =========================================
