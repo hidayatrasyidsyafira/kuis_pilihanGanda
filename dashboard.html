@@ -605,6 +605,10 @@
                     <label>Batas Soal (0 = Semua Soal)</label>
                     <input type="number" id="j-batas-soal" value="0" min="0" placeholder="Contoh: 20">
                 </div>
+                <div class="form-group">
+                    <label>Nilai Standar / KKM</label>
+                    <input type="number" id="j-kkm" value="70" min="1" max="100" placeholder="Contoh: 70">
+                </div>
             </div>
     
             <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="simpanJadwalBaru()">Simpan Jadwal</button>
@@ -1758,7 +1762,8 @@ async function simpanJadwalBaru() {
         token: document.getElementById("j-token").value.trim(),
         jenis: document.getElementById("j-jenis").value,
         durasi: document.getElementById("j-durasi").value,
-        batasSoal: document.getElementById("j-batas-soal").value
+        batasSoal: document.getElementById("j-batas-soal").value,
+        kkm: document.getElementById("j-kkm").value
     };
     const kelasInput = document.getElementById("j-kelas").value.trim();
 
