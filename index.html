@@ -412,7 +412,8 @@
                 <div class="label" id="skor-detail">0 dari 0 soal benar</div>
             </div>
             <p style="margin-bottom: 20px; font-size: 1rem; color: #555;" id="status-kirim">⏳ Memproses hasil...</p>
-            
+
+            <button class="btn-lanjut" id="btn-remedial" style="background: #e74c3c; display: none;" onclick="mulaiRemedial()">🔄 Kerjakan Remedial (Soal Salah)</button>
             <button class="btn-lanjut" style="background: #f39c12;" onclick="tampilkanLeaderboard()">🏆 Lihat Peringkat (Top 10)</button>
             <button class="btn-lanjut" onclick="tampilkanPembahasan()">📖 Lihat Pembahasan</button>
             <button class="btn-kembali-login" onclick="mulaiUlang()">🏠 Tutup & Kembali ke Login</button>
@@ -489,6 +490,7 @@ let jadwalData = [];
 let dataSiswaGlobal = [];
 let jadwalInterval = null; 
 let mapelDipilih = null; 
+let soalRemedialData = null;    
 
 let streamKamera = null; 
 let modelAI = null;
@@ -982,58 +984,46 @@ function acakPilihanSoal(soal) {
 
 async function mulaiKuis() {
     if (!namaSiswa || !mapelDipilih) return;
-        masukFullscreen(); 
+    masukFullscreen(); 
     try {
         document.getElementById("tombol-mulai").textContent = "⏳ Menyiapkan...";
         await nyalakanKamera(); if (!modelAI) await muatModelAI();
     } catch (error) { document.getElementById("tombol-mulai").textContent = "▶️ MULAI UJIAN"; return; }
 
     mapelSiswa = mapelDipilih.mapel;
-    // Catat ke sheet MonitoringLive
-    fetch(URL_GOOGLE_SHEETS, {
-        method: "POST",
-        body: JSON.stringify({
-            aksi: "catat_mulai_ujian",
-            nisn: nisnSiswa,
-            nama: namaSiswa,
-            kelas: kelasSiswa,
-            mapel: mapelSiswa
-        })
-    }).catch(err => console.warn("Gagal catat mulai:", err));
     
-    await ambilSoal(mapelSiswa, mapelDipilih.file);
-    
-    // Acak Soal & Pilihan
-    daftarSoal = acak(daftarSoal); 
-
-    const batasMaksimal = parseInt(mapelDipilih.batasSoal) || 0;
-    if (batasMaksimal > 0 && batasMaksimal < daftarSoal.length) {
-        daftarSoal = daftarSoal.slice(0, batasMaksimal);
+    if (mapelDipilih.isRemedial) {
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS + `?aksi=ambil_soal_salah&nisn=${nisnSiswa}&mapel=${encodeURIComponent(mapelSiswa)}`);
+            const json = await res.json();
+            if (json.status === "success" && json.data) {
+                daftarSoal = JSON.parse(json.data);
+                soalRemedialData = daftarSoal;
+            } else {
+                Swal.fire('Kosong', 'Tidak ada soal remedial yang tersimpan.', 'info'); return;
+            }
+        } catch (err) { Swal.fire('Error', 'Gagal mengambil soal remedial.', 'error'); return; }
+    } else {
+        await ambilSoal(mapelSiswa, mapelDipilih.file);
+        daftarSoal = acak(daftarSoal); 
+        const batasMaksimal = parseInt(mapelDipilih.batasSoal) || 0;
+        if (batasMaksimal > 0 && batasMaksimal < daftarSoal.length) daftarSoal = daftarSoal.slice(0, batasMaksimal);
     }
     
     daftarSoal = daftarSoal.map(s => acakPilihanSoal(s));
-
     if (jadwalInterval) clearInterval(jadwalInterval);
 
-    // Persiapkan UI CBT
     document.getElementById("layar-menu").style.display = "none";
+    document.getElementById("layar-akhir").style.display = "none"; 
     document.getElementById("layar-cbt").style.display = "block";
-    document.getElementById("cbt-info-mapel").textContent = `📘 ${mapelSiswa} - ${namaSiswa} (${kelasSiswa})`;
     
-    // Inisialisasi State
-    nomor = 0;
-    jawabanSiswa = {}; // Reset jawaban
-    soalRaguRagu = [];
-    riwayatJawaban = [];
-    kuisAktif = true;
+    const judulCbt = mapelDipilih.isRemedial ? `🔄 REMEDIAL - ${mapelSiswa}` : `📘 ${mapelSiswa}`;
+    document.getElementById("cbt-info-mapel").textContent = `${judulCbt} - ${namaSiswa} (${kelasSiswa})`;
+    
+    nomor = 0; jawabanSiswa = {}; soalRaguRagu = []; riwayatJawaban = []; kuisAktif = true;
     jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
     
-    buatGridNavigasi();
-    updateTimerTotal();
-    mulaiTimerTotal();
-    mulaiDeteksiAI();
-
-    tampilSoalCBT();
+    buatGridNavigasi(); updateTimerTotal(); mulaiTimerTotal(); mulaiDeteksiAI(); tampilSoalCBT();
 }
 
 /* =========================================================
@@ -1566,6 +1556,7 @@ async function tampilkanLeaderboard() {
     }
 }    
 
+    
 function mulaiUlang() {
     clearInterval(timerInterval); if (jadwalInterval) clearInterval(jadwalInterval);
     matikanKamera(); 
@@ -1590,6 +1581,15 @@ function mulaiUlang() {
     nomor = 0; jawabanSiswa = {}; riwayatJawaban = []; kuisAktif = false; sisaWaktuTotal = 0; 
     jumlahPindahTab = 0; jumlahPelanggaranKamera = 0; jumlahPelanggaranFullscreen = 0;
 }
+
+function mulaiRemedial() {
+    if (!soalRemedialData) {
+        Swal.fire('Oops', 'Data soal remedial tidak ditemukan.', 'error');
+        return;
+    }
+    mapelDipilih.isRemedial = true;
+    mulaiKuis(); 
+}    
 
 /* --- INIT --- */
 aktifkanDeteksiPindahTab(); 
