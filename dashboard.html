@@ -440,20 +440,28 @@
                             <option value="">Semua Mapel</option>
                         </select>
                         <button class="btn btn-blue" onclick="muatMonitoringLive()">🔄 Refresh Manual</button>
+                        <button class="btn btn-red" onclick="hapusMonitoringTerpilih()">🗑️ Hapus Terpilih</button>
                         <span style="margin-left: auto; font-size: 0.9rem; color: #7f8c8d;">
-                            ⏱️ Auto-refresh setiap 30 detik
+                            ⏱️ Auto-refresh 30 detik
                         </span>
                     </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>No</th><th>Nama Siswa</th><th>Kelas</th><th>Mapel</th>
-                                    <th>Status</th><th>Pelanggaran</th><th>Waktu Mulai</th>
+                                    <th width="30"><input type="checkbox" id="pilih-semua-monitoring" onchange="toggleSemuaMonitoring(this)"></th>
+                                    <th width="40">No</th>
+                                    <th>Nama Siswa</th>
+                                    <th>Kelas</th>
+                                    <th>Mapel</th>
+                                    <th>Status</th>
+                                    <th>Pelanggaran</th>
+                                    <th>Waktu Mulai</th>
+                                    <th width="80">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-monitoring">
-                                <tr><td colspan="7" style="text-align:center;">⏳ Memuat...</td></tr>
+                                <tr><td colspan="9" style="text-align:center;">⏳ Memuat...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -923,14 +931,17 @@ let halamanSiswaAktif = 1;
         
         const dataFiltered = dataMonitoring.filter(d => fMapel === "" || d.mapel === fMapel);
         
+        // Reset checkbox pilih semua
+        const pilihSemua = document.getElementById("pilih-semua-monitoring");
+        if (pilihSemua) pilihSemua.checked = false;
+    
         if (dataFiltered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Tidak ada aktivitas ujian ditemukan.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">Tidak ada aktivitas ujian ditemukan.</td></tr>`;
             return;
         }
         
         tbody.innerHTML = "";
         dataFiltered.forEach((d, index) => {
-            // Tentukan badge warna status
             let badge = "";
             if (d.status === "MENGERJAKAN") {
                 badge = `<span class="badge badge-green">🟢 Mengerjakan</span>`;
@@ -938,13 +949,13 @@ let halamanSiswaAktif = 1;
                 badge = `<span class="badge" style="background:#d1ecf1; color:#0c5460;">✅ Selesai</span>`;
             }
             
-            // Warna pelanggaran
             const pelanggaranCell = d.pelanggaran > 0 
                 ? `<span class="warning-text">⚠️ ${d.pelanggaran}x</span>` 
                 : `<span style="color:#7f8c8d;">0x</span>`;
             
             tbody.innerHTML += `
                 <tr>
+                    <td style="text-align:center;"><input type="checkbox" class="checkbox-monitoring" value="${d.baris}"></td>
                     <td>${index + 1}</td>
                     <td><strong>${d.nama}</strong></td>
                     <td>${d.kelas}</td>
@@ -952,8 +963,88 @@ let halamanSiswaAktif = 1;
                     <td>${badge}</td>
                     <td>${pelanggaranCell}</td>
                     <td>${d.waktuMulai}</td>
+                    <td style="text-align:center;">
+                        <button class="btn" style="background:#e74c3c; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="konfirmasiHapusMonitoring(${d.baris})">Hapus</button>
+                    </td>
                 </tr>`;
         });
+    }
+
+    function toggleSemuaMonitoring(source) {
+    document.querySelectorAll('.checkbox-monitoring').forEach(cb => cb.checked = source.checked);
+}
+
+// Hapus 1 data monitoring
+async function konfirmasiHapusMonitoring(baris) {
+    const result = await Swal.fire({
+        title: 'Hapus Monitoring?',
+        text: "Data monitoring siswa ini akan dihapus dari layar pantauan.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        try {
+            const res = await fetch(URL_GOOGLE_SHEETS, {
+                method: "POST", 
+                body: JSON.stringify({ aksi: "hapus_monitoring_massal", daftarBaris: [baris] })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                Swal.fire('Terhapus!', 'Data berhasil dihapus.', 'success');
+                muatMonitoringLive();
+            } else {
+                Swal.fire('Gagal!', json.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error!', 'Koneksi gagal.', 'error');
+        }
+    }
+}
+
+// Hapus data monitoring terpilih (massal)
+    async function hapusMonitoringTerpilih() {
+        const checkboxes = document.querySelectorAll('.checkbox-monitoring:checked');
+        if (checkboxes.length === 0) {
+            Swal.fire('Oops...', 'Pilih minimal satu data monitoring untuk dihapus.', 'info');
+            return;
+        }
+    
+        const result = await Swal.fire({
+            title: 'Hapus Data Terpilih?',
+            text: `${checkboxes.length} data monitoring akan dihapus dari layar.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        });
+    
+        if (result.isConfirmed) {
+            const daftarBaris = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const res = await fetch(URL_GOOGLE_SHEETS, {
+                    method: "POST",
+                    body: JSON.stringify({ aksi: "hapus_monitoring_massal", daftarBaris: daftarBaris })
+                });
+                const json = await res.json();
+                if (json.status === "success") {
+                    Swal.fire('Terhapus!', json.message, 'success');
+                    muatMonitoringLive();
+                } else {
+                    Swal.fire('Gagal!', json.message, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error!', 'Koneksi gagal.', 'error');
+            }
+        }
     }
     
     function mulaiAutoRefreshMonitoring() {
