@@ -1275,7 +1275,155 @@ function soalSebelumnya() {
     if (nomor > 0) { nomor--; tampilSoalCBT(); }
 }
 
-async function selesaikanUjian() {
+// async function selesaikanUjian() {
+//     // Cek apakah masih ada soal yang ragu-ragu
+//     if (soalRaguRagu.length > 0) {
+//         const peringatanRagu = await Swal.fire({
+//             title: 'Masih Ada Soal Ragu-Ragu!',
+//             text: `Anda masih menandai ${soalRaguRagu.length} soal sebagai "Ragu-Ragu" (kotak kuning). Apakah Anda yakin ingin menyelesaikan ujian?`,
+//             icon: 'info',
+//             showCancelButton: true,
+//             confirmButtonColor: '#e74c3c',
+//             cancelButtonColor: '#3498db',
+//             confirmButtonText: 'Ya, Selesaikan',
+//             cancelButtonText: 'Cek Kembali'
+//         });
+        
+//         if (!peringatanRagu.isConfirmed) {
+//             // Cari soal pertama yang ragu-ragu dan buka
+//             nomor = soalRaguRagu[0];
+//             tampilSoalCBT();
+//             return;
+//         }
+//     }
+
+//     // Lanjut ke konfirmasi normal
+//     const result = await Swal.fire({
+//         title: 'Selesaikan Ujian?',
+//         text: "Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.",
+//         icon: 'warning',
+//         showCancelButton: true,
+//         confirmButtonColor: '#2ecc71',
+//         cancelButtonColor: '#95a5a6',
+//         confirmButtonText: 'Ya, Selesaikan!',
+//         cancelButtonText: 'Batal',
+//         allowOutsideClick: false
+//     });
+
+//     if (result.isConfirmed) {
+//         clearInterval(timerInterval);
+//         kuisAktif = false;
+//         matikanKamera();
+
+//         if (document.fullscreenElement) {
+//             document.exitFullscreen();
+//         }
+//         // Buka kunci keyboard setelah ujian selesai
+//         if ('keyboard' in navigator && 'unlock' in navigator.keyboard) {
+//             navigator.keyboard.unlock();
+//         }
+        
+//         // 1. Hitung skor
+//         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
+//         daftarSoal.forEach((soal, idx) => {
+//             const jwb = jawabanSiswa[idx];
+//             const benar = jwb === soal.kunci;
+            
+//             skorMaksimal += soal.skor;
+//             if (benar) { skorDidapat += soal.skor; jumlahBenar++; }
+            
+//             // Rekap untuk pembahasan
+//             riwayatJawaban.push({
+//                 nomor: idx, jawabanSiswa: jwb || null, kunci: soal.kunci, benar: benar,
+//                 skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
+//                 teksPilihanSiswa: jwb ? soal.pilihan[jwb] : "-",
+//                 teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+//                 penjelasan: soal.penjelasan
+//             });
+//         });
+
+//         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+        
+//         // === 2. LOGIKA REMEDIAL & KKM (BARU) ===
+//         const soalSalah = [];
+//         daftarSoal.forEach((soal, idx) => {
+//             if (jawabanSiswa[idx] !== soal.kunci) {
+//                 soalSalah.push(soal);
+//             }
+//         });
+
+//         // Simpan soal yang salah ke server (jika bukan sedang remedial)
+//         if (soalSalah.length > 0 && !mapelDipilih.isRemedial) {
+//             fetch(URL_GOOGLE_SHEETS, {
+//                 method: "POST",
+//                 body: JSON.stringify({
+//                     aksi: "simpan_soal_salah",
+//                     nisn: nisnSiswa,
+//                     mapel: mapelSiswa,
+//                     soalSalahJSON: JSON.stringify(soalSalah)
+//                 })
+//             });
+//         }
+
+//         // Logika Tampilkan Tombol Remedial berdasarkan KKM dari database
+//         // Tampilkan hasil ujian terlebih dahulu
+//         document.getElementById("layar-cbt").style.display = "none";
+//         document.getElementById("layar-akhir").style.display = "block";
+//         document.getElementById("skor-angka").textContent = skorAkhir;
+//         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+        
+//         // Cek apakah nilai di bawah KKM dan ada soal salah
+//         if (skorAkhir < nilaiKKM && !mapelDipilih.isRemedial && soalSalah.length > 0) {
+//             // Munculkan Popup Konfirmasi Remedial
+//             setTimeout(() => {
+//                 Swal.fire({
+//                     title: 'Nilai di Bawah KKM!',
+//                     text: `Nilai Anda (${skorAkhir}) di bawah standar (${nilaiKKM}). Apakah Anda ingin langsung mengerjakan soal Remedial sekarang?`,
+//                     icon: 'warning',
+//                     showCancelButton: true,
+//                     confirmButtonColor: '#e74c3c',
+//                     cancelButtonColor: '#95a5a6',
+//                     confirmButtonText: 'Ya, Remedial',
+//                     cancelButtonText: 'Tidak (Nanti)',
+//                     allowOutsideClick: false
+//                 }).then((res) => {
+//                     if (res.isConfirmed) {
+//                         mapelDipilih.isRemedial = true;
+//                         mulaiKuis(); // Langsung mulai tanpa token
+//                     }
+//                 });
+//             }, 500); // Jeda 0.5 detik agar layar hasil muncul dulu
+//         }
+//         // =====================================
+
+//         const finalPindahTab = jumlahPindahTab;
+//         const finalPelanggaranKamera = jumlahPelanggaranKamera;
+//         const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
+        
+//         // 3. Tampilkan hasil
+//         document.getElementById("layar-cbt").style.display = "none";
+//         document.getElementById("layar-akhir").style.display = "block";
+//         document.getElementById("skor-angka").textContent = skorAkhir;
+//         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+        
+//         // 4. Kirim data ke Google Sheets dan WA
+//         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+//         kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+
+//         // 5. Tandai selesai di MonitoringLive (KODE INI TETAP ADA)
+//         fetch(URL_GOOGLE_SHEETS, {
+//             method: "POST",
+//             body: JSON.stringify({
+//                 aksi: "tandai_selesai_ujian",
+//                 nisn: nisnSiswa,
+//                 mapel: mapelSiswa,
+//                 pelanggaran: finalPindahTab + finalPelanggaranKamera + finalPelanggaranFullscreen
+//             })
+//         }).catch(err => console.warn("Gagal tandai selesai:", err));
+//     }
+// }
+
+ async function selesaikanUjian() {
     // Cek apakah masih ada soal yang ragu-ragu
     if (soalRaguRagu.length > 0) {
         const peringatanRagu = await Swal.fire({
@@ -1290,14 +1438,13 @@ async function selesaikanUjian() {
         });
         
         if (!peringatanRagu.isConfirmed) {
-            // Cari soal pertama yang ragu-ragu dan buka
             nomor = soalRaguRagu[0];
             tampilSoalCBT();
             return;
         }
     }
 
-    // Lanjut ke konfirmasi normal
+    // Konfirmasi normal sebelum selesai
     const result = await Swal.fire({
         title: 'Selesaikan Ujian?',
         text: "Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.",
@@ -1318,21 +1465,26 @@ async function selesaikanUjian() {
         if (document.fullscreenElement) {
             document.exitFullscreen();
         }
-        // Buka kunci keyboard setelah ujian selesai
         if ('keyboard' in navigator && 'unlock' in navigator.keyboard) {
             navigator.keyboard.unlock();
         }
         
         // 1. Hitung skor
         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
+        const soalSalah = []; // Array untuk remedial
+
         daftarSoal.forEach((soal, idx) => {
             const jwb = jawabanSiswa[idx];
             const benar = jwb === soal.kunci;
             
             skorMaksimal += soal.skor;
-            if (benar) { skorDidapat += soal.skor; jumlahBenar++; }
+            if (benar) { 
+                skorDidapat += soal.skor; 
+                jumlahBenar++; 
+            } else {
+                soalSalah.push(soal);
+            }
             
-            // Rekap untuk pembahasan
             riwayatJawaban.push({
                 nomor: idx, jawabanSiswa: jwb || null, kunci: soal.kunci, benar: benar,
                 skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
@@ -1343,38 +1495,29 @@ async function selesaikanUjian() {
         });
 
         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+        const finalPindahTab = jumlahPindahTab;
+        const finalPelanggaranKamera = jumlahPelanggaranKamera;
+        const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
         
-        // === 2. LOGIKA REMEDIAL & KKM (BARU) ===
-        const soalSalah = [];
-        daftarSoal.forEach((soal, idx) => {
-            if (jawabanSiswa[idx] !== soal.kunci) {
-                soalSalah.push(soal);
-            }
-        });
-
-        // Simpan soal yang salah ke server (jika bukan sedang remedial)
-        if (soalSalah.length > 0 && !mapelDipilih.isRemedial) {
-            fetch(URL_GOOGLE_SHEETS, {
-                method: "POST",
-                body: JSON.stringify({
-                    aksi: "simpan_soal_salah",
-                    nisn: nisnSiswa,
-                    mapel: mapelSiswa,
-                    soalSalahJSON: JSON.stringify(soalSalah)
-                })
-            });
-        }
-
-        // Logika Tampilkan Tombol Remedial berdasarkan KKM dari database
-        // Tampilkan hasil ujian terlebih dahulu
+        // 2. Tampilkan layar hasil
         document.getElementById("layar-cbt").style.display = "none";
         document.getElementById("layar-akhir").style.display = "block";
         document.getElementById("skor-angka").textContent = skorAkhir;
         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+
+        // 3. LOGIKA REMEDIAL (MUNCULKAN POPUP KONFIRMASI)
+        const nilaiKKM = parseInt(mapelDipilih.kkm) || 70;
         
-        // Cek apakah nilai di bawah KKM dan ada soal salah
         if (skorAkhir < nilaiKKM && !mapelDipilih.isRemedial && soalSalah.length > 0) {
-            // Munculkan Popup Konfirmasi Remedial
+            // Simpan soal remedial ke server
+            fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({
+                    aksi: "simpan_soal_salah", nisn: nisnSiswa, mapel: mapelSiswa, soalSalahJSON: JSON.stringify(soalSalah)
+                })
+            });
+
+            // Tampilkan Popup Remedial
             setTimeout(() => {
                 Swal.fire({
                     title: 'Nilai di Bawah KKM!',
@@ -1389,28 +1532,19 @@ async function selesaikanUjian() {
                 }).then((res) => {
                     if (res.isConfirmed) {
                         mapelDipilih.isRemedial = true;
-                        mulaiKuis(); // Langsung mulai tanpa token
+                        mulaiKuis(); // Langsung mulai remedial
                     }
                 });
-            }, 500); // Jeda 0.5 detik agar layar hasil muncul dulu
+            }, 500);
         }
-        // =====================================
 
-        const finalPindahTab = jumlahPindahTab;
-        const finalPelanggaranKamera = jumlahPelanggaranKamera;
-        const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
-        
-        // 3. Tampilkan hasil
-        document.getElementById("layar-cbt").style.display = "none";
-        document.getElementById("layar-akhir").style.display = "block";
-        document.getElementById("skor-angka").textContent = skorAkhir;
-        document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
-        
-        // 4. Kirim data ke Google Sheets dan WA
+        // 4. Kirim Hasil Ujian ke Sheet Nilai
         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+        
+        // 5. Kirim Hasil Ujian ke WhatsApp
         kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
 
-        // 5. Tandai selesai di MonitoringLive (KODE INI TETAP ADA)
+        // 6. Tandai selesai di MonitoringLive
         fetch(URL_GOOGLE_SHEETS, {
             method: "POST",
             body: JSON.stringify({
@@ -1421,7 +1555,7 @@ async function selesaikanUjian() {
             })
         }).catch(err => console.warn("Gagal tandai selesai:", err));
     }
-}
+}   
     
 // function selesaikanUjian() {
 //     // Konfirmasi sebelum selesai
