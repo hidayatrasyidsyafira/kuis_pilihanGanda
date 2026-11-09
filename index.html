@@ -1031,6 +1031,19 @@ async function mulaiKuis() {
 
     mapelSiswa = mapelDipilih.mapel;
     
+    // === TAMBAHKAN KODE INI (Pencatat Monitoring Live) ===
+    fetch(URL_GOOGLE_SHEETS, {
+        method: "POST",
+        body: JSON.stringify({
+            aksi: "catat_mulai_ujian",
+            nisn: nisnSiswa,
+            nama: namaSiswa,
+            kelas: kelasSiswa,
+            mapel: mapelSiswa
+        })
+    }).catch(err => console.warn("Gagal catat mulai:", err));
+    // ========================================================
+
     if (mapelDipilih.isRemedial) {
         try {
             const res = await fetch(URL_GOOGLE_SHEETS + `?aksi=ambil_soal_salah&nisn=${nisnSiswa}&mapel=${encodeURIComponent(mapelSiswa)}`);
