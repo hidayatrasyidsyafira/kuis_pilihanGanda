@@ -2031,34 +2031,54 @@ function bukaModalKirimToken() {
         return;
     }
 
+    // Loop setiap jadwal, lalu pecah kelasnya
     jadwalTampil.forEach((j) => {
-        const opt = document.createElement("option");
-        opt.value = j._indexAsli;
-        opt.textContent = `${j.mapel} - ${j.kelas} (Token: ${j.token})`;
-        select.appendChild(opt);
+        const arrKelas = String(j.kelas || "").toUpperCase().split(",").map(k => k.trim());
+        
+        arrKelas.forEach(kelas => {
+            if (kelas === "") return;
+
+            // Jika guru, pastikan hanya menampilkan kelas yang diampu
+            if (sessionGuru.role !== "admin") {
+                const kelasGuru = (sessionGuru.kelasArray || []).map(k => k.toUpperCase());
+                if (!kelasGuru.includes(kelas)) return; // Lewati jika bukan kelasnya
+            }
+
+            const opt = document.createElement("option");
+            // SIMPAN index jadwal dan nama kelas spesifik, dipisahkan dengan "||"
+            opt.value = `${j._indexAsli}||${kelas}`; 
+            opt.textContent = `${j.mapel} - ${kelas} (Token: ${j.token})`;
+            select.appendChild(opt);
+        });
     });
 
     bukaModal("modal-kirim-token");
-    renderTabelTokenSiswa(); // Panggil fungsi untuk isi tabel
+    renderTabelTokenSiswa(); 
 }
 
 function renderTabelTokenSiswa() {
-    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
+    const val = document.getElementById("pilih-token-jadwal").value;
     const tbody = document.getElementById("tbody-token-siswa");
     
-    if (indexTerpilih === "" || !semuaDataJadwal[indexTerpilih]) {
+    if (!val) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Pilih ujian terlebih dahulu.</td></tr>`;
         return;
     }
 
+    // Pisahkan index jadwal dan kelas target
+    const [indexStr, kelasTarget] = val.split("||");
+    const indexTerpilih = parseInt(indexStr);
     const jadwal = semuaDataJadwal[indexTerpilih];
-    const kelasTarget = jadwal.kelas.split(",").map(k => k.trim().toUpperCase());
     
-    // Filter siswa yang kelasnya sesuai
-    const siswaTerkait = semuaDataSiswa.filter(s => kelasTarget.includes(s.kelas.toUpperCase()));
+    if (!jadwal) return;
+
+    // Filter siswa HANYA untuk kelas yang dipilih di dropdown
+    const siswaTerkait = semuaDataSiswa.filter(s => 
+        String(s.kelas).toUpperCase().trim() === kelasTarget
+    );
 
     if (siswaTerkait.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa di kelas ${jadwal.kelas}.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada siswa di kelas ${kelasTarget}.</td></tr>`;
         return;
     }
 
@@ -2081,12 +2101,14 @@ function renderTabelTokenSiswa() {
 }
 
 async function kirimTokenSatuSiswa(nisn) {
-    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
-    const jadwal = semuaDataJadwal[indexTerpilih];
+    const val = document.getElementById("pilih-token-jadwal").value;
+    if (!val) return;
     
-    // Cari siswa berdasarkan NISN
+    const [indexStr] = val.split("||");
+    const jadwal = semuaDataJadwal[parseInt(indexStr)];
+    
     const siswa = semuaDataSiswa.find(s => s.nisn.replace(/^'/, '') === nisn);
-    if (!siswa) return;
+    if (!siswa || !jadwal) return;
 
     const konfirmasi = await Swal.fire({
         title: 'Kirim Token?',
@@ -2108,7 +2130,7 @@ async function kirimTokenSatuSiswa(nisn) {
                 aksi: "kirim_token_massal",
                 tokenUtama: jadwal.token,
                 mapel: jadwal.mapel,
-                siswa: [siswa] // Kirim dalam bentuk array 1 item
+                siswa: [siswa] 
             })
         });
         const json = await res.json();
@@ -2116,24 +2138,30 @@ async function kirimTokenSatuSiswa(nisn) {
     } catch (err) {
         Swal.fire('Error!', 'Koneksi server gagal.', 'error');
     }
-}    
+}   
 
 async function prosesKirimToken(kirimSemua = true) {
-    const indexTerpilih = document.getElementById("pilih-token-jadwal").value;
-    if (indexTerpilih === "") return;
+    const val = document.getElementById("pilih-token-jadwal").value;
+    if (!val) return;
     
-    const jadwal = semuaDataJadwal[indexTerpilih];
-    const kelasTarget = jadwal.kelas.split(",").map(k => k.trim().toUpperCase());
-    const siswaTerkait = semuaDataSiswa.filter(s => kelasTarget.includes(s.kelas.toUpperCase()));
+    const [indexStr, kelasTarget] = val.split("||");
+    const jadwal = semuaDataJadwal[parseInt(indexStr)];
+    
+    if (!jadwal) return;
+
+    // Ambil siswa HANYA untuk kelas target
+    const siswaTerkait = semuaDataSiswa.filter(s => 
+        String(s.kelas).toUpperCase().trim() === kelasTarget
+    );
 
     if (siswaTerkait.length === 0) {
-        Swal.fire('Kosong!', `Tidak ada siswa dari kelas ${jadwal.kelas} di database.`, 'info');
+        Swal.fire('Kosong!', `Tidak ada siswa dari kelas ${kelasTarget} di database.`, 'info');
         return;
     }
 
     const konfirmasi = await Swal.fire({
         title: 'Kirim Token Massal?',
-        text: `Token akan dikirim ke ${siswaTerkait.length} siswa kelas ${jadwal.kelas}.`,
+        text: `Token akan dikirim ke ${siswaTerkait.length} siswa kelas ${kelasTarget}.`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#f39c12',
@@ -2156,14 +2184,13 @@ async function prosesKirimToken(kirimSemua = true) {
                 aksi: "kirim_token_massal",
                 tokenUtama: jadwal.token,
                 mapel: jadwal.mapel,
-                siswa: siswaTerkait // Kirim semua siswa
+                siswa: siswaTerkait 
             })
         });
         const json = await res.json();
         
         if (json.status === "success") {
             Swal.fire('Selesai!', json.message, 'success');
-            // tutupModal("modal-kirim-token"); // Biarkan modal terbuka agar bisa kirim lagi jika ada yang gagal
         } else {
             Swal.fire('Gagal!', json.message, 'error');
         }
