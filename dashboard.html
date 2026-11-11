@@ -610,7 +610,8 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label id="j-kelas-label">Kelas</label>
-                    <input type="text" id="j-kelas" placeholder="Contoh: X-3">
+                    <!-- Ganti input menjadi select -->
+                    <select id="j-kelas" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem;"></select>
                     <small id="j-kelas-hint" style="color: #7f8c8d; font-size: 0.8rem;">Satu kelas saja.</small>
                 </div>
                 <div class="form-group"><label>Waktu (Cth: 09:00 - 10:30)</label><input type="text" id="j-waktu" placeholder="08:00 - 09:30"></div>
@@ -1152,8 +1153,44 @@ function bukaTab(tab) {
 
 function bukaModal(id) {
     document.getElementById(id).classList.add("aktif");
-    if (id === "modal-jadwal") ubahModeJadwal();
+    if (id === "modal-jadwal") {
+        isiDropdownKelasJadwal(); // <-- TAMBAHKAN INI
+        ubahModeJadwal();
+    }
 }
+function isiDropdownKelasJadwal() {
+    const select = document.getElementById("j-kelas");
+    if (!select) return;
+    
+    const setKelas = new Set();
+    
+    if (sessionGuru.role === "admin") {
+        // Admin: Ambil dari data siswa yang sudah dimuat
+        if (typeof semuaDataSiswa !== 'undefined') {
+            semuaDataSiswa.forEach(s => { if (s.kelas) setKelas.add(s.kelas.toUpperCase().trim()); });
+        }
+        // Tambahan: Ambil dari jadwal yang sudah ada (jaga-jaga jika ada kelas yang belum ada siswanya)
+        if (typeof semuaDataJadwal !== 'undefined') {
+            semuaDataJadwal.forEach(j => {
+                if (j.kelas) {
+                    String(j.kelas).split(",").forEach(k => { if (k.trim()) setKelas.add(k.trim().toUpperCase()); });
+                }
+            });
+        }
+    } else {
+        // Guru: Hanya ambil dari kelas yang diampu (dari session login)
+        (sessionGuru.kelasArray || []).forEach(k => setKelas.add(k.toUpperCase().trim()));
+    }
+    
+    const arrKelas = Array.from(setKelas).sort();
+    
+    // Jika kosong, beri 1 opsi default
+    if (arrKelas.length === 0) {
+        select.innerHTML = `<option value="">- Tidak ada data kelas -</option>`;
+    } else {
+        select.innerHTML = arrKelas.map(k => `<option value="${k}">${k}</option>`).join('');
+    }
+}    
 function tutupModal(id) { document.getElementById(id).classList.remove("aktif"); }
 
 function muatSemuaData() {
@@ -1759,27 +1796,28 @@ function ubahModeJadwal() {
     const modeEl = document.querySelector('input[name="j-mode"]:checked');
     if (!modeEl) return;
     const mode = modeEl.value;
-    const inputKelas = document.getElementById("j-kelas");
+    const selectKelas = document.getElementById("j-kelas");
     const hintMode = document.getElementById("j-mode-hint");
     const hintKelas = document.getElementById("j-kelas-hint");
     
-    // === TAMBAHKAN INI: Sinkronisasi dropdown Jenis Ujian ===
     const selectJenis = document.getElementById("j-jenis");
-    if (selectJenis) {
-        selectJenis.value = mode; // Otomatis mengubah combobox jadi UH atau UAS
-    }
-    // ========================================================
+    if (selectJenis) selectJenis.value = mode;
 
-    if (!inputKelas) return;
+    if (!selectKelas) return;
 
     if (mode === "UH") {
-        inputKelas.placeholder = "Contoh: X-3";
+        selectKelas.removeAttribute("multiple"); // Hapus mode multi-select
+        selectKelas.style.height = "auto";
+        if (selectKelas.options.length > 0) selectKelas.selectedIndex = 0; // Pilih yang pertama
+        
         if (hintMode) hintMode.textContent = "Mode UH: satu kelas per input, waktu bisa berbeda per kelas.";
-        if (hintKelas) hintKelas.textContent = "Satu kelas saja. Untuk kelas lain di jam berbeda, tambah jadwal lagi.";
+        if (hintKelas) hintKelas.textContent = "Pilih satu kelas saja.";
     } else {
-        inputKelas.placeholder = "Contoh: X-1, X-2, X-3, X-4";
+        selectKelas.setAttribute("multiple", "multiple"); // Aktifkan mode multi-select
+        selectKelas.style.height = "120px"; // Perbesar kotak agar terlihat list-nya
+        
         if (hintMode) hintMode.textContent = "Mode UAS: semua kelas ujian di waktu & token yang sama.";
-        if (hintKelas) hintKelas.textContent = "Pisahkan dengan koma. Sistem otomatis memecah jadi satu baris per kelas.";
+        if (hintKelas) hintKelas.textContent = "Tekan CTRL (Windows) / CMD (Mac) untuk memilih lebih dari satu kelas.";
     }
 }
 
@@ -1799,7 +1837,18 @@ async function simpanJadwalBaru() {
         batasSoal: document.getElementById("j-batas-soal").value,
         kkm: document.getElementById("j-kkm").value
     };
-    const kelasInput = document.getElementById("j-kelas").value.trim();
+        const selectKelas = document.getElementById("j-kelas");
+    let kelasInput = "";
+    
+    // Jika mode multi-select (UAS) aktif
+    if (selectKelas.hasAttribute("multiple")) {
+        // Ambil semua kelas yang dipilih, gabungkan dengan koma
+        const selectedOptions = Array.from(selectKelas.selectedOptions).map(opt => opt.value);
+        kelasInput = selectedOptions.join(",");
+    } else {
+        // Jika mode single (UH), ambil nilai tunggal
+        kelasInput = selectKelas.value.trim();
+    }
 
     if (!dataDasar.waktu || !dataDasar.tanggal || !dataDasar.mapel || !kelasInput || !dataDasar.token) {
         Swal.fire('Oops...', 'Waktu, Tanggal, Mapel, Kelas, dan Token wajib diisi!', 'warning');
