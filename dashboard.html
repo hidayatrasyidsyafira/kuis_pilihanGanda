@@ -691,8 +691,10 @@
                     <input type="text" id="s-mapel" placeholder="Contoh: TIK UH 3 Queue">
                 </div>
                 <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Kelas (Opsional - Kosongkan jika untuk semua kelas)</label>
-                    <input type="text" id="s-kelas" placeholder="Contoh: X-1, X-2 (Pisahkan dengan koma)">
+                    <label>Kelas (Kosongkan / Pilih "Umum" jika untuk semua kelas)</label>
+                    <!-- Ganti input text menjadi select multiple -->
+                    <select id="s-kelas" multiple style="height: 100px; width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem;"></select>
+                    <small style="color: #7f8c8d; font-size: 0.8rem;">Tekan CTRL (Windows) / CMD (Mac) untuk memilih lebih dari satu kelas.</small>
                 </div>
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Pertanyaan</label>
@@ -1151,11 +1153,46 @@ function bukaTab(tab) {
     }
 }
 
+function isiDropdownKelasSoal() {
+    const select = document.getElementById("s-kelas");
+    if (!select) return;
+    
+    const setKelas = new Set();
+    
+    if (sessionGuru.role === "admin") {
+        // Admin: Ambil dari data siswa yang sudah dimuat
+        if (typeof semuaDataSiswa !== 'undefined') {
+            semuaDataSiswa.forEach(s => { if (s.kelas) setKelas.add(s.kelas.toUpperCase().trim()); });
+        }
+        if (typeof semuaDataJadwal !== 'undefined') {
+            semuaDataJadwal.forEach(j => {
+                if (j.kelas) {
+                    String(j.kelas).split(",").forEach(k => { if (k.trim()) setKelas.add(k.trim().toUpperCase()); });
+                }
+            });
+        }
+    } else {
+        // Guru: Hanya ambil dari kelas yang diampu
+        (sessionGuru.kelasArray || []).forEach(k => setKelas.add(k.toUpperCase().trim()));
+    }
+    
+    const arrKelas = Array.from(setKelas).sort();
+    
+    // Opsi pertama adalah "Umum" dengan value string kosong
+    let html = `<option value="" style="font-weight: bold; color: #e67e22; padding: 5px;">-- Umum (Semua Kelas) --</option>`;
+    html += arrKelas.map(k => `<option value="${k}" style="padding: 5px;">${k}</option>`).join('');
+    
+    select.innerHTML = html;
+}
+    
 function bukaModal(id) {
     document.getElementById(id).classList.add("aktif");
     if (id === "modal-jadwal") {
         isiDropdownKelasJadwal(); // <-- TAMBAHKAN INI
         ubahModeJadwal();
+    }
+    if (id === "modal-tambah-soal") {
+        isiDropdownKelasSoal();
     }
 }
 function isiDropdownKelasJadwal() {
@@ -2821,7 +2858,18 @@ async function hapusSoalTerpilih() {
 }
 
 async function simpanSoalBaru() {
-        const data = {
+    // 1. Ambil data kelas dari multi-select
+    const selectKelas = document.getElementById("s-kelas");
+    const selectedValues = Array.from(selectKelas.selectedOptions).map(opt => opt.value);
+    
+    // Jika yang dipilih adalah "Umum" (value kosong) atau tidak ada yang dipilih
+    let kelasTeks = "";
+    if (selectedValues.length > 0 && !selectedValues.includes("")) {
+        kelasTeks = selectedValues.join(", ");
+    }
+
+    // 2. Kumpulkan data dari form
+    const data = {
         mapel: document.getElementById("s-mapel").value,
         soal: document.getElementById("s-soal").value,
         pilihanA: document.getElementById("s-a").value,
@@ -2832,39 +2880,62 @@ async function simpanSoalBaru() {
         kunci: document.getElementById("s-kunci").value,
         skor: document.getElementById("s-skor").value,
         penjelasan: document.getElementById("s-penjelasan").value,
-        gambar: document.getElementById("s-gambar").value.trim(), // <-- BARU
-        kelas: document.getElementById("s-kelas").value.trim(),
-        dibuat_oleh: sessionGuru.username // <-- Tambahan 
+        gambar: document.getElementById("s-gambar").value.trim(),
+        kelas: kelasTeks, // Menggunakan teks kelas yang sudah diolah
+        dibuat_oleh: sessionGuru.username 
     };
 
-    if(!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); return; }
+    // 3. Validasi input wajib
+    if (!data.mapel || !data.soal || !data.pilihanA || !data.pilihanB) { 
+        Swal.fire('Oops...', 'Mapel, Pertanyaan, dan minimal Pilihan A & B harus diisi!', 'warning'); 
+        return; 
+    }
     
+    // 4. Proses simpan ke server
     const btn = document.querySelector("#modal-tambah-soal .btn-green");
-    btn.textContent = "⏳ Menyimpan..."; btn.disabled = true;
+    btn.textContent = "⏳ Menyimpan..."; 
+    btn.disabled = true;
 
     try {
-        const res = await fetch(URL_GOOGLE_SHEETS, { method: "POST", body: JSON.stringify({ aksi: "tambah_soal", soal: data }) });
+        const res = await fetch(URL_GOOGLE_SHEETS, { 
+            method: "POST", 
+            body: JSON.stringify({ aksi: "tambah_soal", soal: data }) 
+        });
         const json = await res.json();
-if (json.status === "success") {
-    Swal.fire('Berhasil!', 'Soal baru telah ditambahkan.', 'success');
-    tutupModal("modal-tambah-soal");
-    // Reset form soal & gambar
-    hapusGambarSoal();
-    document.getElementById("s-mapel").value = "";
-    document.getElementById("s-kelas").value = "";
-    document.getElementById("s-soal").value = "";
-    document.getElementById("s-a").value = "";
-    document.getElementById("s-b").value = "";
-    document.getElementById("s-c").value = "";
-    document.getElementById("s-d").value = "";
-    document.getElementById("s-e").value = "";
-    document.getElementById("s-penjelasan").value = "";
-    document.getElementById("s-skor").value = "1";
-    document.getElementById("s-kunci").value = "A";
-    muatBankSoal();
-} else { Swal.fire('Gagal!', json.message, 'error'); }
-    } catch (err) { Swal.fire('Error!', 'Koneksi server terputus.', 'error'); } 
-    finally { btn.textContent = "Simpan Soal"; btn.disabled = false; }
+        
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', 'Soal baru telah ditambahkan.', 'success');
+            tutupModal("modal-tambah-soal");
+            
+            // 5. Reset form & gambar
+            hapusGambarSoal();
+            document.getElementById("s-mapel").value = "";
+            document.getElementById("s-soal").value = "";
+            document.getElementById("s-a").value = "";
+            document.getElementById("s-b").value = "";
+            document.getElementById("s-c").value = "";
+            document.getElementById("s-d").value = "";
+            document.getElementById("s-e").value = "";
+            document.getElementById("s-penjelasan").value = "";
+            document.getElementById("s-skor").value = "1";
+            document.getElementById("s-kunci").value = "A";
+            
+            // Reset pilihan pada combobox multi-select (hilangkan semua centang)
+            for (let i = 0; i < selectKelas.options.length; i++) {
+                selectKelas.options[i].selected = false;
+            }
+            
+            // Refresh tabel Bank Soal
+            muatBankSoal();
+        } else { 
+            Swal.fire('Gagal!', json.message, 'error'); 
+        }
+    } catch (err) { 
+        Swal.fire('Error!', 'Koneksi server terputus.', 'error'); 
+    } finally { 
+        btn.textContent = "Simpan Soal"; 
+        btn.disabled = false; 
+    }
 }
 
 async function prosesPasteSoal() {
