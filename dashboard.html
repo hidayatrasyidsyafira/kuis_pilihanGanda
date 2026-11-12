@@ -2473,7 +2473,89 @@ async function prosesKirimQR(kirimSemua = false) {
     }
 }    
 
-/* =========================================
+async function kirimQRKeKetua() {
+    const fKelas = document.getElementById("filter-kelas-qr").value;
+    const targetWa = document.getElementById("wa-ketua-kelas-qr").value.trim();
+
+    if (!fKelas) {
+        Swal.fire('Oops', 'Pilih kelas terlebih dahulu.', 'warning');
+        return;
+    }
+    if (!targetWa) {
+        Swal.fire('Oops', 'Masukkan nomor WhatsApp Ketua Kelas.', 'warning');
+        return;
+    }
+
+    // Filter siswa berdasarkan kelas yang dipilih
+    const siswaTampil = semuaDataSiswa.filter(s => {
+        const kelasSiswa = String(s.kelas || "").toUpperCase();
+        const cocokKelas = kelasSiswa === fKelas;
+        const cocokRole = (sessionGuru.role === "admin") 
+            || (sessionGuru.kelasArray || []).map(k => k.toUpperCase()).includes(kelasSiswa);
+        return cocokKelas && cocokRole;
+    });
+
+    if (siswaTampil.length === 0) {
+        Swal.fire('Kosong!', `Tidak ada siswa di kelas ${fKelas}.`, 'info');
+        return;
+    }
+
+    // Ambil mapel dari jadwal pertama guru (sebagai default teks)
+    const mapelDefault = semuaDataJadwal.length > 0 ? semuaDataJadwal[0].mapel : "Ujian CBT";
+
+    // Buat format pesan
+    let pesan = `Halo Ketua Kelas *${fKelas}*,\n\n`;
+    pesan += `Berikut adalah daftar Link QR Code Kartu Ujian untuk mapel *${mapelDefault}*:\n\n`;
+    pesan += `📋 *DAFTAR LINK QR SISWA:*\n`;
+    pesan += `----------------------------\n`;
+
+    siswaTampil.forEach((s, index) => {
+        const nisnBersih = s.nisn.replace(/^'/, '');
+        const qrUrl = `https://quickchart.io/qr?text=${nisnBersih}&size=400&margin=2`;
+        
+        pesan += `${index + 1}. *${s.nama}* (${nisnBersih})\n`;
+        pesan += `   Link: ${qrUrl}\n\n`;
+    });
+
+    pesan += `----------------------------\n`;
+    pesan += `📌 *Cara pakai:*\n1. Klik link di atas.\n2. Simpan gambar QR yang muncul.\n3. Upload saat login ujian.\n\n⚠️ _Mohon bagikan link ini ke anggota kelas Anda masing-masing._`;
+
+    const konfirmasi = await Swal.fire({
+        title: 'Kirim ke Ketua Kelas?',
+        text: `Daftar link QR (${siswaTampil.length} siswa) akan dikirim ke nomor ${targetWa}.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#8e44ad',
+        confirmButtonText: 'Ya, Kirim!'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const res = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "kirim_pesan_kustom",
+                target: targetWa,
+                pesan: pesan
+            })
+        });
+        const json = await res.json();
+        
+        if (json.status === "success") {
+            Swal.fire('Berhasil!', json.message, 'success');
+            document.getElementById("wa-ketua-kelas-qr").value = ""; // Reset input
+        } else {
+            Swal.fire('Gagal!', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+    }
+}
+    
+    /* =========================================
    TAB 3: BANK SOAL
    ========================================= */
 async function muatBankSoal() {
