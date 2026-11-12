@@ -795,35 +795,51 @@
 
 <!-- ================= MODAL KARTU UJIAN QR ================= -->
 <div class="modal-overlay" id="modal-qr-code">
-    <div class="modal-content" style="max-width: 800px;">
-    <h3>🎓 Kirim Kartu Ujian (QR Code)</h3>
-    <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
-        Pilih siswa yang ingin dikirimi QR Code via WhatsApp. Atau kirim massal ke semua siswa di kelas yang dipilih.
-    </p>
-    
-    <!-- DROPDOWN PILIH KELAS -->
-    <div class="form-group" style="margin-bottom: 15px;">
-        <label>Pilih Kelas:</label>
-        <select id="filter-kelas-qr" onchange="renderTabelQR()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
-            <!-- Opsi akan diisi oleh JavaScript -->
-        </select>
-    </div>
+        <div class="modal-content" style="max-width: 800px;">
+        <h3>🎓 Kirim Kartu Ujian (QR Code)</h3>
+        <p style="font-size: 0.9rem; color: #555; margin-bottom: 15px;">
+            Pilih siswa yang ingin dikirimi QR Code via WhatsApp, atau kirim daftar link QR ke Ketua Kelas.
+        </p>
+        
+        <!-- DROPDOWN PILIH KELAS -->
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Pilih Kelas:</label>
+            <select id="filter-kelas-qr" onchange="renderTabelQR()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+                <!-- Opsi akan diisi oleh JavaScript -->
+            </select>
+        </div>
 
-    <div class="table-responsive" style="max-height: 400px;">
-        <table>
-            <thead>
-                <tr>
-                    <th width="30"><input type="checkbox" id="pilih-semua-qr" onchange="toggleSemuaQR(this)"></th>
-                    <th width="40">No</th>
-                    <th>NISN</th>
-                    <th>Nama</th>
-                    <th width="100">Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="tbody-qr">
-                <!-- Diisi oleh JS -->
-            </tbody>
-        </table>
+        <div class="table-responsive" style="max-height: 300px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="30"><input type="checkbox" id="pilih-semua-qr" onchange="toggleSemuaQR(this)"></th>
+                        <th width="40">No</th>
+                        <th>NISN</th>
+                        <th>Nama</th>
+                        <th width="100">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-qr">
+                    <!-- Diisi oleh JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- KOTAK KETUA KELAS -->
+        <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin-top: 15px; margin-bottom: 15px; border: 1px dashed #8e44ad;">
+            <label style="font-weight: bold; color: #2c3e50; margin-bottom: 8px; display: block;">👑 Kirim Daftar Link QR ke Ketua Kelas (Hemat Kuota)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="wa-ketua-kelas-qr" placeholder="Contoh: 628123456789" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                <button class="btn btn-orange" onclick="kirimQRKeKetua()" style="white-space: nowrap; background: #8e44ad;">👑 Kirim ke Ketua</button>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; text-align: right;">
+            <button class="btn btn-green" style="width: 100%; margin-bottom: 10px;" onclick="prosesKirimQR()">🚀 Kirim QR ke Siswa Terpilih</button>
+            <button class="btn btn-orange" style="width: 100%; margin-bottom: 10px; background: #8e44ad;" onclick="prosesKirimQR(true)">📢 Kirim ke SEMUA Siswa di Kelas Ini</button>
+            <button class="btn" style="width: 100%; background:#95a5a6;" onclick="tutupModal('modal-qr-code')">Batal</button>
+        </div>
     </div>
 
     <div style="margin-top: 15px; text-align: right;">
