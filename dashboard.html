@@ -2244,42 +2244,57 @@ async function kirimTokenKeKetua() {
         return;
     }
 
-    // Buat format pesan
-    let pesan = `Halo Ketua Kelas *${kelasTarget}*,\n\n`;
-    pesan += `Berikut adalah daftar Token Ujian untuk:\n`;
-    pesan += `📘 *Mapel:* ${jadwal.mapel}\n`;
-    pesan += `👨‍🏫 *Guru:* ${jadwal.namaGuru || '-'}\n\n`;
-    pesan += `📋 *DAFTAR TOKEN SISWA:*\n`;
-    pesan += `----------------------------\n`;
-
-    // Looping siswa untuk dapatkan token masing-masing
-    siswaTerkait.forEach((s, index) => {
-        const nisnBersih = s.nisn.replace(/^'/, '');
-        // Generate token unik persis seperti di backend
-        const tokenUnik = `${jadwal.token}${s.nama.substring(0, 3).toUpperCase()}${nisnBersih.slice(-2)}`;
-        
-        pesan += `${index + 1}. *${s.nama}* (${nisnBersih})\n`;
-        pesan += `   Token: \`${tokenUnik}\`\n\n`;
-    });
-
-    pesan += `----------------------------\n`;
-    pesan += `⚠️ *PENTING:* Mohon segera bagikan token ini ke anggota kelas Anda masing-masing. Jangan sampai tertukar!`;
-
     const konfirmasi = await Swal.fire({
         title: 'Kirim ke Ketua Kelas?',
-        text: `Daftar token (${siswaTerkait.length} siswa) akan dikirim ke nomor ${targetWa}.`,
+        text: `Sistem akan menyimpan ${siswaTerkait.length} token ke database, lalu mengirim daftarnya ke WA ${targetWa}.`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#f39c12',
-        confirmButtonText: 'Ya, Kirim!'
+        confirmButtonText: 'Ya, Proses!'
     });
 
     if (!konfirmasi.isConfirmed) return;
 
-    Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'Memproses...', text: 'Menyimpan token & mengirim WA', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     try {
-        const res = await fetch(URL_GOOGLE_SHEETS, {
+        // LANGKAH 1: Simpan ke Sheet TokenSiswa dan ambil hasilnya
+        const resSimpan = await fetch(URL_GOOGLE_SHEETS, {
+            method: "POST",
+            body: JSON.stringify({
+                aksi: "simpan_token_siswa",
+                mapel: jadwal.mapel,
+                tokenUtama: jadwal.token,
+                siswa: siswaTerkait
+            })
+        });
+        const jsonSimpan = await resSimpan.json();
+
+        if (jsonSimpan.status !== "success") {
+            throw new Error("Gagal menyimpan token: " + jsonSimpan.message);
+        }
+
+        const tokenData = jsonSimpan.data; // Array berisi {nisn, nama, token}
+
+        // LANGKAH 2: Susun pesan WA berdasarkan data token dari server
+        let pesan = `Halo Ketua Kelas *${kelasTarget}*,\n\n`;
+        pesan += `Berikut adalah daftar Token Ujian untuk:\n`;
+        pesan += `📘 *Mapel:* ${jadwal.mapel}\n`;
+        pesan += `👨‍🏫 *Guru:* ${jadwal.namaGuru || '-'}\n\n`;
+        pesan += `📋 *DAFTAR TOKEN SISWA:*\n`;
+        pesan += `----------------------------\n`;
+
+        tokenData.forEach((s, index) => {
+            const nisnBersih = s.nisn.replace(/^'/, '');
+            pesan += `${index + 1}. *${s.nama}* (${nisnBersih})\n`;
+            pesan += `   Token: \`${s.token}\`\n\n`;
+        });
+
+        pesan += `----------------------------\n`;
+        pesan += `⚠️ *PENTING:* Mohon segera bagikan token ini ke anggota kelas Anda masing-masing.`;
+
+        // LANGKAH 3: Kirim pesan WA
+        const resKirim = await fetch(URL_GOOGLE_SHEETS, {
             method: "POST",
             body: JSON.stringify({
                 aksi: "kirim_pesan_kustom",
@@ -2287,16 +2302,17 @@ async function kirimTokenKeKetua() {
                 pesan: pesan
             })
         });
-        const json = await res.json();
+        const jsonKirim = await resKirim.json();
         
-        if (json.status === "success") {
-            Swal.fire('Berhasil!', json.message, 'success');
+        if (jsonKirim.status === "success") {
+            Swal.fire('Berhasil!', jsonKirim.message, 'success');
             document.getElementById("wa-ketua-kelas").value = ""; // Reset input
         } else {
-            Swal.fire('Gagal!', json.message, 'error');
+            Swal.fire('Gagal Kirim WA!', jsonKirim.message, 'error');
         }
+
     } catch (err) {
-        Swal.fire('Error!', 'Koneksi ke server gagal.', 'error');
+        Swal.fire('Error!', err.message, 'error');
     }
 }
   
