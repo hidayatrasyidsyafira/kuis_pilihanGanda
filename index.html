@@ -1462,6 +1462,31 @@ function updateTimerTotal() {
 }
 
 /* --- KIRIM HASIL KE SHEET --- */
+// function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
+//     if (mapelDipilih && mapelDipilih.isLatihan) {
+//         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
+//         return; 
+//     }
+    
+//     const params = new URLSearchParams({
+//         nama: namaSiswa, 
+//         nisn: nisnSiswa, 
+//         kelas: kelasSiswa, 
+//         jumlah_benar: jumlahBenar, 
+//         total_soal: totalSoal, 
+//         skor: skorAkhir, 
+//         pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
+//         pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
+//         pelanggaran_fullscreen: pelanggaranFullscreen || 0,
+//         mapel: mapelSiswa, 
+//         waktu_jawab: new Date().toLocaleString("id-ID")
+//     });
+    
+//     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
+//     .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
+//     .catch(err => console.error("❌ Gagal:", err));
+// }
+
 function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
     if (mapelDipilih && mapelDipilih.isLatihan) {
         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
@@ -1475,17 +1500,19 @@ function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggar
         jumlah_benar: jumlahBenar, 
         total_soal: totalSoal, 
         skor: skorAkhir, 
-        pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
-        pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
+        pindah_tab: pindahTab,
+        pelanggaran_kamera: pelanggaranKamera,
         pelanggaran_fullscreen: pelanggaranFullscreen || 0,
         mapel: mapelSiswa, 
-        waktu_jawab: new Date().toLocaleString("id-ID")
+        waktu_jawab: new Date().toLocaleString("id-ID"),
+        kkm: mapelDipilih.kkm || 70, // <-- TAMBAHAN BARU
+        is_remedial: mapelDipilih.isRemedial ? "true" : "false" // <-- TAMBAHAN BARU
     });
     
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
     .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
     .catch(err => console.error("❌ Gagal:", err));
-}
+}    
 
 function kirimHasilKeWA(skor, benar, total, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
     if (mapelDipilih && mapelDipilih.isLatihan) return;
