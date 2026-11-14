@@ -1364,7 +1364,7 @@ async function selesaikanUjian() {
         const finalPelanggaranKamera = jumlahPelanggaranKamera;
         const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
         
-        // TAMBAHKAN INI: Hapus data remedial jika ini adalah ujian remedial
+        // Hapus data remedial jika ini adalah ujian remedial
         if (mapelDipilih.isRemedial) {
             fetch(URL_GOOGLE_SHEETS, {
                 method: "POST",
@@ -1375,7 +1375,6 @@ async function selesaikanUjian() {
                 })
             }).catch(err => console.warn("Gagal hapus data remedial:", err));
         }
-        // ========================================================
         
         // 2. Tampilkan layar hasil
         document.getElementById("layar-cbt").style.display = "none";
@@ -1416,24 +1415,175 @@ async function selesaikanUjian() {
             }, 500);
         }
 
-        // 4. Kirim Hasil Ujian ke Sheet Nilai
+        // 4. Kirim Hasil Ujian ke Sheet Nilai (Prioritas Utama)
         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
         
-        // 5. Kirim Hasil Ujian ke WhatsApp
-        kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+        // 5. Kirim Hasil Ujian ke WhatsApp (Beri jeda 3 detik agar tidak bentrok)
+        setTimeout(() => {
+            kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+        }, 3000);
 
-        // 6. Tandai selesai di MonitoringLive
-        fetch(URL_GOOGLE_SHEETS, {
-            method: "POST",
-            body: JSON.stringify({
-                aksi: "tandai_selesai_ujian",
-                nisn: nisnSiswa,
-                mapel: mapelSiswa,
-                pelanggaran: finalPindahTab + finalPelanggaranKamera + finalPelanggaranFullscreen
-            })
-        }).catch(err => console.warn("Gagal tandai selesai:", err));
+        // 6. Tandai selesai di MonitoringLive (Beri jeda 5 detik)
+        setTimeout(() => {
+            fetch(URL_GOOGLE_SHEETS, {
+                method: "POST",
+                body: JSON.stringify({
+                    aksi: "tandai_selesai_ujian",
+                    nisn: nisnSiswa,
+                    mapel: mapelSiswa,
+                    pelanggaran: finalPindahTab + finalPelanggaranKamera + finalPelanggaranFullscreen
+                })
+            }).catch(err => console.warn("Gagal tandai selesai:", err));
+        }, 5000);
     }
-}   
+}
+    
+// async function selesaikanUjian() {
+//     // Cek apakah masih ada soal yang ragu-ragu
+//     if (soalRaguRagu.length > 0) {
+//         const peringatanRagu = await Swal.fire({
+//             title: 'Masih Ada Soal Ragu-Ragu!',
+//             text: `Anda masih menandai ${soalRaguRagu.length} soal sebagai "Ragu-Ragu" (kotak kuning). Apakah Anda yakin ingin menyelesaikan ujian?`,
+//             icon: 'info',
+//             showCancelButton: true,
+//             confirmButtonColor: '#e74c3c',
+//             cancelButtonColor: '#3498db',
+//             confirmButtonText: 'Ya, Selesaikan',
+//             cancelButtonText: 'Cek Kembali'
+//         });
+        
+//         if (!peringatanRagu.isConfirmed) {
+//             nomor = soalRaguRagu[0];
+//             tampilSoalCBT();
+//             return;
+//         }
+//     }
+
+//     // Konfirmasi normal sebelum selesai
+//     const result = await Swal.fire({
+//         title: 'Selesaikan Ujian?',
+//         text: "Apakah Anda yakin ingin menyelesaikan ujian? Pastikan semua soal sudah dijawab.",
+//         icon: 'warning',
+//         showCancelButton: true,
+//         confirmButtonColor: '#2ecc71',
+//         cancelButtonColor: '#95a5a6',
+//         confirmButtonText: 'Ya, Selesaikan!',
+//         cancelButtonText: 'Batal',
+//         allowOutsideClick: false
+//     });
+
+//     if (result.isConfirmed) {
+//         clearInterval(timerInterval);
+//         kuisAktif = false;
+//         matikanKamera();
+
+//         if (document.fullscreenElement) {
+//             document.exitFullscreen();
+//         }
+//         if ('keyboard' in navigator && 'unlock' in navigator.keyboard) {
+//             navigator.keyboard.unlock();
+//         }
+        
+//         // 1. Hitung skor
+//         let skorDidapat = 0, skorMaksimal = 0, jumlahBenar = 0;
+//         const soalSalah = []; // Array untuk remedial
+
+//         daftarSoal.forEach((soal, idx) => {
+//             const jwb = jawabanSiswa[idx];
+//             const benar = jwb === soal.kunci;
+            
+//             skorMaksimal += soal.skor;
+//             if (benar) { 
+//                 skorDidapat += soal.skor; 
+//                 jumlahBenar++; 
+//             } else {
+//                 soalSalah.push(soal);
+//             }
+            
+//             riwayatJawaban.push({
+//                 nomor: idx, jawabanSiswa: jwb || null, kunci: soal.kunci, benar: benar,
+//                 skor: soal.skor, skorDidapat: benar ? soal.skor : 0, teksSoal: soal.soal,
+//                 teksPilihanSiswa: jwb ? soal.pilihan[jwb] : "-",
+//                 teksPilihanKunci: soal.pilihan[soal.kunci] || "-",
+//                 penjelasan: soal.penjelasan
+//             });
+//         });
+
+//         const skorAkhir = skorMaksimal > 0 ? Math.round(skorDidapat / skorMaksimal * 100) : 0;
+//         const finalPindahTab = jumlahPindahTab;
+//         const finalPelanggaranKamera = jumlahPelanggaranKamera;
+//         const finalPelanggaranFullscreen = jumlahPelanggaranFullscreen;
+        
+//         // TAMBAHKAN INI: Hapus data remedial jika ini adalah ujian remedial
+//         if (mapelDipilih.isRemedial) {
+//             fetch(URL_GOOGLE_SHEETS, {
+//                 method: "POST",
+//                 body: JSON.stringify({
+//                     aksi: "hapus_data_remedial",
+//                     nisn: nisnSiswa,
+//                     mapel: mapelSiswa
+//                 })
+//             }).catch(err => console.warn("Gagal hapus data remedial:", err));
+//         }
+//         // ========================================================
+        
+//         // 2. Tampilkan layar hasil
+//         document.getElementById("layar-cbt").style.display = "none";
+//         document.getElementById("layar-akhir").style.display = "block";
+//         document.getElementById("skor-angka").textContent = skorAkhir;
+//         document.getElementById("skor-detail").textContent = `${jumlahBenar} dari ${daftarSoal.length} soal benar (${skorDidapat}/${skorMaksimal} poin)`;
+
+//         // 3. LOGIKA REMEDIAL (MUNCULKAN POPUP KONFIRMASI)
+//         const nilaiKKM = parseInt(mapelDipilih.kkm) || 70;
+        
+//         if (skorAkhir < nilaiKKM && !mapelDipilih.isRemedial && soalSalah.length > 0) {
+//             // Simpan soal remedial ke server
+//             fetch(URL_GOOGLE_SHEETS, {
+//                 method: "POST",
+//                 body: JSON.stringify({
+//                     aksi: "simpan_soal_salah", nisn: nisnSiswa, mapel: mapelSiswa, soalSalahJSON: JSON.stringify(soalSalah)
+//                 })
+//             });
+
+//             // Tampilkan Popup Remedial
+//             setTimeout(() => {
+//                 Swal.fire({
+//                     title: 'Nilai di Bawah KKM!',
+//                     text: `Nilai Anda (${skorAkhir}) di bawah standar (${nilaiKKM}). Apakah Anda ingin langsung mengerjakan soal Remedial sekarang?`,
+//                     icon: 'warning',
+//                     showCancelButton: true,
+//                     confirmButtonColor: '#e74c3c',
+//                     cancelButtonColor: '#95a5a6',
+//                     confirmButtonText: 'Ya, Remedial',
+//                     cancelButtonText: 'Tidak (Nanti)',
+//                     allowOutsideClick: false
+//                 }).then((res) => {
+//                     if (res.isConfirmed) {
+//                         mapelDipilih.isRemedial = true;
+//                         mulaiKuis(); // Langsung mulai remedial
+//                     }
+//                 });
+//             }, 500);
+//         }
+
+//         // 4. Kirim Hasil Ujian ke Sheet Nilai
+//         kirimHasilAkhir(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+        
+//         // 5. Kirim Hasil Ujian ke WhatsApp
+//         kirimHasilKeWA(skorAkhir, jumlahBenar, daftarSoal.length, finalPindahTab, finalPelanggaranKamera, finalPelanggaranFullscreen);
+
+//         // 6. Tandai selesai di MonitoringLive
+//         fetch(URL_GOOGLE_SHEETS, {
+//             method: "POST",
+//             body: JSON.stringify({
+//                 aksi: "tandai_selesai_ujian",
+//                 nisn: nisnSiswa,
+//                 mapel: mapelSiswa,
+//                 pelanggaran: finalPindahTab + finalPelanggaranKamera + finalPelanggaranFullscreen
+//             })
+//         }).catch(err => console.warn("Gagal tandai selesai:", err));
+//     }
+// }   
     
 function mulaiTimerTotal() {
     clearInterval(timerInterval);
@@ -1462,31 +1612,6 @@ function updateTimerTotal() {
 }
 
 /* --- KIRIM HASIL KE SHEET --- */
-// function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
-//     if (mapelDipilih && mapelDipilih.isLatihan) {
-//         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
-//         return; 
-//     }
-    
-//     const params = new URLSearchParams({
-//         nama: namaSiswa, 
-//         nisn: nisnSiswa, 
-//         kelas: kelasSiswa, 
-//         jumlah_benar: jumlahBenar, 
-//         total_soal: totalSoal, 
-//         skor: skorAkhir, 
-//         pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
-//         pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
-//         pelanggaran_fullscreen: pelanggaranFullscreen || 0,
-//         mapel: mapelSiswa, 
-//         waktu_jawab: new Date().toLocaleString("id-ID")
-//     });
-    
-//     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
-//     .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
-//     .catch(err => console.error("❌ Gagal:", err));
-// }
-
 function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
     if (mapelDipilih && mapelDipilih.isLatihan) {
         document.getElementById("status-kirim").textContent = "🎯 Ujian latihan. Nilai tidak disimpan.";
@@ -1500,19 +1625,17 @@ function kirimHasilAkhir(skorAkhir, jumlahBenar, totalSoal, pindahTab, pelanggar
         jumlah_benar: jumlahBenar, 
         total_soal: totalSoal, 
         skor: skorAkhir, 
-        pindah_tab: pindahTab,
-        pelanggaran_kamera: pelanggaranKamera,
+        pindah_tab: pindahTab, // Menggunakan parameter yang dikirim
+        pelanggaran_kamera: pelanggaranKamera, // Menggunakan parameter yang dikirim
         pelanggaran_fullscreen: pelanggaranFullscreen || 0,
         mapel: mapelSiswa, 
-        waktu_jawab: new Date().toLocaleString("id-ID"),
-        kkm: mapelDipilih.kkm || 70, // <-- TAMBAHAN BARU
-        is_remedial: mapelDipilih.isRemedial ? "true" : "false" // <-- TAMBAHAN BARU
+        waktu_jawab: new Date().toLocaleString("id-ID")
     });
     
     fetch(URL_GOOGLE_SHEETS + "?" + params.toString(), { method: "GET", mode: "no-cors" })
     .then(() => { document.getElementById("status-kirim").textContent = "📤 Hasil sudah dikirim ke Google Sheets."; })
     .catch(err => console.error("❌ Gagal:", err));
-}    
+}
 
 function kirimHasilKeWA(skor, benar, total, pindahTab, pelanggaranKamera, pelanggaranFullscreen) {
     if (mapelDipilih && mapelDipilih.isLatihan) return;
